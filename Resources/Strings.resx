@@ -665,8 +665,80 @@
   <data name="PlaceholderFrequencyPenalty" xml:space="preserve">
     <value>Default: 0.0</value>
   </data>
+  <data name="PlaceholderSpecDraftNMax" xml:space="preserve">
+    <value>Default: 16</value>
+  </data>
+  <data name="PlaceholderSpecDraftNMin" xml:space="preserve">
+    <value>Default: 0</value>
+  </data>
+  <data name="PlaceholderSpecDraftPSplit" xml:space="preserve">
+    <value>Default: 0.1</value>
+  </data>
+  <data name="PlaceholderSpecDraftPMin" xml:space="preserve">
+    <value>Default: 0.9</value>
+  </data>
+  <data name="PlaceholderSpecDraftGpuLayers" xml:space="preserve">
+    <value>Draft GPU layers</value>
+  </data>
+  <data name="PlaceholderSpecDraftModel" xml:space="preserve">
+    <value>Path to draft model</value>
+  </data>
+  <data name="PlaceholderHfRepo" xml:space="preserve">
+    <value>author/repository</value>
+  </data>
+  <data name="PlaceholderHfFile" xml:space="preserve">
+    <value>model-file.gguf</value>
+  </data>
+  <data name="PlaceholderHfRepoDraft" xml:space="preserve">
+    <value>author/draft-repository</value>
+  </data>
   <data name="FeatureNotSupported" xml:space="preserve">
     <value>Not supported by this version of llama-server</value>
+  </data>
+  <data name="UnsupportedArgWarning" xml:space="preserve">
+    <value>This argument is not supported by the selected llama-server executable.</value>
+  </data>
+  <data name="TooltipSpecType" xml:space="preserve">
+    <value>Speculative decoding mode (--spec-type). Use with compatible builds and models only.</value>
+  </data>
+  <data name="TooltipSpecDraftModel" xml:space="preserve">
+    <value>Draft model path for speculative decoding.</value>
+  </data>
+  <data name="TooltipSpecDraftGpuLayers" xml:space="preserve">
+    <value>Number of draft model layers to offload to GPU.</value>
+  </data>
+  <data name="TooltipSpecDraftNMax" xml:space="preserve">
+    <value>Maximum draft tokens to verify per step. Higher values can be faster but less stable.</value>
+  </data>
+  <data name="TooltipSpecDraftNMin" xml:space="preserve">
+    <value>Minimum draft tokens before accepting speculative output.</value>
+  </data>
+  <data name="TooltipSpecDraftPSplit" xml:space="preserve">
+    <value>Probability split threshold for speculative decoding.</value>
+  </data>
+  <data name="TooltipSpecDraftPMin" xml:space="preserve">
+    <value>Minimum probability threshold for draft token acceptance.</value>
+  </data>
+  <data name="TooltipHfRepo" xml:space="preserve">
+    <value>Hugging Face repository id, for example author/model-name.</value>
+  </data>
+  <data name="TooltipHfFile" xml:space="preserve">
+    <value>Specific model file to load from the Hugging Face repository.</value>
+  </data>
+  <data name="TooltipOffline" xml:space="preserve">
+    <value>Use local files only and do not contact Hugging Face.</value>
+  </data>
+  <data name="TooltipHfRepoDraft" xml:space="preserve">
+    <value>Hugging Face repository id for the draft model.</value>
+  </data>
+  <data name="NoHelpAvailable" xml:space="preserve">
+    <value>Help output is unavailable for the selected executable.</value>
+  </data>
+  <data name="DockerNotInstalledError" xml:space="preserve">
+    <value>Docker is not installed or is not available in PATH.</value>
+  </data>
+  <data name="SaveLogDialogTitle" xml:space="preserve">
+    <value>Save log</value>
   </data>
   <data name="AboutTitle" xml:space="preserve">
     <value>About</value>
