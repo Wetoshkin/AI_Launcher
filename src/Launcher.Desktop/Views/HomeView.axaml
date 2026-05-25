@@ -1,0 +1,118 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Launcher.Desktop.ViewModels"
+             x:Class="Launcher.Desktop.Views.HomeView"
+             x:DataType="vm:HomeViewModel">
+  <Grid ColumnDefinitions="220,*" Background="#F6F2EB" Margin="18">
+    <Border Grid.Column="0"
+            Background="#FFFAF2"
+            BorderBrush="#EADCC9"
+            BorderThickness="1"
+            CornerRadius="22"
+            Padding="14">
+      <StackPanel Spacing="12">
+        <TextBlock Text="Пресеты" FontWeight="Bold" FontSize="16"/>
+        <TextBlock Text="быстрый запуск" FontSize="11" Foreground="#7B6C5B"/>
+        <ItemsControl ItemsSource="{Binding Presets}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Background="White"
+                      BorderBrush="#EADCC9"
+                      BorderThickness="1"
+                      CornerRadius="14"
+                      Padding="10"
+                      Margin="0,0,0,8">
+                <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis"/>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="+ Новый пресет"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"/>
+      </StackPanel>
+    </Border>
+
+    <StackPanel Grid.Column="1" Margin="18,0,0,0" Spacing="16">
+      <DockPanel LastChildFill="False">
+        <StackPanel DockPanel.Dock="Left" Spacing="4">
+          <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="Bold" Foreground="#20242C"/>
+          <TextBlock Text="{Binding Subtitle}" FontSize="13" Foreground="#6F7785"/>
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+          <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="12" Padding="10,7">
+            <TextBlock Text="GPU 13.8 / 24 ГБ"/>
+          </Border>
+          <Button Content="порт 8080 занят · освободить"
+                  Background="#FFF0DB"
+                  BorderBrush="#FFBD74"
+                  Foreground="#A95508"/>
+          <Border Background="#EEF8FB" BorderBrush="#C8E6EE" BorderThickness="1" CornerRadius="12" Padding="10,7">
+            <TextBlock Text="TurboQuant готов" Foreground="#20677A"/>
+          </Border>
+        </StackPanel>
+      </DockPanel>
+
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="1. Режим" Background="#FF9B35" Foreground="White" Padding="10,7" FontWeight="Bold"/>
+        <TextBlock Text="→" VerticalAlignment="Center" Foreground="#BCA98F"/>
+        <TextBlock Text="2. Папки" Background="White" Foreground="#867565" Padding="10,7"/>
+        <TextBlock Text="→" VerticalAlignment="Center" Foreground="#BCA98F"/>
+        <TextBlock Text="3. Модель" Background="White" Foreground="#867565" Padding="10,7"/>
+        <TextBlock Text="→" VerticalAlignment="Center" Foreground="#BCA98F"/>
+        <TextBlock Text="4. Runtime" Background="White" Foreground="#867565" Padding="10,7"/>
+        <TextBlock Text="→" VerticalAlignment="Center" Foreground="#BCA98F"/>
+        <TextBlock Text="5. Проверка" Background="White" Foreground="#867565" Padding="10,7"/>
+      </StackPanel>
+
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+        <Button Grid.Column="0"
+                MinHeight="220"
+                Background="White"
+                BorderBrush="#FF9B35"
+                BorderThickness="2"
+                HorizontalContentAlignment="Stretch">
+          <StackPanel Margin="18">
+            <TextBlock Text="ПРОЕКТ" Foreground="#C15F00" FontWeight="Bold"/>
+            <TextBlock Text="Запустить агента" FontSize="30" FontWeight="Bold" Margin="0,42,0,8"/>
+            <TextBlock Text="проект · агент · модель · runtime · старт" Foreground="#697386"/>
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="1"
+                MinHeight="220"
+                Background="White"
+                BorderBrush="#70B8C7"
+                BorderThickness="2"
+                HorizontalContentAlignment="Stretch">
+          <StackPanel Margin="18">
+            <TextBlock Text="СЕРВЕР" Foreground="#247187" FontWeight="Bold"/>
+            <TextBlock Text="Поднять endpoint" FontSize="30" FontWeight="Bold" Margin="0,42,0,8"/>
+            <TextBlock Text="модель · контекст · KV · MTP · сервер" Foreground="#697386"/>
+          </StackPanel>
+        </Button>
+      </Grid>
+
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+        <Button Grid.Column="0" HorizontalContentAlignment="Left" Padding="14">
+          <StackPanel>
+            <TextBlock Text="Папка моделей" FontWeight="Bold"/>
+            <TextBlock Text="D:\AI\Models" Foreground="#7B6C5B" FontSize="12"/>
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="1" HorizontalContentAlignment="Left" Padding="14">
+          <StackPanel>
+            <TextBlock Text="Папка проектов" FontWeight="Bold"/>
+            <TextBlock Text="не указана" Foreground="#A95508" FontSize="12"/>
+          </StackPanel>
+        </Button>
+      </Grid>
+
+      <UniformGrid Columns="4">
+        <Button Content="Модели"/>
+        <Button Content="Рантаймы"/>
+        <Button Content="Агенты"/>
+        <Button Content="Журнал"/>
+      </UniformGrid>
+    </StackPanel>
+  </Grid>
+</UserControl>

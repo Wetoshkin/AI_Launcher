@@ -1,0 +1,14 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:Launcher.Desktop.Views"
+        xmlns:vm="using:Launcher.Desktop.ViewModels"
+        x:Class="Launcher.Desktop.Views.MainWindow"
+        x:DataType="vm:HomeViewModel"
+        Width="1180"
+        Height="760"
+        MinWidth="980"
+        MinHeight="640"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="AI Launcher Studio">
+    <views:HomeView/>
+</Window>

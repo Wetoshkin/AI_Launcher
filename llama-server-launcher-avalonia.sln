@@ -24,6 +24,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher.Models.Tests", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher.Agents.Tests", "tests\Launcher.Agents.Tests\Launcher.Agents.Tests.csproj", "{93C2FBA4-6B09-4AA0-91CE-FDE7E12C56D8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher.Desktop", "src\Launcher.Desktop\Launcher.Desktop.csproj", "{4B05381D-50CA-4226-9804-1AEC49C3BCF5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,6 +68,10 @@ Global
 		{93C2FBA4-6B09-4AA0-91CE-FDE7E12C56D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{93C2FBA4-6B09-4AA0-91CE-FDE7E12C56D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{93C2FBA4-6B09-4AA0-91CE-FDE7E12C56D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B05381D-50CA-4226-9804-1AEC49C3BCF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B05381D-50CA-4226-9804-1AEC49C3BCF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B05381D-50CA-4226-9804-1AEC49C3BCF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B05381D-50CA-4226-9804-1AEC49C3BCF5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -82,5 +88,6 @@ Global
 		{69668120-34AB-4819-A0A0-DEF9FDAA58B2} = {3B6D508C-8119-45BE-B4BA-134CA0BE5D13}
 		{927948DB-7D5D-41B1-8DCD-4FC18DC634F7} = {3B6D508C-8119-45BE-B4BA-134CA0BE5D13}
 		{93C2FBA4-6B09-4AA0-91CE-FDE7E12C56D8} = {3B6D508C-8119-45BE-B4BA-134CA0BE5D13}
+		{4B05381D-50CA-4226-9804-1AEC49C3BCF5} = {2D2D594C-366E-4A85-95C1-54201C44E610}
 	EndGlobalSection
 EndGlobal
