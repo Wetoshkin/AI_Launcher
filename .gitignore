@@ -35,3 +35,6 @@ Thumbs.db
 TestResults/
 coverage/
 *.csproj.lscache
+
+# Local agent worktrees
+.worktrees/
