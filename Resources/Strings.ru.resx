@@ -665,8 +665,80 @@
   <data name="PlaceholderFrequencyPenalty" xml:space="preserve">
     <value>По умолчанию: 0.0</value>
   </data>
+  <data name="PlaceholderSpecDraftNMax" xml:space="preserve">
+    <value>По умолчанию: 16</value>
+  </data>
+  <data name="PlaceholderSpecDraftNMin" xml:space="preserve">
+    <value>По умолчанию: 0</value>
+  </data>
+  <data name="PlaceholderSpecDraftPSplit" xml:space="preserve">
+    <value>По умолчанию: 0.1</value>
+  </data>
+  <data name="PlaceholderSpecDraftPMin" xml:space="preserve">
+    <value>По умолчанию: 0.9</value>
+  </data>
+  <data name="PlaceholderSpecDraftGpuLayers" xml:space="preserve">
+    <value>Слоёв draft-модели на GPU</value>
+  </data>
+  <data name="PlaceholderSpecDraftModel" xml:space="preserve">
+    <value>Путь к draft-модели</value>
+  </data>
+  <data name="PlaceholderHfRepo" xml:space="preserve">
+    <value>автор/репозиторий</value>
+  </data>
+  <data name="PlaceholderHfFile" xml:space="preserve">
+    <value>model-file.gguf</value>
+  </data>
+  <data name="PlaceholderHfRepoDraft" xml:space="preserve">
+    <value>автор/draft-репозиторий</value>
+  </data>
   <data name="FeatureNotSupported" xml:space="preserve">
     <value>Не поддерживается данной версией llama-server</value>
+  </data>
+  <data name="UnsupportedArgWarning" xml:space="preserve">
+    <value>Этот аргумент не поддерживается выбранным исполняемым файлом llama-server.</value>
+  </data>
+  <data name="TooltipSpecType" xml:space="preserve">
+    <value>Режим speculative decoding (--spec-type). Используйте только с совместимыми сборками и моделями.</value>
+  </data>
+  <data name="TooltipSpecDraftModel" xml:space="preserve">
+    <value>Путь к draft-модели для speculative decoding.</value>
+  </data>
+  <data name="TooltipSpecDraftGpuLayers" xml:space="preserve">
+    <value>Количество слоёв draft-модели, выгружаемых на GPU.</value>
+  </data>
+  <data name="TooltipSpecDraftNMax" xml:space="preserve">
+    <value>Максимум draft-токенов для проверки за шаг. Больше может быть быстрее, но менее стабильно.</value>
+  </data>
+  <data name="TooltipSpecDraftNMin" xml:space="preserve">
+    <value>Минимум draft-токенов перед принятием speculative-вывода.</value>
+  </data>
+  <data name="TooltipSpecDraftPSplit" xml:space="preserve">
+    <value>Порог разделения вероятности для speculative decoding.</value>
+  </data>
+  <data name="TooltipSpecDraftPMin" xml:space="preserve">
+    <value>Минимальный порог вероятности для принятия draft-токена.</value>
+  </data>
+  <data name="TooltipHfRepo" xml:space="preserve">
+    <value>ID репозитория Hugging Face, например author/model-name.</value>
+  </data>
+  <data name="TooltipHfFile" xml:space="preserve">
+    <value>Конкретный файл модели в репозитории Hugging Face.</value>
+  </data>
+  <data name="TooltipOffline" xml:space="preserve">
+    <value>Использовать только локальные файлы и не обращаться к Hugging Face.</value>
+  </data>
+  <data name="TooltipHfRepoDraft" xml:space="preserve">
+    <value>ID репозитория Hugging Face для draft-модели.</value>
+  </data>
+  <data name="NoHelpAvailable" xml:space="preserve">
+    <value>Вывод справки недоступен для выбранного исполняемого файла.</value>
+  </data>
+  <data name="DockerNotInstalledError" xml:space="preserve">
+    <value>Docker не установлен или недоступен в PATH.</value>
+  </data>
+  <data name="SaveLogDialogTitle" xml:space="preserve">
+    <value>Сохранить журнал</value>
   </data>
   <data name="AboutTitle" xml:space="preserve">
     <value>О программе</value>
