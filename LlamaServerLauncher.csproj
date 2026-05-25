@@ -45,5 +45,9 @@
     <EmbeddedResource Remove="tests\**\*" />
     <None Remove="src\**\*" />
     <None Remove="tests\**\*" />
+    <AvaloniaXaml Remove="src\**\*.axaml" />
+    <AvaloniaXaml Remove="tests\**\*.axaml" />
+    <AvaloniaResource Remove="src\**\*" />
+    <AvaloniaResource Remove="tests\**\*" />
   </ItemGroup>
 </Project>
