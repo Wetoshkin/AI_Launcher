@@ -149,6 +149,19 @@
         <TextBlock Text="{Binding StatusMessage}" Foreground="#765A36"/>
       </Border>
 
+      <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Проверка запуска" FontWeight="Bold" FontSize="15"/>
+          <ItemsControl ItemsSource="{Binding LaunchReviewLines}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding}" Foreground="#5A4D3E" Margin="0,0,0,4"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
       <UniformGrid Columns="4">
         <Button Content="Модели"/>
         <Button Content="Рантаймы"/>
