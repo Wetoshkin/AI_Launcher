@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using Launcher.Desktop.Services;
@@ -10,6 +12,8 @@ namespace Launcher.Desktop.ViewModels;
 public sealed partial class HomeViewModel : ViewModelBase
 {
     private readonly string _defaultModelsDirectory = @"D:\AI\Models";
+    private IReadOnlyList<LocalModelFile> _allModels = [];
+    private string _modelSearchText = "";
 
     public HomeViewModel()
     {
@@ -17,7 +21,7 @@ public sealed partial class HomeViewModel : ViewModelBase
             ? _defaultModelsDirectory
             : "не указана";
         ProjectsFolderPath = "не указана";
-        ModelCountText = CountLocalModelsText(ModelsFolderPath);
+        RefreshLocalModels();
     }
 
     public string Title => "AI Launcher Studio";
@@ -34,11 +38,29 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public string ProjectsFolderPath { get; private set; }
 
-    public string ModelCountText { get; private set; }
+    public string ModelCountText { get; private set; } = "модели: проверка";
 
     public string StatusMessage { get; private set; } = "Выберите режим запуска или настройте папки.";
 
     public IFolderPicker? FolderPicker { get; set; }
+
+    public ObservableCollection<ModelRowViewModel> LocalModels { get; } = [];
+
+    public string ModelSearchText
+    {
+        get => _modelSearchText;
+        set
+        {
+            if (_modelSearchText == value)
+            {
+                return;
+            }
+
+            _modelSearchText = value;
+            OnPropertyChanged();
+            ApplyModelFilter();
+        }
+    }
 
     public ObservableCollection<string> Presets { get; } =
     [
@@ -78,9 +100,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         ModelsFolderPath = folder;
-        ModelCountText = CountLocalModelsText(folder);
+        RefreshLocalModels();
         OnPropertyChanged(nameof(ModelsFolderPath));
-        OnPropertyChanged(nameof(ModelCountText));
         SetStatus("Папка моделей обновлена.");
     }
 
@@ -111,20 +132,37 @@ public sealed partial class HomeViewModel : ViewModelBase
         SetStatus("Проверка порта использует WindowsPortInspector; llama-server можно будет освободить безопасно.");
     }
 
+    [RelayCommand]
+    private void RefreshModels()
+    {
+        RefreshLocalModels();
+        SetStatus("Каталог локальных моделей обновлён.");
+    }
+
     private void SetStatus(string message)
     {
         StatusMessage = message;
         OnPropertyChanged(nameof(StatusMessage));
     }
 
-    private static string CountLocalModelsText(string modelsFolderPath)
+    private void RefreshLocalModels()
     {
-        if (!Directory.Exists(modelsFolderPath))
-        {
-            return "модели: папка не выбрана";
-        }
+        _allModels = Directory.Exists(ModelsFolderPath)
+            ? LocalModelCatalog.Scan([ModelsFolderPath])
+            : [];
+        ModelCountText = _allModels.Count == 0
+            ? "модели: GGUF не найдены"
+            : $"модели: {_allModels.Count} GGUF";
+        OnPropertyChanged(nameof(ModelCountText));
+        ApplyModelFilter();
+    }
 
-        var count = LocalModelCatalog.Scan([modelsFolderPath]).Count;
-        return count == 0 ? "модели: GGUF не найдены" : $"модели: {count} GGUF";
+    private void ApplyModelFilter()
+    {
+        LocalModels.Clear();
+        foreach (var model in ModelFilterService.Apply(_allModels, new ModelFilter(null, null, null, ModelSearchText)).Take(8))
+        {
+            LocalModels.Add(new ModelRowViewModel(model));
+        }
     }
 }
