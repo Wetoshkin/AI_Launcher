@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
+using Launcher.Core.Scenarios;
 using Launcher.Desktop.Services;
 using Launcher.Models.Catalog;
 using Launcher.Models.HuggingFace;
@@ -16,6 +17,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly string _defaultModelsDirectory = @"D:\AI\Models";
     private readonly HuggingFaceModelClient _huggingFaceClient;
     private IReadOnlyList<LocalModelFile> _allModels = [];
+    private LaunchWizardState _wizardState;
     private string _modelSearchText = "";
     private string _hfSearchText = "qwen coder gguf";
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
@@ -31,11 +33,16 @@ public sealed partial class HomeViewModel : ViewModelBase
     public HomeViewModel(HuggingFaceModelClient huggingFaceClient)
     {
         _huggingFaceClient = huggingFaceClient;
+        _wizardState = LaunchWizardState.ForScenario(new LaunchScenario(
+            LaunchMode.Agent,
+            AgentKind.Kilo,
+            RuntimeKind.LlamaCppTurboQuant));
         ModelsFolderPath = Directory.Exists(_defaultModelsDirectory)
             ? _defaultModelsDirectory
             : "не указана";
         ProjectsFolderPath = "не указана";
         RefreshLocalModels();
+        RefreshWizardSteps();
     }
 
     public string Title => "AI Launcher Studio";
@@ -61,6 +68,10 @@ public sealed partial class HomeViewModel : ViewModelBase
     public ObservableCollection<ModelRowViewModel> LocalModels { get; } = [];
 
     public ObservableCollection<RemoteModelRowViewModel> RemoteModels { get; } = [];
+
+    public ObservableCollection<WizardStepRowViewModel> WizardSteps { get; } = [];
+
+    public string CurrentWizardStepText => StepLabel(_wizardState.CurrentStep);
 
     public string ModelSearchText
     {
@@ -126,15 +137,31 @@ public sealed partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private void SelectAgentMode()
     {
-        StatusMessage = "Режим проекта: далее выбор папки проекта, агента, модели и runtime.";
-        OnPropertyChanged(nameof(StatusMessage));
+        SetScenario(new LaunchScenario(LaunchMode.Agent, AgentKind.Kilo, RuntimeKind.LlamaCppTurboQuant));
+        SetStatus("Режим проекта: далее выбор папки проекта, агента, модели и runtime.");
     }
 
     [RelayCommand]
     private void SelectEndpointMode()
     {
-        StatusMessage = "Режим сервера: далее выбор модели, контекста, KV/MTP и порта.";
-        OnPropertyChanged(nameof(StatusMessage));
+        SetScenario(new LaunchScenario(LaunchMode.Endpoint, AgentKind.None, RuntimeKind.LlamaCppMtp));
+        SetStatus("Режим сервера: далее выбор модели, контекста, KV/MTP и порта.");
+    }
+
+    [RelayCommand]
+    private void NextStep()
+    {
+        _wizardState = _wizardState.Next();
+        RefreshWizardSteps();
+        SetStatus($"Текущий шаг: {CurrentWizardStepText}.");
+    }
+
+    [RelayCommand]
+    private void PreviousStep()
+    {
+        _wizardState = _wizardState.Back();
+        RefreshWizardSteps();
+        SetStatus($"Текущий шаг: {CurrentWizardStepText}.");
     }
 
     [RelayCommand]
@@ -230,6 +257,42 @@ public sealed partial class HomeViewModel : ViewModelBase
         StatusMessage = message;
         OnPropertyChanged(nameof(StatusMessage));
     }
+
+    private void SetScenario(LaunchScenario scenario)
+    {
+        _wizardState = LaunchWizardState.ForScenario(scenario);
+        RefreshWizardSteps();
+    }
+
+    private void RefreshWizardSteps()
+    {
+        WizardSteps.Clear();
+        for (var index = 0; index < _wizardState.Route.Count; index++)
+        {
+            var step = _wizardState.Route[index];
+            WizardSteps.Add(new WizardStepRowViewModel(
+                (index + 1).ToString(),
+                StepLabel(step),
+                index == _wizardState.CurrentIndex));
+        }
+
+        OnPropertyChanged(nameof(CurrentWizardStepText));
+    }
+
+    private static string StepLabel(WizardStep step) => step switch
+    {
+        WizardStep.Mode => "Режим",
+        WizardStep.Project => "Проект",
+        WizardStep.Agent => "Агент",
+        WizardStep.Model => "Модель",
+        WizardStep.Runtime => "Runtime",
+        WizardStep.Port => "Порт",
+        WizardStep.KvMtpContext => "KV / MTP / контекст",
+        WizardStep.AgentOptions => "Опции агента",
+        WizardStep.Review => "Проверка",
+        WizardStep.Launch => "Запуск",
+        _ => step.ToString()
+    };
 
     private void RefreshLocalModels()
     {
