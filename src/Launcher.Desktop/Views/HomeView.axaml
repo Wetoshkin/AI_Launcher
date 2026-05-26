@@ -170,6 +170,44 @@
           </ItemsControl>
         </StackPanel>
       </Border>
+
+      <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="*,150,Auto" ColumnSpacing="10">
+            <TextBox Grid.Column="0"
+                     PlaceholderText="Поиск Hugging Face GGUF"
+                     Text="{Binding HfSearchText}"/>
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding HfSortOptions}"
+                      SelectedItem="{Binding HfSort}"/>
+            <Button Grid.Column="2"
+                    Content="Найти"
+                    Command="{Binding SearchHuggingFaceCommand}"/>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding RemoteModels}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RemoteModelRowViewModel">
+                <Border Background="#FFF8EC"
+                        BorderBrush="#EADCC9"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="10"
+                        Margin="0,0,0,8">
+                  <Grid ColumnDefinitions="*,95,70,90" ColumnSpacing="10">
+                    <StackPanel Grid.Column="0">
+                      <TextBlock Text="{Binding Id}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Text="{Binding Tags}" Foreground="#8A7660" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding Downloads}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    <TextBlock Grid.Column="2" Text="{Binding Likes}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    <TextBlock Grid.Column="3" Text="{Binding Compatibility}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
     </StackPanel>
   </Grid>
 </UserControl>
