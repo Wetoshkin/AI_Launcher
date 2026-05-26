@@ -4,6 +4,7 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
+using Launcher.Desktop.Services;
 using Launcher.Desktop.ViewModels;
 using Launcher.Desktop.Views;
 
@@ -20,10 +21,13 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
+            var viewModel = new HomeViewModel();
+            var window = new MainWindow
             {
-                DataContext = new HomeViewModel(),
+                DataContext = viewModel,
             };
+            viewModel.FolderPicker = new AvaloniaFolderPicker(window);
+            desktop.MainWindow = window;
         }
 
         base.OnFrameworkInitializationCompleted();
