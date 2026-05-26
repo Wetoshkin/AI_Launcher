@@ -7,4 +7,5 @@ public sealed record HuggingFaceModelSummary(
     IReadOnlyList<string> Tags,
     bool IsCompatibleWithCurrentGpu,
     bool HasPreferredQuant,
-    bool IsRuntimeCompatible);
+    bool IsRuntimeCompatible,
+    IReadOnlyList<string>? SiblingFiles = null);
