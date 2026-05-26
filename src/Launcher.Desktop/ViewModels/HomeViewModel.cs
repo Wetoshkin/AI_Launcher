@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
+using Launcher.Core.Decoding;
 using Launcher.Core.Profiles;
 using Launcher.Core.Review;
 using Launcher.Core.Scenarios;
@@ -27,6 +28,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private string _modelSearchText = "";
     private string _hfSearchText = "qwen coder gguf";
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
+    private DecodingPresetRowViewModel _selectedDecodingPreset;
 
     public HomeViewModel()
         : this(new HuggingFaceModelClient(new HttpClient
@@ -47,6 +49,9 @@ public sealed partial class HomeViewModel : ViewModelBase
             LaunchMode.Agent,
             AgentKind.Kilo,
             RuntimeKind.LlamaCppTurboQuant));
+        DecodingPresets = new ObservableCollection<DecodingPresetRowViewModel>(
+            DecodingPresetCatalog.All.Select(preset => new DecodingPresetRowViewModel(preset)));
+        _selectedDecodingPreset = DecodingPresets[0];
         ModelsFolderPath = Directory.Exists(_defaultModelsDirectory)
             ? _defaultModelsDirectory
             : "не указана";
@@ -82,6 +87,24 @@ public sealed partial class HomeViewModel : ViewModelBase
     public ObservableCollection<WizardStepRowViewModel> WizardSteps { get; } = [];
 
     public ObservableCollection<string> LaunchReviewLines { get; } = [];
+
+    public ObservableCollection<DecodingPresetRowViewModel> DecodingPresets { get; }
+
+    public DecodingPresetRowViewModel SelectedDecodingPreset
+    {
+        get => _selectedDecodingPreset;
+        set
+        {
+            if (_selectedDecodingPreset == value)
+            {
+                return;
+            }
+
+            _selectedDecodingPreset = value;
+            OnPropertyChanged();
+            RefreshLaunchReview();
+        }
+    }
 
     public string CurrentWizardStepText => StepLabel(_wizardState.CurrentStep);
 
@@ -318,7 +341,7 @@ public sealed partial class HomeViewModel : ViewModelBase
             ModelPath: ModelsFolderPath == "не указана" ? "модель не выбрана" : ModelsFolderPath,
             ContextTokens: 65536,
             Port: 8080,
-            AntiLoopPresetId: "coding-safe");
+            AntiLoopPresetId: SelectedDecodingPreset.Id);
 
         LaunchReviewLines.Clear();
         foreach (var line in LaunchReviewBuilder.Build(profile).Lines)
