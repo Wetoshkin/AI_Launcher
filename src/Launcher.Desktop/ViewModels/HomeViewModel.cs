@@ -9,6 +9,9 @@ using Launcher.Core.Scenarios;
 using Launcher.Desktop.Services;
 using Launcher.Models.Catalog;
 using Launcher.Models.HuggingFace;
+using Launcher.Runtimes.Hardware;
+using Launcher.Runtimes.Ports;
+using Launcher.Runtimes.Status;
 
 namespace Launcher.Desktop.ViewModels;
 
@@ -16,6 +19,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 {
     private readonly string _defaultModelsDirectory = @"D:\AI\Models";
     private readonly HuggingFaceModelClient _huggingFaceClient;
+    private readonly RuntimeDashboardService _runtimeDashboardService;
     private IReadOnlyList<LocalModelFile> _allModels = [];
     private LaunchWizardState _wizardState;
     private string _modelSearchText = "";
@@ -26,13 +30,17 @@ public sealed partial class HomeViewModel : ViewModelBase
         : this(new HuggingFaceModelClient(new HttpClient
         {
             BaseAddress = new System.Uri("https://huggingface.co")
-        }))
+        }),
+        new RuntimeDashboardService(
+            new NvidiaSmiGpuProbe(new ProcessCommandRunner()),
+            new WindowsPortInspector()))
     {
     }
 
-    public HomeViewModel(HuggingFaceModelClient huggingFaceClient)
+    public HomeViewModel(HuggingFaceModelClient huggingFaceClient, RuntimeDashboardService runtimeDashboardService)
     {
         _huggingFaceClient = huggingFaceClient;
+        _runtimeDashboardService = runtimeDashboardService;
         _wizardState = LaunchWizardState.ForScenario(new LaunchScenario(
             LaunchMode.Agent,
             AgentKind.Kilo,
@@ -49,11 +57,11 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public string Subtitle => "локальные агенты · сервер моделей · каталог GGUF";
 
-    public string GpuStatus => "GPU: проверка при запуске";
+    public string GpuStatus { get; private set; } = "GPU: проверить";
 
-    public string RuntimeStatus => "TurboQuant / MTP: требуется проверка runtime";
+    public string RuntimeStatus { get; private set; } = "runtime: требуется проверка";
 
-    public string PortStatus => "порт 8080: проверить";
+    public string PortStatus { get; private set; } = "порт 8080: проверить";
 
     public string ModelsFolderPath { get; private set; }
 
@@ -208,9 +216,19 @@ public sealed partial class HomeViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void CheckPort()
+    private async Task CheckPortAsync()
     {
-        SetStatus("Проверка порта использует WindowsPortInspector; llama-server можно будет освободить безопасно.");
+        SetStatus("Проверяю GPU и порт 8080...");
+        var snapshot = await _runtimeDashboardService.CheckAsync(8080, default);
+        GpuStatus = snapshot.GpuText;
+        PortStatus = snapshot.PortText;
+        RuntimeStatus = snapshot.RuntimeText;
+        OnPropertyChanged(nameof(GpuStatus));
+        OnPropertyChanged(nameof(PortStatus));
+        OnPropertyChanged(nameof(RuntimeStatus));
+        SetStatus(snapshot.IsPortFree
+            ? "Окружение проверено: порт свободен."
+            : "Порт занят. Если это llama-server, его можно будет освободить перед запуском.");
     }
 
     [RelayCommand]
