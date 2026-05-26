@@ -27,7 +27,7 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Button Content="+ Новый пресет"
+        <Button Content="Новый пресет"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"/>
       </StackPanel>
@@ -41,14 +41,15 @@
         </StackPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
           <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="12" Padding="10,7">
-            <TextBlock Text="GPU 13.8 / 24 ГБ"/>
+            <TextBlock Text="{Binding GpuStatus}"/>
           </Border>
-          <Button Content="порт 8080 занят · освободить"
+          <Button Content="{Binding PortStatus}"
+                  Command="{Binding CheckPortCommand}"
                   Background="#FFF0DB"
                   BorderBrush="#FFBD74"
                   Foreground="#A95508"/>
           <Border Background="#EEF8FB" BorderBrush="#C8E6EE" BorderThickness="1" CornerRadius="12" Padding="10,7">
-            <TextBlock Text="TurboQuant готов" Foreground="#20677A"/>
+            <TextBlock Text="{Binding RuntimeStatus}" Foreground="#20677A"/>
           </Border>
         </StackPanel>
       </DockPanel>
@@ -71,6 +72,7 @@
                 Background="White"
                 BorderBrush="#FF9B35"
                 BorderThickness="2"
+                Command="{Binding SelectAgentModeCommand}"
                 HorizontalContentAlignment="Stretch">
           <StackPanel Margin="18">
             <TextBlock Text="ПРОЕКТ" Foreground="#C15F00" FontWeight="Bold"/>
@@ -83,6 +85,7 @@
                 Background="White"
                 BorderBrush="#70B8C7"
                 BorderThickness="2"
+                Command="{Binding SelectEndpointModeCommand}"
                 HorizontalContentAlignment="Stretch">
           <StackPanel Margin="18">
             <TextBlock Text="СЕРВЕР" Foreground="#247187" FontWeight="Bold"/>
@@ -93,19 +96,38 @@
       </Grid>
 
       <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-        <Button Grid.Column="0" HorizontalContentAlignment="Left" Padding="14">
-          <StackPanel>
-            <TextBlock Text="Папка моделей" FontWeight="Bold"/>
-            <TextBlock Text="D:\AI\Models" Foreground="#7B6C5B" FontSize="12"/>
-          </StackPanel>
+        <Button Grid.Column="0" HorizontalContentAlignment="Stretch" Padding="14" Command="{Binding ChooseModelsFolderCommand}">
+          <Grid ColumnDefinitions="34,*">
+            <PathIcon Grid.Column="0"
+                      Width="22"
+                      Height="22"
+                      Foreground="#C15F00"
+                      Data="M3,6 L8,6 L10,8 L21,8 L21,18 L3,18 Z M3,8 L21,8"/>
+            <StackPanel Grid.Column="1">
+              <TextBlock Text="Папка моделей" FontWeight="Bold"/>
+              <TextBlock Text="{Binding ModelsFolderPath}" Foreground="#7B6C5B" FontSize="12"/>
+              <TextBlock Text="{Binding ModelCountText}" Foreground="#A95508" FontSize="12"/>
+            </StackPanel>
+          </Grid>
         </Button>
-        <Button Grid.Column="1" HorizontalContentAlignment="Left" Padding="14">
-          <StackPanel>
-            <TextBlock Text="Папка проектов" FontWeight="Bold"/>
-            <TextBlock Text="не указана" Foreground="#A95508" FontSize="12"/>
-          </StackPanel>
+        <Button Grid.Column="1" HorizontalContentAlignment="Stretch" Padding="14" Command="{Binding ChooseProjectsFolderCommand}">
+          <Grid ColumnDefinitions="34,*">
+            <PathIcon Grid.Column="0"
+                      Width="22"
+                      Height="22"
+                      Foreground="#247187"
+                      Data="M3,6 L8,6 L10,8 L21,8 L21,18 L3,18 Z M3,8 L21,8"/>
+            <StackPanel Grid.Column="1">
+              <TextBlock Text="Папка проектов" FontWeight="Bold"/>
+              <TextBlock Text="{Binding ProjectsFolderPath}" Foreground="#A95508" FontSize="12"/>
+            </StackPanel>
+          </Grid>
         </Button>
       </Grid>
+
+      <Border Background="#FFF8EC" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="12" Padding="12">
+        <TextBlock Text="{Binding StatusMessage}" Foreground="#765A36"/>
+      </Border>
 
       <UniformGrid Columns="4">
         <Button Content="Модели"/>
