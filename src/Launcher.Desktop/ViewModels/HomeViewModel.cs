@@ -5,6 +5,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
+using Launcher.Core.Profiles;
+using Launcher.Core.Review;
 using Launcher.Core.Scenarios;
 using Launcher.Desktop.Services;
 using Launcher.Models.Catalog;
@@ -78,6 +80,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     public ObservableCollection<RemoteModelRowViewModel> RemoteModels { get; } = [];
 
     public ObservableCollection<WizardStepRowViewModel> WizardSteps { get; } = [];
+
+    public ObservableCollection<string> LaunchReviewLines { get; } = [];
 
     public string CurrentWizardStepText => StepLabel(_wizardState.CurrentStep);
 
@@ -161,6 +165,11 @@ public sealed partial class HomeViewModel : ViewModelBase
     {
         _wizardState = _wizardState.Next();
         RefreshWizardSteps();
+        if (_wizardState.CurrentStep == WizardStep.Review)
+        {
+            RefreshLaunchReview();
+        }
+
         SetStatus($"Текущий шаг: {CurrentWizardStepText}.");
     }
 
@@ -295,6 +304,27 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         OnPropertyChanged(nameof(CurrentWizardStepText));
+    }
+
+    private void RefreshLaunchReview()
+    {
+        var profile = new LaunchProfile(
+            Id: "draft",
+            Name: "Черновик запуска",
+            Mode: _wizardState.Scenario.Mode,
+            Agent: _wizardState.Scenario.Agent,
+            Runtime: _wizardState.Scenario.Runtime,
+            ProjectPath: ProjectsFolderPath == "не указана" ? null : ProjectsFolderPath,
+            ModelPath: ModelsFolderPath == "не указана" ? "модель не выбрана" : ModelsFolderPath,
+            ContextTokens: 65536,
+            Port: 8080,
+            AntiLoopPresetId: "coding-safe");
+
+        LaunchReviewLines.Clear();
+        foreach (var line in LaunchReviewBuilder.Build(profile).Lines)
+        {
+            LaunchReviewLines.Add(line);
+        }
     }
 
     private static string StepLabel(WizardStep step) => step switch
