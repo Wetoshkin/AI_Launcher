@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
+using Launcher.Desktop.Services;
 using Launcher.Models.Catalog;
 
 namespace Launcher.Desktop.ViewModels;
@@ -36,6 +38,8 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public string StatusMessage { get; private set; } = "Выберите режим запуска или настройте папки.";
 
+    public IFolderPicker? FolderPicker { get; set; }
+
     public ObservableCollection<string> Presets { get; } =
     [
         "Kilo · Qwen3 Coder · TurboQuant · 64k",
@@ -58,23 +62,58 @@ public sealed partial class HomeViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void ChooseModelsFolder()
+    private async Task ChooseModelsFolderAsync()
     {
-        StatusMessage = "Здесь будет системный выбор папки моделей.";
-        OnPropertyChanged(nameof(StatusMessage));
+        if (FolderPicker is null)
+        {
+            SetStatus("Выбор папки моделей пока недоступен: окно ещё не готово.");
+            return;
+        }
+
+        var folder = await FolderPicker.PickFolderAsync("Выберите папку с GGUF-моделями");
+        if (string.IsNullOrWhiteSpace(folder))
+        {
+            SetStatus("Выбор папки моделей отменён.");
+            return;
+        }
+
+        ModelsFolderPath = folder;
+        ModelCountText = CountLocalModelsText(folder);
+        OnPropertyChanged(nameof(ModelsFolderPath));
+        OnPropertyChanged(nameof(ModelCountText));
+        SetStatus("Папка моделей обновлена.");
     }
 
     [RelayCommand]
-    private void ChooseProjectsFolder()
+    private async Task ChooseProjectsFolderAsync()
     {
-        StatusMessage = "Здесь будет системный выбор папки проектов.";
-        OnPropertyChanged(nameof(StatusMessage));
+        if (FolderPicker is null)
+        {
+            SetStatus("Выбор папки проектов пока недоступен: окно ещё не готово.");
+            return;
+        }
+
+        var folder = await FolderPicker.PickFolderAsync("Выберите папку с проектами");
+        if (string.IsNullOrWhiteSpace(folder))
+        {
+            SetStatus("Выбор папки проектов отменён.");
+            return;
+        }
+
+        ProjectsFolderPath = folder;
+        OnPropertyChanged(nameof(ProjectsFolderPath));
+        SetStatus("Папка проектов обновлена.");
     }
 
     [RelayCommand]
     private void CheckPort()
     {
-        StatusMessage = "Проверка порта использует WindowsPortInspector; llama-server можно будет освободить безопасно.";
+        SetStatus("Проверка порта использует WindowsPortInspector; llama-server можно будет освободить безопасно.");
+    }
+
+    private void SetStatus(string message)
+    {
+        StatusMessage = message;
         OnPropertyChanged(nameof(StatusMessage));
     }
 
