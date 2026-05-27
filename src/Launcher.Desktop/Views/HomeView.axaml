@@ -166,6 +166,22 @@
           <TextBlock Text="{Binding SelectedDecodingPreset.Description}"
                      Foreground="#765A36"
                      TextWrapping="Wrap"/>
+          <Button Content="Собрать команду"
+                  Command="{Binding BuildLaunchCommandCommand}"
+                  HorizontalAlignment="Left"/>
+          <Border Background="#1F2328" CornerRadius="8" Padding="10">
+            <TextBlock Text="{Binding LaunchCommandPreview}"
+                       Foreground="#F8E8C8"
+                       FontFamily="Consolas"
+                       TextWrapping="Wrap"/>
+          </Border>
+          <ItemsControl ItemsSource="{Binding LaunchEnvironmentLines}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding}" Foreground="#765A36" FontFamily="Consolas" FontSize="12"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
           <ItemsControl ItemsSource="{Binding LaunchReviewLines}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
