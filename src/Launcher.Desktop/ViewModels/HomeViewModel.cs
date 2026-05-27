@@ -5,7 +5,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
+using Launcher.Agents.Commands;
 using Launcher.Core.Decoding;
+using Launcher.Core.LaunchPlans;
 using Launcher.Core.Profiles;
 using Launcher.Core.Review;
 using Launcher.Core.Scenarios;
@@ -13,6 +15,7 @@ using Launcher.Desktop.Services;
 using Launcher.Models.Catalog;
 using Launcher.Models.HuggingFace;
 using Launcher.Runtimes.Hardware;
+using Launcher.Runtimes.LlamaCpp;
 using Launcher.Runtimes.Ports;
 using Launcher.Runtimes.Status;
 
@@ -87,6 +90,10 @@ public sealed partial class HomeViewModel : ViewModelBase
     public ObservableCollection<WizardStepRowViewModel> WizardSteps { get; } = [];
 
     public ObservableCollection<string> LaunchReviewLines { get; } = [];
+
+    public ObservableCollection<string> LaunchEnvironmentLines { get; } = [];
+
+    public string LaunchCommandPreview { get; private set; } = "Команда ещё не собрана.";
 
     public ObservableCollection<DecodingPresetRowViewModel> DecodingPresets { get; }
 
@@ -331,7 +338,36 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     private void RefreshLaunchReview()
     {
-        var profile = new LaunchProfile(
+        var profile = BuildDraftProfile();
+
+        LaunchReviewLines.Clear();
+        foreach (var line in LaunchReviewBuilder.Build(profile).Lines)
+        {
+            LaunchReviewLines.Add(line);
+        }
+    }
+
+    [RelayCommand]
+    private void BuildLaunchCommand()
+    {
+        var profile = BuildDraftProfile();
+        var plan = profile.Mode == LaunchMode.Endpoint
+            ? LlamaServerCommandBuilder.Build(profile, DecodingPresetCatalog.Get(SelectedDecodingPreset.Id))
+            : BuildAgentPlan(profile);
+        var preview = LaunchPlanFormatter.Format(plan);
+
+        LaunchCommandPreview = preview.CommandLine;
+        OnPropertyChanged(nameof(LaunchCommandPreview));
+        LaunchEnvironmentLines.Clear();
+        foreach (var line in preview.EnvironmentLines)
+        {
+            LaunchEnvironmentLines.Add(line);
+        }
+
+        SetStatus("Команда запуска собрана. Проверьте её перед стартом.");
+    }
+
+    private LaunchProfile BuildDraftProfile() => new(
             Id: "draft",
             Name: "Черновик запуска",
             Mode: _wizardState.Scenario.Mode,
@@ -343,11 +379,23 @@ public sealed partial class HomeViewModel : ViewModelBase
             Port: 8080,
             AntiLoopPresetId: SelectedDecodingPreset.Id);
 
-        LaunchReviewLines.Clear();
-        foreach (var line in LaunchReviewBuilder.Build(profile).Lines)
+    private static LaunchPlan BuildAgentPlan(LaunchProfile profile)
+    {
+        var request = new AgentLaunchRequest(
+            profile.Agent,
+            profile.ProjectPath ?? "",
+            "local/llama.cpp/model",
+            $"http://127.0.0.1:{profile.Port}/v1");
+
+        IAgentCommandBuilder builder = profile.Agent switch
         {
-            LaunchReviewLines.Add(line);
-        }
+            AgentKind.OpenCode => new OpenCodeCommandBuilder(),
+            AgentKind.Claw => new ClawCommandBuilder(),
+            AgentKind.Aider => new AiderCommandBuilder(),
+            _ => new KiloCommandBuilder()
+        };
+
+        return builder.Build(request);
     }
 
     private static string StepLabel(WizardStep step) => step switch
