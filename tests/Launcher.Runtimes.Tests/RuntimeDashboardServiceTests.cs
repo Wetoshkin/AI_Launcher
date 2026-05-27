@@ -1,4 +1,5 @@
 using Launcher.Runtimes.Hardware;
+using Launcher.Runtimes.LlamaCpp;
 using Launcher.Runtimes.Ports;
 using Launcher.Runtimes.Status;
 
@@ -11,7 +12,8 @@ public sealed class RuntimeDashboardServiceTests
     {
         var service = new RuntimeDashboardService(
             new FakeGpuProbe([new GpuInfo("RTX 3090", 10.0, 24.0)]),
-            new FakePortInspector(null));
+            new FakePortInspector(null),
+            new FakeRuntimeCatalog([]));
 
         var snapshot = await service.CheckAsync(8080, CancellationToken.None);
 
@@ -27,12 +29,29 @@ public sealed class RuntimeDashboardServiceTests
     {
         var service = new RuntimeDashboardService(
             new FakeGpuProbe([]),
-            new FakePortInspector(new PortOwnerInfo(8080, 1234, "llama-server", null, false, null)));
+            new FakePortInspector(new PortOwnerInfo(8080, 1234, "llama-server", null, false, null)),
+            new FakeRuntimeCatalog([]));
 
         var snapshot = await service.CheckAsync(8080, CancellationToken.None);
 
         Assert.False(snapshot.IsPortFree);
         Assert.Equal("порт 8080: занят llama-server", snapshot.PortText);
+    }
+
+    [Fact]
+    public async Task ReportsRuntimeCapabilities()
+    {
+        var service = new RuntimeDashboardService(
+            new FakeGpuProbe([]),
+            new FakePortInspector(null),
+            new FakeRuntimeCatalog([
+                new LlamaRuntimeInfo(@"D:\AI\runtimes\llama-server.exe",
+                    new LlamaServerCapabilities(new HashSet<string>(), new HashSet<string>(), new HashSet<string>(), true, true))
+            ]));
+
+        var snapshot = await service.CheckAsync(8080, CancellationToken.None);
+
+        Assert.Equal("runtime: MTP + TurboQuant", snapshot.RuntimeText);
     }
 
     private sealed class FakeGpuProbe(IReadOnlyList<GpuInfo> gpus) : IGpuProbe
@@ -45,5 +64,11 @@ public sealed class RuntimeDashboardServiceTests
     {
         public Task<PortOwnerInfo?> InspectAsync(int port, CancellationToken cancellationToken) =>
             Task.FromResult(owner);
+    }
+
+    private sealed class FakeRuntimeCatalog(IReadOnlyList<LlamaRuntimeInfo> runtimes) : ILlamaRuntimeCatalog
+    {
+        public Task<IReadOnlyList<LlamaRuntimeInfo>> ScanAsync(IEnumerable<string> runtimeRoots, CancellationToken cancellationToken) =>
+            Task.FromResult(runtimes);
     }
 }

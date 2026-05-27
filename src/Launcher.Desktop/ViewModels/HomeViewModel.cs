@@ -48,7 +48,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         }),
         new RuntimeDashboardService(
             new NvidiaSmiGpuProbe(new ProcessCommandRunner()),
-            new WindowsPortInspector()),
+            new WindowsPortInspector(),
+            new RuntimeCatalogService(new ProcessCommandRunner())),
         new RuntimeStartCoordinator(
             new WindowsPortInspector(),
             new PortReleaseService(new ProcessCommandRunner()),
