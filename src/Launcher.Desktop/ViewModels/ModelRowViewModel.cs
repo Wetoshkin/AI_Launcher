@@ -5,6 +5,8 @@ namespace Launcher.Desktop.ViewModels;
 
 public sealed class ModelRowViewModel(LocalModelFile model)
 {
+    public LocalModelFile Model => model;
+
     public string Name => System.IO.Path.GetFileName(model.Path);
 
     public string Family => model.Family;

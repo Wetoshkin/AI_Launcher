@@ -214,28 +214,23 @@
                     Content="Обновить"
                     Command="{Binding RefreshModelsCommand}"/>
           </Grid>
-          <ItemsControl ItemsSource="{Binding LocalModels}">
-            <ItemsControl.ItemTemplate>
+          <ListBox ItemsSource="{Binding LocalModels}"
+                   SelectedItem="{Binding SelectedLocalModel}"
+                   MaxHeight="260">
+            <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:ModelRowViewModel">
-                <Border Background="#FFF8EC"
-                        BorderBrush="#EADCC9"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="10"
-                        Margin="0,0,0,8">
-                  <Grid ColumnDefinitions="*,90,80,80" ColumnSpacing="10">
-                    <StackPanel Grid.Column="0">
-                      <TextBlock Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
-                      <TextBlock Text="{Binding Path}" Foreground="#8A7660" FontSize="11" TextTrimming="CharacterEllipsis"/>
-                    </StackPanel>
-                    <TextBlock Grid.Column="1" Text="{Binding Family}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="2" Text="{Binding Quant}" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="3" Text="{Binding Size}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                  </Grid>
-                </Border>
+                <Grid ColumnDefinitions="*,90,80,80" ColumnSpacing="10" Margin="0,4">
+                  <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Path}" Foreground="#8A7660" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Text="{Binding Family}" VerticalAlignment="Center"/>
+                  <TextBlock Grid.Column="2" Text="{Binding Quant}" VerticalAlignment="Center"/>
+                  <TextBlock Grid.Column="3" Text="{Binding Size}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                </Grid>
               </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+            </ListBox.ItemTemplate>
+          </ListBox>
         </StackPanel>
       </Border>
 
