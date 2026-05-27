@@ -169,6 +169,11 @@
           <Button Content="Собрать команду"
                   Command="{Binding BuildLaunchCommandCommand}"
                   HorizontalAlignment="Left"/>
+          <Button Content="Запустить"
+                  Command="{Binding StartLaunchCommand}"
+                  Background="#FF9B35"
+                  Foreground="White"
+                  HorizontalAlignment="Left"/>
           <Border Background="#1F2328" CornerRadius="8" Padding="10">
             <TextBlock Text="{Binding LaunchCommandPreview}"
                        Foreground="#F8E8C8"
