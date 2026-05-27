@@ -1,6 +1,6 @@
 namespace Launcher.Runtimes.Ports;
 
-public sealed class PortReleaseService(ICommandRunner commandRunner)
+public sealed class PortReleaseService(ICommandRunner commandRunner) : IPortReleaser
 {
     public async Task<PortReleaseResult> ReleaseIfSafeAsync(
         PortOwnerInfo portOwner,

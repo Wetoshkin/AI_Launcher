@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using Launcher.Agents.Commands;
 using Launcher.Core.Decoding;
+using Launcher.Core.Guards;
 using Launcher.Core.LaunchPlans;
 using Launcher.Core.Profiles;
 using Launcher.Core.Review;
@@ -18,6 +19,7 @@ using Launcher.Runtimes.Hardware;
 using Launcher.Runtimes.LlamaCpp;
 using Launcher.Runtimes.Ports;
 using Launcher.Runtimes.Processes;
+using Launcher.Runtimes.Startup;
 using Launcher.Runtimes.Status;
 
 namespace Launcher.Desktop.ViewModels;
@@ -27,7 +29,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly string _defaultModelsDirectory = @"D:\AI\Models";
     private readonly HuggingFaceModelClient _huggingFaceClient;
     private readonly RuntimeDashboardService _runtimeDashboardService;
-    private readonly LaunchPlanProcessService _launchPlanProcessService;
+    private readonly RuntimeStartCoordinator _runtimeStartCoordinator;
     private LaunchPlan? _lastLaunchPlan;
     private IReadOnlyList<LocalModelFile> _allModels = [];
     private LaunchWizardState _wizardState;
@@ -44,18 +46,21 @@ public sealed partial class HomeViewModel : ViewModelBase
         new RuntimeDashboardService(
             new NvidiaSmiGpuProbe(new ProcessCommandRunner()),
             new WindowsPortInspector()),
-        new LaunchPlanProcessService(new ProcessStarter()))
+        new RuntimeStartCoordinator(
+            new WindowsPortInspector(),
+            new PortReleaseService(new ProcessCommandRunner()),
+            new ProcessStarter()))
     {
     }
 
     public HomeViewModel(
         HuggingFaceModelClient huggingFaceClient,
         RuntimeDashboardService runtimeDashboardService,
-        LaunchPlanProcessService launchPlanProcessService)
+        RuntimeStartCoordinator runtimeStartCoordinator)
     {
         _huggingFaceClient = huggingFaceClient;
         _runtimeDashboardService = runtimeDashboardService;
-        _launchPlanProcessService = launchPlanProcessService;
+        _runtimeStartCoordinator = runtimeStartCoordinator;
         _wizardState = LaunchWizardState.ForScenario(new LaunchScenario(
             LaunchMode.Agent,
             AgentKind.Kilo,
@@ -379,6 +384,14 @@ public sealed partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private async Task StartLaunchAsync()
     {
+        var profile = BuildDraftProfile();
+        var guard = LaunchGuard.Validate(profile);
+        if (!guard.CanLaunch)
+        {
+            SetStatus(string.Join(" ", guard.Messages));
+            return;
+        }
+
         if (_lastLaunchPlan is null)
         {
             BuildLaunchCommand();
@@ -390,10 +403,9 @@ public sealed partial class HomeViewModel : ViewModelBase
             return;
         }
 
-        var profile = BuildDraftProfile();
         var workingDirectory = profile.Mode == LaunchMode.Agent ? profile.ProjectPath : null;
-        var result = await _launchPlanProcessService.StartAsync(_lastLaunchPlan, workingDirectory, default);
-        SetStatus($"Процесс запущен. PID: {result.ProcessId}.");
+        var result = await _runtimeStartCoordinator.StartAsync(_lastLaunchPlan, profile.Port, workingDirectory, default);
+        SetStatus(string.Join(" ", result.Messages));
     }
 
     private LaunchProfile BuildDraftProfile() => new(
