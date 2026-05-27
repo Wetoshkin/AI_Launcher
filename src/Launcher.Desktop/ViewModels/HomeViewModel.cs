@@ -37,6 +37,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private string _hfSearchText = "qwen coder gguf";
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
     private DecodingPresetRowViewModel _selectedDecodingPreset;
+    private ModelRowViewModel? _selectedLocalModel;
 
     public HomeViewModel()
         : this(new HuggingFaceModelClient(new HttpClient
@@ -97,6 +98,23 @@ public sealed partial class HomeViewModel : ViewModelBase
     public IFolderPicker? FolderPicker { get; set; }
 
     public ObservableCollection<ModelRowViewModel> LocalModels { get; } = [];
+
+    public ModelRowViewModel? SelectedLocalModel
+    {
+        get => _selectedLocalModel;
+        set
+        {
+            if (_selectedLocalModel == value)
+            {
+                return;
+            }
+
+            _selectedLocalModel = value;
+            OnPropertyChanged();
+            RefreshLaunchReview();
+            _lastLaunchPlan = null;
+        }
+    }
 
     public ObservableCollection<RemoteModelRowViewModel> RemoteModels { get; } = [];
 
@@ -415,7 +433,7 @@ public sealed partial class HomeViewModel : ViewModelBase
             Agent: _wizardState.Scenario.Agent,
             Runtime: _wizardState.Scenario.Runtime,
             ProjectPath: ProjectsFolderPath == "не указана" ? null : ProjectsFolderPath,
-            ModelPath: ModelsFolderPath == "не указана" ? "модель не выбрана" : ModelsFolderPath,
+            ModelPath: SelectedLocalModel?.Path ?? "модель не выбрана",
             ContextTokens: 65536,
             Port: 8080,
             AntiLoopPresetId: SelectedDecodingPreset.Id);
@@ -472,6 +490,11 @@ public sealed partial class HomeViewModel : ViewModelBase
         foreach (var model in ModelFilterService.Apply(_allModels, new ModelFilter(null, null, null, ModelSearchText)).Take(8))
         {
             LocalModels.Add(new ModelRowViewModel(model));
+        }
+
+        if (SelectedLocalModel is null && LocalModels.Count > 0)
+        {
+            SelectedLocalModel = LocalModels[0];
         }
     }
 }
