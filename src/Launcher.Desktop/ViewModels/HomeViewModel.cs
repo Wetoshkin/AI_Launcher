@@ -17,6 +17,7 @@ using Launcher.Models.HuggingFace;
 using Launcher.Runtimes.Hardware;
 using Launcher.Runtimes.LlamaCpp;
 using Launcher.Runtimes.Ports;
+using Launcher.Runtimes.Processes;
 using Launcher.Runtimes.Status;
 
 namespace Launcher.Desktop.ViewModels;
@@ -26,6 +27,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly string _defaultModelsDirectory = @"D:\AI\Models";
     private readonly HuggingFaceModelClient _huggingFaceClient;
     private readonly RuntimeDashboardService _runtimeDashboardService;
+    private readonly LaunchPlanProcessService _launchPlanProcessService;
+    private LaunchPlan? _lastLaunchPlan;
     private IReadOnlyList<LocalModelFile> _allModels = [];
     private LaunchWizardState _wizardState;
     private string _modelSearchText = "";
@@ -40,14 +43,19 @@ public sealed partial class HomeViewModel : ViewModelBase
         }),
         new RuntimeDashboardService(
             new NvidiaSmiGpuProbe(new ProcessCommandRunner()),
-            new WindowsPortInspector()))
+            new WindowsPortInspector()),
+        new LaunchPlanProcessService(new ProcessStarter()))
     {
     }
 
-    public HomeViewModel(HuggingFaceModelClient huggingFaceClient, RuntimeDashboardService runtimeDashboardService)
+    public HomeViewModel(
+        HuggingFaceModelClient huggingFaceClient,
+        RuntimeDashboardService runtimeDashboardService,
+        LaunchPlanProcessService launchPlanProcessService)
     {
         _huggingFaceClient = huggingFaceClient;
         _runtimeDashboardService = runtimeDashboardService;
+        _launchPlanProcessService = launchPlanProcessService;
         _wizardState = LaunchWizardState.ForScenario(new LaunchScenario(
             LaunchMode.Agent,
             AgentKind.Kilo,
@@ -354,6 +362,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         var plan = profile.Mode == LaunchMode.Endpoint
             ? LlamaServerCommandBuilder.Build(profile, DecodingPresetCatalog.Get(SelectedDecodingPreset.Id))
             : BuildAgentPlan(profile);
+        _lastLaunchPlan = plan;
         var preview = LaunchPlanFormatter.Format(plan);
 
         LaunchCommandPreview = preview.CommandLine;
@@ -365,6 +374,26 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         SetStatus("Команда запуска собрана. Проверьте её перед стартом.");
+    }
+
+    [RelayCommand]
+    private async Task StartLaunchAsync()
+    {
+        if (_lastLaunchPlan is null)
+        {
+            BuildLaunchCommand();
+        }
+
+        if (_lastLaunchPlan is null)
+        {
+            SetStatus("Не удалось собрать команду запуска.");
+            return;
+        }
+
+        var profile = BuildDraftProfile();
+        var workingDirectory = profile.Mode == LaunchMode.Agent ? profile.ProjectPath : null;
+        var result = await _launchPlanProcessService.StartAsync(_lastLaunchPlan, workingDirectory, default);
+        SetStatus($"Процесс запущен. PID: {result.ProcessId}.");
     }
 
     private LaunchProfile BuildDraftProfile() => new(
