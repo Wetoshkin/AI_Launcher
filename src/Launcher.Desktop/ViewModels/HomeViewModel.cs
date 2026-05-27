@@ -38,6 +38,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
     private DecodingPresetRowViewModel _selectedDecodingPreset;
     private ModelRowViewModel? _selectedLocalModel;
+    private AgentKind _selectedAgent = AgentKind.Kilo;
+    private RuntimeKind _selectedRuntime = RuntimeKind.LlamaCppTurboQuant;
 
     public HomeViewModel()
         : this(new HuggingFaceModelClient(new HttpClient
@@ -207,17 +209,68 @@ public sealed partial class HomeViewModel : ViewModelBase
         "Endpoint · Hermes · MTP · 8081"
     ];
 
+    public IReadOnlyList<AgentKind> AgentOptions { get; } =
+    [
+        AgentKind.Kilo,
+        AgentKind.OpenCode,
+        AgentKind.Claw,
+        AgentKind.Aider
+    ];
+
+    public AgentKind SelectedAgent
+    {
+        get => _selectedAgent;
+        set
+        {
+            if (_selectedAgent == value)
+            {
+                return;
+            }
+
+            _selectedAgent = value;
+            OnPropertyChanged();
+            SetScenario(new LaunchScenario(LaunchMode.Agent, _selectedAgent, _selectedRuntime));
+            _lastLaunchPlan = null;
+        }
+    }
+
+    public IReadOnlyList<RuntimeKind> RuntimeOptions { get; } =
+    [
+        RuntimeKind.Ollama,
+        RuntimeKind.LlamaCpp,
+        RuntimeKind.LlamaCppTurboQuant,
+        RuntimeKind.LlamaCppMtp
+    ];
+
+    public RuntimeKind SelectedRuntime
+    {
+        get => _selectedRuntime;
+        set
+        {
+            if (_selectedRuntime == value)
+            {
+                return;
+            }
+
+            _selectedRuntime = value;
+            OnPropertyChanged();
+            var mode = _wizardState.Scenario.Mode;
+            SetScenario(new LaunchScenario(mode, mode == LaunchMode.Agent ? _selectedAgent : AgentKind.None, _selectedRuntime));
+            _lastLaunchPlan = null;
+        }
+    }
+
     [RelayCommand]
     private void SelectAgentMode()
     {
-        SetScenario(new LaunchScenario(LaunchMode.Agent, AgentKind.Kilo, RuntimeKind.LlamaCppTurboQuant));
+        SetScenario(new LaunchScenario(LaunchMode.Agent, SelectedAgent, SelectedRuntime));
         SetStatus("Режим проекта: далее выбор папки проекта, агента, модели и runtime.");
     }
 
     [RelayCommand]
     private void SelectEndpointMode()
     {
-        SetScenario(new LaunchScenario(LaunchMode.Endpoint, AgentKind.None, RuntimeKind.LlamaCppMtp));
+        SetScenario(new LaunchScenario(LaunchMode.Endpoint, AgentKind.None, SelectedRuntime));
         SetStatus("Режим сервера: далее выбор модели, контекста, KV/MTP и порта.");
     }
 

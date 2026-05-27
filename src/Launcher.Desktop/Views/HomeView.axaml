@@ -145,6 +145,19 @@
         </Button>
       </Grid>
 
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+        <StackPanel Grid.Column="0" Spacing="6">
+          <TextBlock Text="Агент" FontWeight="Bold"/>
+          <ComboBox ItemsSource="{Binding AgentOptions}"
+                    SelectedItem="{Binding SelectedAgent}"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Spacing="6">
+          <TextBlock Text="Runtime" FontWeight="Bold"/>
+          <ComboBox ItemsSource="{Binding RuntimeOptions}"
+                    SelectedItem="{Binding SelectedRuntime}"/>
+        </StackPanel>
+      </Grid>
+
       <Border Background="#FFF8EC" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="12" Padding="12">
         <TextBlock Text="{Binding StatusMessage}" Foreground="#765A36"/>
       </Border>
