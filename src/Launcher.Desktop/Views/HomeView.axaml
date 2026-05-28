@@ -239,9 +239,32 @@
       <UniformGrid Columns="4">
         <Button Content="Модели"/>
         <Button Content="Рантаймы"/>
-        <Button Content="Агенты"/>
+        <Button Content="Агенты" Command="{Binding CheckAgentsCommand}"/>
         <Button Content="Журнал"/>
       </UniformGrid>
+
+      <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
+        <StackPanel Spacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Агентные CLI" FontWeight="Bold" FontSize="15"/>
+            <Button Grid.Column="1"
+                    Content="Проверить"
+                    Command="{Binding CheckAgentsCommand}"/>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding AgentCliStatuses}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:AgentCliStatusRowViewModel">
+                <Grid ColumnDefinitions="90,90,120,*" ColumnSpacing="8" Margin="0,3">
+                  <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold"/>
+                  <TextBlock Grid.Column="1" Text="{Binding Executable}" Foreground="#765A36"/>
+                  <TextBlock Grid.Column="2" Text="{Binding Status}" Foreground="#A95508"/>
+                  <TextBlock Grid.Column="3" Text="{Binding Path}" Foreground="#7B6C5B" TextTrimming="CharacterEllipsis"/>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
 
       <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
         <StackPanel Spacing="10">
