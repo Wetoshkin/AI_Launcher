@@ -41,6 +41,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     private string _modelSearchText = "";
     private string _hfSearchText = "qwen coder gguf";
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
+    private int _port = 8080;
+    private int _contextTokens = 65536;
     private DecodingPresetRowViewModel _selectedDecodingPreset;
     private ModelRowViewModel? _selectedLocalModel;
     private PresetRowViewModel? _selectedPreset;
@@ -115,6 +117,41 @@ public sealed partial class HomeViewModel : ViewModelBase
     public string ModelCountText { get; private set; } = "модели: проверка";
 
     public string StatusMessage { get; private set; } = "Выберите режим запуска или настройте папки.";
+
+    public int Port
+    {
+        get => _port;
+        set
+        {
+            var normalized = Math.Clamp(value, 1, 65535);
+            if (_port == normalized)
+            {
+                return;
+            }
+
+            _port = normalized;
+            OnPropertyChanged();
+            _lastLaunchPlan = null;
+        }
+    }
+
+    public int ContextTokens
+    {
+        get => _contextTokens;
+        set
+        {
+            var normalized = Math.Clamp(value, 1024, 1_048_576);
+            if (_contextTokens == normalized)
+            {
+                return;
+            }
+
+            _contextTokens = normalized;
+            OnPropertyChanged();
+            RefreshLaunchReview();
+            _lastLaunchPlan = null;
+        }
+    }
 
     public string DownloadProgressText { get; private set; } = "Загрузок нет.";
 
@@ -422,8 +459,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private async Task CheckPortAsync()
     {
-        SetStatus("Проверяю GPU и порт 8080...");
-        var snapshot = await _runtimeDashboardService.CheckAsync(8080, default);
+        SetStatus($"Проверяю GPU и порт {Port}...");
+        var snapshot = await _runtimeDashboardService.CheckAsync(Port, default);
         GpuStatus = snapshot.GpuText;
         PortStatus = snapshot.PortText;
         RuntimeStatus = snapshot.RuntimeText;
@@ -463,6 +500,8 @@ public sealed partial class HomeViewModel : ViewModelBase
             OnPropertyChanged(nameof(ProjectsFolderPath));
         }
 
+        Port = profile.Port;
+        ContextTokens = profile.ContextTokens;
         var decodingPreset = DecodingPresets.FirstOrDefault(preset => preset.Id == profile.AntiLoopPresetId);
         if (decodingPreset is not null)
         {
@@ -735,8 +774,8 @@ public sealed partial class HomeViewModel : ViewModelBase
             Runtime: _wizardState.Scenario.Runtime,
             ProjectPath: ProjectsFolderPath == "не указана" ? null : ProjectsFolderPath,
             ModelPath: SelectedLocalModel?.Path ?? "модель не выбрана",
-            ContextTokens: 65536,
-            Port: 8080,
+            ContextTokens: ContextTokens,
+            Port: Port,
             AntiLoopPresetId: SelectedDecodingPreset.Id);
 
     private static LaunchPlan BuildAgentPlan(LaunchProfile profile)
@@ -818,7 +857,7 @@ public sealed partial class HomeViewModel : ViewModelBase
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "AI Launcher Studio",
             "downloads"),
-        DefaultPort: 8080,
+        DefaultPort: Port,
         Language: "ru",
         HelpMode: "pro",
         Profiles: Presets.Select(preset => preset.Profile).ToArray());
