@@ -13,21 +13,29 @@
       <StackPanel Spacing="12">
         <TextBlock Text="Пресеты" FontWeight="Bold" FontSize="16"/>
         <TextBlock Text="быстрый запуск" FontSize="11" Foreground="#7B6C5B"/>
-        <ItemsControl ItemsSource="{Binding Presets}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
+        <ListBox ItemsSource="{Binding Presets}"
+                 SelectedItem="{Binding SelectedPreset}"
+                 MaxHeight="420">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:PresetRowViewModel">
               <Border Background="White"
                       BorderBrush="#EADCC9"
                       BorderThickness="1"
                       CornerRadius="14"
                       Padding="10"
                       Margin="0,0,0,8">
-                <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis"/>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Text="{Binding Summary}" FontSize="11" Foreground="#A95508" TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding ProjectPath}" FontSize="11" Foreground="#7B6C5B" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Text="{Binding ModelPath}" FontSize="11" Foreground="#7B6C5B" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
               </Border>
             </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <Button Content="Новый пресет"
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <Button Content="Применить пресет"
+                Command="{Binding ApplySelectedPresetCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"/>
       </StackPanel>
