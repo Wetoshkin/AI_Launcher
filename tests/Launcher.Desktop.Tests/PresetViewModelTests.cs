@@ -3,6 +3,7 @@ using Launcher.Core.Scenarios;
 using Launcher.Desktop.ViewModels;
 using Launcher.Models.HuggingFace;
 using Launcher.Runtimes.Hardware;
+using Launcher.Runtimes.LlamaCpp;
 using Launcher.Runtimes.Ports;
 using Launcher.Runtimes.Processes;
 using Launcher.Runtimes.Startup;
@@ -124,6 +125,28 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task InstallRuntimePackageCommandInstallsArchiveIntoRuntimeRoot()
+    {
+        var installer = new CapturingRuntimeInstaller(new RuntimePackageInstallResult(
+            Installed: true,
+            InstallDirectory: @"D:\AI\runtimes\llama-runtime",
+            ExecutablePath: @"D:\AI\runtimes\llama-runtime\llama-server.exe",
+            Message: "llama-server.exe найден"));
+        var viewModel = CreateViewModel(runtimePackageInstaller: installer);
+        viewModel.RuntimeArchivePath = @"D:\Downloads\llama-runtime.zip";
+        viewModel.RuntimeRootPath = @"D:\AI\runtimes";
+
+        await viewModel.InstallRuntimePackageCommand.ExecuteAsync(null);
+
+        Assert.NotNull(installer.LastRequest);
+        Assert.Equal(@"D:\Downloads\llama-runtime.zip", installer.LastRequest.ArchivePath);
+        Assert.Equal(@"D:\AI\runtimes", installer.LastRequest.RuntimeRoot);
+        Assert.Equal("llama-runtime", installer.LastRequest.RuntimeId);
+        Assert.Equal("runtime: llama-server.exe найден", viewModel.RuntimeStatus);
+        Assert.Equal("Runtime установлен: llama-server.exe найден", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public void AgentCliStatusRowShowsRussianMissingPath()
     {
         var row = new AgentCliStatusRowViewModel(new Launcher.Agents.Discovery.AgentCliStatus(
@@ -140,12 +163,16 @@ public sealed class PresetViewModelTests
         Assert.False(row.IsInstalled);
     }
 
-    private static HomeViewModel CreateViewModel(ILauncherSettingsStore? settingsStore = null) => new(
+    private static HomeViewModel CreateViewModel(
+        ILauncherSettingsStore? settingsStore = null,
+        IRuntimePackageInstaller? runtimePackageInstaller = null) => new(
         new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
         new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
         new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
         new EmptyDownloadService(),
-        settingsStore);
+        settingsStore,
+        agentCliCatalogService: null,
+        runtimePackageInstaller: runtimePackageInstaller ?? new EmptyRuntimeInstaller());
 
     private sealed class EmptyDownloadService : IHuggingFaceModelDownloadService
     {
@@ -154,6 +181,23 @@ public sealed class PresetViewModelTests
             CancellationToken cancellationToken,
             Action<HuggingFaceDownloadProgress>? progress = null) =>
             Task.FromResult(new HuggingFaceModelDownloadResult([], []));
+    }
+
+    private sealed class EmptyRuntimeInstaller : IRuntimePackageInstaller
+    {
+        public Task<RuntimePackageInstallResult> InstallAsync(RuntimePackageInstallRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult(new RuntimePackageInstallResult(false, request.RuntimeRoot, null, "не используется"));
+    }
+
+    private sealed class CapturingRuntimeInstaller(RuntimePackageInstallResult result) : IRuntimePackageInstaller
+    {
+        public RuntimePackageInstallRequest? LastRequest { get; private set; }
+
+        public Task<RuntimePackageInstallResult> InstallAsync(RuntimePackageInstallRequest request, CancellationToken cancellationToken)
+        {
+            LastRequest = request;
+            return Task.FromResult(result);
+        }
     }
 
     private sealed class MemorySettingsStore(LauncherSettings? initial) : ILauncherSettingsStore

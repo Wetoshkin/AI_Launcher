@@ -34,6 +34,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly HuggingFaceModelClient _huggingFaceClient;
     private readonly IHuggingFaceModelDownloadService _modelDownloadService;
     private readonly AgentCliCatalogService _agentCliCatalogService;
+    private readonly IRuntimePackageInstaller _runtimePackageInstaller;
     private readonly ILauncherSettingsStore? _settingsStore;
     private readonly RuntimeDashboardService _runtimeDashboardService;
     private readonly RuntimeStartCoordinator _runtimeStartCoordinator;
@@ -42,6 +43,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     private LaunchWizardState _wizardState;
     private string _modelSearchText = "";
     private string _hfSearchText = "qwen coder gguf";
+    private string _runtimeArchivePath = "";
+    private string _runtimeRootPath = @"D:\AI\runtimes";
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
     private int _port = 8080;
     private int _contextTokens = 65536;
@@ -71,7 +74,8 @@ public sealed partial class HomeViewModel : ViewModelBase
             new OpenAiEndpointHealthClient(new HttpClient())),
         new HuggingFaceModelDownloadService(new HttpClient()),
         new LauncherSettingsFileStore(DefaultSettingsPath()),
-        new AgentCliCatalogService(new WindowsExecutableResolver()))
+        new AgentCliCatalogService(new WindowsExecutableResolver()),
+        new RuntimePackageInstaller())
     {
     }
 
@@ -81,11 +85,13 @@ public sealed partial class HomeViewModel : ViewModelBase
         RuntimeStartCoordinator runtimeStartCoordinator,
         IHuggingFaceModelDownloadService modelDownloadService,
         ILauncherSettingsStore? settingsStore = null,
-        AgentCliCatalogService? agentCliCatalogService = null)
+        AgentCliCatalogService? agentCliCatalogService = null,
+        IRuntimePackageInstaller? runtimePackageInstaller = null)
     {
         _huggingFaceClient = huggingFaceClient;
         _modelDownloadService = modelDownloadService;
         _agentCliCatalogService = agentCliCatalogService ?? new AgentCliCatalogService(new WindowsExecutableResolver());
+        _runtimePackageInstaller = runtimePackageInstaller ?? new RuntimePackageInstaller();
         _settingsStore = settingsStore;
         _runtimeDashboardService = runtimeDashboardService;
         _runtimeStartCoordinator = runtimeStartCoordinator;
@@ -123,6 +129,36 @@ public sealed partial class HomeViewModel : ViewModelBase
     public string ModelCountText { get; private set; } = "модели: проверка";
 
     public string StatusMessage { get; private set; } = "Выберите режим запуска или настройте папки.";
+
+    public string RuntimeArchivePath
+    {
+        get => _runtimeArchivePath;
+        set
+        {
+            if (_runtimeArchivePath == value)
+            {
+                return;
+            }
+
+            _runtimeArchivePath = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string RuntimeRootPath
+    {
+        get => _runtimeRootPath;
+        set
+        {
+            if (_runtimeRootPath == value)
+            {
+                return;
+            }
+
+            _runtimeRootPath = value;
+            OnPropertyChanged();
+        }
+    }
 
     public int Port
     {
@@ -493,6 +529,34 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         var installed = statuses.Count(status => status.IsInstalled);
         SetStatus($"Агенты проверены: {installed}/{statuses.Count} доступны.");
+    }
+
+    [RelayCommand]
+    private async Task InstallRuntimePackageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(RuntimeArchivePath))
+        {
+            SetStatus("Укажите путь к zip-архиву runtime.");
+            return;
+        }
+
+        var runtimeId = Path.GetFileNameWithoutExtension(RuntimeArchivePath);
+        SetStatus($"Устанавливаю runtime: {runtimeId}...");
+        try
+        {
+            var result = await _runtimePackageInstaller.InstallAsync(
+                new RuntimePackageInstallRequest(RuntimeArchivePath, RuntimeRootPath, runtimeId),
+                default);
+            RuntimeStatus = $"runtime: {result.Message}";
+            OnPropertyChanged(nameof(RuntimeStatus));
+            SetStatus(result.Installed
+                ? $"Runtime установлен: {result.Message}"
+                : $"Runtime распакован, но не готов: {result.Message}");
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            SetStatus($"Не удалось установить runtime: {ex.Message}");
+        }
     }
 
     [RelayCommand]
