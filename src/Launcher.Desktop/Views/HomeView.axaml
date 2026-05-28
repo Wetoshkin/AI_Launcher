@@ -336,6 +336,22 @@
                     Background="#FF9B35"
                     Foreground="White"/>
           </Grid>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <StackPanel Grid.Column="0" Spacing="4">
+              <ProgressBar Minimum="0"
+                           Maximum="100"
+                           Value="{Binding DownloadProgressPercent}"
+                           Height="8"/>
+              <TextBlock Text="{Binding DownloadProgressText}"
+                         Foreground="#765A36"
+                         FontSize="12"
+                         TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+            <Button Grid.Column="1"
+                    Content="Отменить"
+                    Command="{Binding CancelDownloadCommand}"
+                    VerticalAlignment="Top"/>
+          </Grid>
         </StackPanel>
       </Border>
     </StackPanel>

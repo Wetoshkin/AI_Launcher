@@ -48,9 +48,90 @@ public sealed class HomeViewModelDownloadTests
         Assert.Equal("Скачивание завершено: 1 скачано, 0 уже были на диске.", viewModel.StatusMessage);
     }
 
+    [Fact]
+    public async Task DownloadSelectedRemoteModelCommandUpdatesProgressState()
+    {
+        using var temp = new TempDirectory();
+        var downloadService = new FakeDownloadService
+        {
+            ProgressToEmit = new HuggingFaceDownloadProgress(
+                "Qwen3-Coder-Q4_K_M.gguf",
+                FileIndex: 1,
+                TotalFiles: 2,
+                BytesReceived: 50,
+                TotalBytes: 100,
+                IsSkipped: false)
+        };
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            downloadService)
+        {
+            FolderPicker = new FixedFolderPicker(temp.Path)
+        };
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        var remoteModel = new RemoteModelRowViewModel(new HuggingFaceModelSummary(
+            "unsloth/Qwen3-Coder-GGUF",
+            Downloads: 100,
+            Likes: 10,
+            Tags: ["gguf"],
+            IsCompatibleWithCurrentGpu: false,
+            HasPreferredQuant: true,
+            IsRuntimeCompatible: true,
+            SiblingFiles: ["Qwen3-Coder-Q4_K_M.gguf"]));
+
+        viewModel.SelectedRemoteModel = remoteModel;
+        viewModel.SelectedRemoteDownloadOption = viewModel.RemoteDownloadOptions.Single();
+        await viewModel.DownloadSelectedRemoteModelCommand.ExecuteAsync(null);
+
+        Assert.False(viewModel.IsDownloading);
+        Assert.Equal(50, viewModel.DownloadProgressPercent);
+        Assert.Equal("1/2 · Qwen3-Coder-Q4_K_M.gguf · 50%", viewModel.DownloadProgressText);
+    }
+
+    [Fact]
+    public async Task CancelDownloadCommandCancelsActiveDownload()
+    {
+        using var temp = new TempDirectory();
+        var downloadService = new BlockingDownloadService();
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            downloadService)
+        {
+            FolderPicker = new FixedFolderPicker(temp.Path)
+        };
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        var remoteModel = new RemoteModelRowViewModel(new HuggingFaceModelSummary(
+            "unsloth/Qwen3-Coder-GGUF",
+            Downloads: 100,
+            Likes: 10,
+            Tags: ["gguf"],
+            IsCompatibleWithCurrentGpu: false,
+            HasPreferredQuant: true,
+            IsRuntimeCompatible: true,
+            SiblingFiles: ["Qwen3-Coder-Q4_K_M.gguf"]));
+
+        viewModel.SelectedRemoteModel = remoteModel;
+        viewModel.SelectedRemoteDownloadOption = viewModel.RemoteDownloadOptions.Single();
+        var running = viewModel.DownloadSelectedRemoteModelCommand.ExecuteAsync(null);
+        await downloadService.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        viewModel.CancelDownloadCommand.Execute(null);
+        await running;
+
+        Assert.True(downloadService.WasCanceled);
+        Assert.False(viewModel.IsDownloading);
+        Assert.Equal("Скачивание отменено.", viewModel.StatusMessage);
+    }
+
     private sealed class FakeDownloadService : IHuggingFaceModelDownloadService
     {
         public HuggingFaceModelDownloadRequest? LastRequest { get; private set; }
+
+        public HuggingFaceDownloadProgress? ProgressToEmit { get; set; }
 
         public Task<HuggingFaceModelDownloadResult> DownloadAsync(
             HuggingFaceModelDownloadRequest request,
@@ -58,7 +139,38 @@ public sealed class HomeViewModelDownloadTests
             Action<HuggingFaceDownloadProgress>? progress = null)
         {
             LastRequest = request;
+            if (ProgressToEmit is not null)
+            {
+                progress?.Invoke(ProgressToEmit);
+            }
+
             return Task.FromResult(new HuggingFaceModelDownloadResult(["downloaded.gguf"], []));
+        }
+    }
+
+    private sealed class BlockingDownloadService : IHuggingFaceModelDownloadService
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool WasCanceled { get; private set; }
+
+        public async Task<HuggingFaceModelDownloadResult> DownloadAsync(
+            HuggingFaceModelDownloadRequest request,
+            CancellationToken cancellationToken,
+            Action<HuggingFaceDownloadProgress>? progress = null)
+        {
+            Started.SetResult();
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                WasCanceled = true;
+                throw;
+            }
+
+            return new HuggingFaceModelDownloadResult([], []);
         }
     }
 
