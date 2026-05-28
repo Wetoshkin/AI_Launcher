@@ -29,15 +29,19 @@ public sealed class RemoteModelRowViewModelTests
         Assert.Collection(row.DownloadOptions,
             option =>
             {
+                Assert.Equal("unsloth/Qwen3-Coder-GGUF", option.RepoId);
                 Assert.Equal("Qwen3-Coder-Q4_K_M.gguf", option.Label);
                 Assert.Equal("Q4_K_M", option.Quant);
                 Assert.Equal("1 файл", option.FileCountText);
+                Assert.False(option.Option.IsSplit);
             },
             option =>
             {
+                Assert.Equal("unsloth/Qwen3-Coder-GGUF", option.RepoId);
                 Assert.Equal("Qwen3-Coder-Q5_K_M.gguf", option.Label);
                 Assert.Equal("Q5_K_M", option.Quant);
                 Assert.Equal("2 файла", option.FileCountText);
+                Assert.True(option.Option.IsSplit);
             });
     }
 }

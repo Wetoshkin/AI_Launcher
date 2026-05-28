@@ -1,0 +1,114 @@
+using Launcher.Core.LaunchPlans;
+using Launcher.Desktop.Services;
+using Launcher.Desktop.ViewModels;
+using Launcher.Models.HuggingFace;
+using Launcher.Runtimes.Hardware;
+using Launcher.Runtimes.Ports;
+using Launcher.Runtimes.Processes;
+using Launcher.Runtimes.Startup;
+using Launcher.Runtimes.Status;
+
+namespace Launcher.Desktop.Tests;
+
+public sealed class HomeViewModelDownloadTests
+{
+    [Fact]
+    public async Task DownloadSelectedRemoteModelCommandPassesSelectedOptionToDownloadService()
+    {
+        using var temp = new TempDirectory();
+        var downloadService = new FakeDownloadService();
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            downloadService)
+        {
+            FolderPicker = new FixedFolderPicker(temp.Path)
+        };
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        var remoteModel = new RemoteModelRowViewModel(new HuggingFaceModelSummary(
+            "unsloth/Qwen3-Coder-GGUF",
+            Downloads: 100,
+            Likes: 10,
+            Tags: ["gguf"],
+            IsCompatibleWithCurrentGpu: false,
+            HasPreferredQuant: true,
+            IsRuntimeCompatible: true,
+            SiblingFiles: ["Qwen3-Coder-Q4_K_M.gguf"]));
+
+        viewModel.RemoteModels.Add(remoteModel);
+        viewModel.SelectedRemoteModel = remoteModel;
+        viewModel.SelectedRemoteDownloadOption = viewModel.RemoteDownloadOptions.Single();
+        await viewModel.DownloadSelectedRemoteModelCommand.ExecuteAsync(null);
+
+        Assert.NotNull(downloadService.LastRequest);
+        Assert.Equal("unsloth/Qwen3-Coder-GGUF", downloadService.LastRequest.RepoId);
+        Assert.Equal(temp.Path, downloadService.LastRequest.ModelsDirectory);
+        Assert.Equal("Qwen3-Coder-Q4_K_M.gguf", downloadService.LastRequest.Option.Label);
+        Assert.Equal("Скачивание завершено: 1 скачано, 0 уже были на диске.", viewModel.StatusMessage);
+    }
+
+    private sealed class FakeDownloadService : IHuggingFaceModelDownloadService
+    {
+        public HuggingFaceModelDownloadRequest? LastRequest { get; private set; }
+
+        public Task<HuggingFaceModelDownloadResult> DownloadAsync(
+            HuggingFaceModelDownloadRequest request,
+            CancellationToken cancellationToken,
+            Action<HuggingFaceDownloadProgress>? progress = null)
+        {
+            LastRequest = request;
+            return Task.FromResult(new HuggingFaceModelDownloadResult(["downloaded.gguf"], []));
+        }
+    }
+
+    private sealed class FixedFolderPicker(string path) : IFolderPicker
+    {
+        public Task<string?> PickFolderAsync(string title) => Task.FromResult<string?>(path);
+    }
+
+    private sealed class EmptyHttpHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.NotFound));
+    }
+
+    private sealed class EmptyGpuProbe : IGpuProbe
+    {
+        public Task<IReadOnlyList<GpuInfo>> GetGpusAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<GpuInfo>>([]);
+    }
+
+    private sealed class EmptyPortInspector : IPortInspector
+    {
+        public Task<PortOwnerInfo?> InspectAsync(int port, CancellationToken cancellationToken) =>
+            Task.FromResult<PortOwnerInfo?>(null);
+    }
+
+    private sealed class EmptyPortReleaser : IPortReleaser
+    {
+        public Task<PortReleaseResult> ReleaseIfSafeAsync(PortOwnerInfo owner, CancellationToken cancellationToken) =>
+            Task.FromResult(new PortReleaseResult(Released: false, "не требуется"));
+    }
+
+    private sealed class EmptyProcessStarter : IProcessStarter
+    {
+        public Task<ProcessStartResult> StartAsync(ProcessStartRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult(new ProcessStartResult(0));
+    }
+
+    private sealed class TempDirectory : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "launcher-desktop-" + Guid.NewGuid().ToString("N"));
+
+        public TempDirectory() => Directory.CreateDirectory(Path);
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+            {
+                Directory.Delete(Path, recursive: true);
+            }
+        }
+    }
+}

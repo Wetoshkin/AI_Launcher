@@ -2,8 +2,12 @@ using Launcher.Models.HuggingFace;
 
 namespace Launcher.Desktop.ViewModels;
 
-public sealed class RemoteGgufDownloadOptionRowViewModel(HuggingFaceGgufDownloadOption option)
+public sealed class RemoteGgufDownloadOptionRowViewModel(string repoId, HuggingFaceGgufDownloadOption option)
 {
+    public string RepoId => repoId;
+
+    public HuggingFaceGgufDownloadOption Option => option;
+
     public string Label => option.Label;
 
     public string Quant => option.Quant ?? "quant?";
