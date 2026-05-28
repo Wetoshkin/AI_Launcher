@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Launcher.Models.HuggingFace;
 
@@ -5,6 +6,8 @@ namespace Launcher.Desktop.ViewModels;
 
 public sealed class RemoteModelRowViewModel(HuggingFaceModelSummary model)
 {
+    public HuggingFaceModelSummary Model => model;
+
     public string Id => model.Id;
 
     public string Downloads => $"{model.Downloads:N0}";
@@ -16,4 +19,11 @@ public sealed class RemoteModelRowViewModel(HuggingFaceModelSummary model)
     public string Compatibility => model.IsRuntimeCompatible
         ? "GGUF"
         : "требует проверки";
+
+    public IReadOnlyList<RemoteGgufDownloadOptionRowViewModel> DownloadOptions { get; } =
+        HuggingFaceGgufFileSelector.SelectDownloadOptions(model)
+            .Select(option => new RemoteGgufDownloadOptionRowViewModel(option))
+            .ToArray();
+
+    public string DownloadOptionsText => $"{DownloadOptions.Count} GGUF";
 }

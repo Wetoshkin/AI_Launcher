@@ -269,14 +269,43 @@
                         CornerRadius="10"
                         Padding="10"
                         Margin="0,0,0,8">
-                  <Grid ColumnDefinitions="*,95,70,90" ColumnSpacing="10">
+                  <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,95,70,90" ColumnSpacing="10" RowSpacing="8">
                     <StackPanel Grid.Column="0">
                       <TextBlock Text="{Binding Id}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
                       <TextBlock Text="{Binding Tags}" Foreground="#8A7660" FontSize="11" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="{Binding Downloads}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                     <TextBlock Grid.Column="2" Text="{Binding Likes}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                    <TextBlock Grid.Column="3" Text="{Binding Compatibility}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    <StackPanel Grid.Column="3" HorizontalAlignment="Right">
+                      <TextBlock Text="{Binding Compatibility}" HorizontalAlignment="Right"/>
+                      <TextBlock Text="{Binding DownloadOptionsText}" Foreground="#A95508" FontSize="11" HorizontalAlignment="Right"/>
+                    </StackPanel>
+                    <ItemsControl Grid.Row="1"
+                                  Grid.ColumnSpan="4"
+                                  ItemsSource="{Binding DownloadOptions}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel/>
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:RemoteGgufDownloadOptionRowViewModel">
+                          <Border Background="White"
+                                  BorderBrush="#F1D2A8"
+                                  BorderThickness="1"
+                                  CornerRadius="8"
+                                  Padding="8,5"
+                                  Margin="0,0,6,6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                              <TextBlock Text="{Binding Quant}" Foreground="#C15F00" FontWeight="Bold"/>
+                              <TextBlock Text="{Binding Label}" MaxWidth="260" TextTrimming="CharacterEllipsis"/>
+                              <TextBlock Text="{Binding FileCountText}" Foreground="#7B6C5B"/>
+                              <TextBlock Text="{Binding ModeText}" Foreground="#247187"/>
+                            </StackPanel>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                   </Grid>
                 </Border>
               </DataTemplate>
