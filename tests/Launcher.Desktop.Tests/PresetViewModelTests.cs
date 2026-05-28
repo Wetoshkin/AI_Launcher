@@ -60,6 +60,8 @@ public sealed class PresetViewModelTests
         Assert.Equal(AgentKind.OpenCode, viewModel.SelectedAgent);
         Assert.Equal(RuntimeKind.Ollama, viewModel.SelectedRuntime);
         Assert.Equal(@"D:\AI\Projects\App", viewModel.ProjectsFolderPath);
+        Assert.Equal(11434, viewModel.Port);
+        Assert.Equal(32768, viewModel.ContextTokens);
         Assert.Equal("Пресет применён: OpenCode + Gemma.", viewModel.StatusMessage);
     }
 
@@ -105,6 +107,8 @@ public sealed class PresetViewModelTests
         var viewModel = CreateViewModel(store);
         viewModel.SelectedAgent = AgentKind.Claw;
         viewModel.SelectedRuntime = RuntimeKind.LlamaCppMtp;
+        viewModel.Port = 8081;
+        viewModel.ContextTokens = 131072;
 
         await viewModel.SaveCurrentPresetCommand.ExecuteAsync(null);
 
@@ -114,6 +118,8 @@ public sealed class PresetViewModelTests
         Assert.Equal("Быстрый запуск 4", profile.Name);
         Assert.Equal(AgentKind.Claw, profile.Agent);
         Assert.Equal(RuntimeKind.LlamaCppMtp, profile.Runtime);
+        Assert.Equal(8081, profile.Port);
+        Assert.Equal(131072, profile.ContextTokens);
         Assert.Equal("Пресет сохранён: Быстрый запуск 4.", viewModel.StatusMessage);
     }
 

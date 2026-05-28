@@ -157,7 +157,7 @@
         </Button>
       </Grid>
 
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+      <Grid ColumnDefinitions="*,*,140,160" ColumnSpacing="12">
         <StackPanel Grid.Column="0" Spacing="6">
           <TextBlock Text="Агент" FontWeight="Bold"/>
           <ComboBox ItemsSource="{Binding AgentOptions}"
@@ -167,6 +167,20 @@
           <TextBlock Text="Runtime" FontWeight="Bold"/>
           <ComboBox ItemsSource="{Binding RuntimeOptions}"
                     SelectedItem="{Binding SelectedRuntime}"/>
+        </StackPanel>
+        <StackPanel Grid.Column="2" Spacing="6">
+          <TextBlock Text="Порт" FontWeight="Bold"/>
+          <NumericUpDown Minimum="1"
+                         Maximum="65535"
+                         Increment="1"
+                         Value="{Binding Port}"/>
+        </StackPanel>
+        <StackPanel Grid.Column="3" Spacing="6">
+          <TextBlock Text="Контекст" FontWeight="Bold"/>
+          <NumericUpDown Minimum="1024"
+                         Maximum="1048576"
+                         Increment="1024"
+                         Value="{Binding ContextTokens}"/>
         </StackPanel>
       </Grid>
 
