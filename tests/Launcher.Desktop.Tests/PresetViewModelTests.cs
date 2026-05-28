@@ -123,6 +123,23 @@ public sealed class PresetViewModelTests
         Assert.Equal("Пресет сохранён: Быстрый запуск 4.", viewModel.StatusMessage);
     }
 
+    [Fact]
+    public void AgentCliStatusRowShowsRussianMissingPath()
+    {
+        var row = new AgentCliStatusRowViewModel(new Launcher.Agents.Discovery.AgentCliStatus(
+            AgentKind.Kilo,
+            "kilo",
+            IsInstalled: false,
+            ExecutablePath: null,
+            VersionText: null));
+
+        Assert.Equal("Kilo", row.Name);
+        Assert.Equal("kilo", row.Executable);
+        Assert.Equal("не найден", row.Status);
+        Assert.Equal("не найден в PATH", row.Path);
+        Assert.False(row.IsInstalled);
+    }
+
     private static HomeViewModel CreateViewModel(ILauncherSettingsStore? settingsStore = null) => new(
         new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
         new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),

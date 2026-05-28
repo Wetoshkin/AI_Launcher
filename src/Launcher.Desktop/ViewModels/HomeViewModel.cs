@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using Launcher.Agents.Commands;
+using Launcher.Agents.Discovery;
 using Launcher.Core.Decoding;
 using Launcher.Core.Guards;
 using Launcher.Core.LaunchPlans;
@@ -32,6 +33,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly string _defaultModelsDirectory = @"D:\AI\Models";
     private readonly HuggingFaceModelClient _huggingFaceClient;
     private readonly IHuggingFaceModelDownloadService _modelDownloadService;
+    private readonly AgentCliCatalogService _agentCliCatalogService;
     private readonly ILauncherSettingsStore? _settingsStore;
     private readonly RuntimeDashboardService _runtimeDashboardService;
     private readonly RuntimeStartCoordinator _runtimeStartCoordinator;
@@ -67,7 +69,8 @@ public sealed partial class HomeViewModel : ViewModelBase
             new PortReleaseService(new ProcessCommandRunner()),
             new ProcessStarter()),
         new HuggingFaceModelDownloadService(new HttpClient()),
-        new LauncherSettingsFileStore(DefaultSettingsPath()))
+        new LauncherSettingsFileStore(DefaultSettingsPath()),
+        new AgentCliCatalogService(new WindowsExecutableResolver()))
     {
     }
 
@@ -76,10 +79,12 @@ public sealed partial class HomeViewModel : ViewModelBase
         RuntimeDashboardService runtimeDashboardService,
         RuntimeStartCoordinator runtimeStartCoordinator,
         IHuggingFaceModelDownloadService modelDownloadService,
-        ILauncherSettingsStore? settingsStore = null)
+        ILauncherSettingsStore? settingsStore = null,
+        AgentCliCatalogService? agentCliCatalogService = null)
     {
         _huggingFaceClient = huggingFaceClient;
         _modelDownloadService = modelDownloadService;
+        _agentCliCatalogService = agentCliCatalogService ?? new AgentCliCatalogService(new WindowsExecutableResolver());
         _settingsStore = settingsStore;
         _runtimeDashboardService = runtimeDashboardService;
         _runtimeStartCoordinator = runtimeStartCoordinator;
@@ -233,6 +238,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     public ObservableCollection<string> LaunchReviewLines { get; } = [];
 
     public ObservableCollection<string> LaunchEnvironmentLines { get; } = [];
+
+    public ObservableCollection<AgentCliStatusRowViewModel> AgentCliStatuses { get; } = [];
 
     public string LaunchCommandPreview { get; private set; } = "Команда ещё не собрана.";
 
@@ -470,6 +477,21 @@ public sealed partial class HomeViewModel : ViewModelBase
         SetStatus(snapshot.IsPortFree
             ? "Окружение проверено: порт свободен."
             : "Порт занят. Если это llama-server, его можно будет освободить перед запуском.");
+    }
+
+    [RelayCommand]
+    private async Task CheckAgentsAsync()
+    {
+        SetStatus("Проверяю агентные CLI в PATH...");
+        var statuses = await _agentCliCatalogService.CheckAsync(default);
+        AgentCliStatuses.Clear();
+        foreach (var status in statuses)
+        {
+            AgentCliStatuses.Add(new AgentCliStatusRowViewModel(status));
+        }
+
+        var installed = statuses.Count(status => status.IsInstalled);
+        SetStatus($"Агенты проверены: {installed}/{statuses.Count} доступны.");
     }
 
     [RelayCommand]
@@ -734,6 +756,15 @@ public sealed partial class HomeViewModel : ViewModelBase
         foreach (var line in preview.EnvironmentLines)
         {
             LaunchEnvironmentLines.Add(line);
+        }
+
+        if (profile.Mode == LaunchMode.Agent)
+        {
+            var status = AgentCliStatuses.FirstOrDefault(row => row.Name == profile.Agent.ToString());
+            if (status is { IsInstalled: false })
+            {
+                LaunchEnvironmentLines.Add($"WARN: агент {profile.Agent} не найден в PATH ({status.Executable}).");
+            }
         }
 
         SetStatus("Команда запуска собрана. Проверьте её перед стартом.");
