@@ -260,8 +260,10 @@
                     Content="Найти"
                     Command="{Binding SearchHuggingFaceCommand}"/>
           </Grid>
-          <ItemsControl ItemsSource="{Binding RemoteModels}">
-            <ItemsControl.ItemTemplate>
+          <ListBox ItemsSource="{Binding RemoteModels}"
+                   SelectedItem="{Binding SelectedRemoteModel}"
+                   MaxHeight="300">
+            <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:RemoteModelRowViewModel">
                 <Border Background="#FFF8EC"
                         BorderBrush="#EADCC9"
@@ -309,8 +311,31 @@
                   </Grid>
                 </Border>
               </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <ListBox Grid.Column="0"
+                     ItemsSource="{Binding RemoteDownloadOptions}"
+                     SelectedItem="{Binding SelectedRemoteDownloadOption}"
+                     MaxHeight="120">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:RemoteGgufDownloadOptionRowViewModel">
+                  <Grid ColumnDefinitions="90,*,85,70" ColumnSpacing="8" Margin="0,4">
+                    <TextBlock Grid.Column="0" Text="{Binding Quant}" Foreground="#C15F00" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="1" Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Grid.Column="2" Text="{Binding FileCountText}" Foreground="#7B6C5B" HorizontalAlignment="Right"/>
+                    <TextBlock Grid.Column="3" Text="{Binding ModeText}" Foreground="#247187" HorizontalAlignment="Right"/>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <Button Grid.Column="1"
+                    Content="Скачать выбранный GGUF"
+                    Command="{Binding DownloadSelectedRemoteModelCommand}"
+                    VerticalAlignment="Top"
+                    Background="#FF9B35"
+                    Foreground="White"/>
+          </Grid>
         </StackPanel>
       </Border>
     </StackPanel>

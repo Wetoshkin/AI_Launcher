@@ -1,5 +1,6 @@
-using System.Collections.ObjectModel;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -28,6 +29,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 {
     private readonly string _defaultModelsDirectory = @"D:\AI\Models";
     private readonly HuggingFaceModelClient _huggingFaceClient;
+    private readonly IHuggingFaceModelDownloadService _modelDownloadService;
     private readonly RuntimeDashboardService _runtimeDashboardService;
     private readonly RuntimeStartCoordinator _runtimeStartCoordinator;
     private LaunchPlan? _lastLaunchPlan;
@@ -38,6 +40,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
     private DecodingPresetRowViewModel _selectedDecodingPreset;
     private ModelRowViewModel? _selectedLocalModel;
+    private RemoteModelRowViewModel? _selectedRemoteModel;
+    private RemoteGgufDownloadOptionRowViewModel? _selectedRemoteDownloadOption;
     private AgentKind _selectedAgent = AgentKind.Kilo;
     private RuntimeKind _selectedRuntime = RuntimeKind.LlamaCppTurboQuant;
 
@@ -50,19 +54,22 @@ public sealed partial class HomeViewModel : ViewModelBase
             new NvidiaSmiGpuProbe(new ProcessCommandRunner()),
             new WindowsPortInspector(),
             new RuntimeCatalogService(new ProcessCommandRunner())),
-        new RuntimeStartCoordinator(
+            new RuntimeStartCoordinator(
             new WindowsPortInspector(),
             new PortReleaseService(new ProcessCommandRunner()),
-            new ProcessStarter()))
+            new ProcessStarter()),
+        new HuggingFaceModelDownloadService(new HttpClient()))
     {
     }
 
     public HomeViewModel(
         HuggingFaceModelClient huggingFaceClient,
         RuntimeDashboardService runtimeDashboardService,
-        RuntimeStartCoordinator runtimeStartCoordinator)
+        RuntimeStartCoordinator runtimeStartCoordinator,
+        IHuggingFaceModelDownloadService modelDownloadService)
     {
         _huggingFaceClient = huggingFaceClient;
+        _modelDownloadService = modelDownloadService;
         _runtimeDashboardService = runtimeDashboardService;
         _runtimeStartCoordinator = runtimeStartCoordinator;
         _wizardState = LaunchWizardState.ForScenario(new LaunchScenario(
@@ -120,6 +127,39 @@ public sealed partial class HomeViewModel : ViewModelBase
     }
 
     public ObservableCollection<RemoteModelRowViewModel> RemoteModels { get; } = [];
+
+    public RemoteModelRowViewModel? SelectedRemoteModel
+    {
+        get => _selectedRemoteModel;
+        set
+        {
+            if (_selectedRemoteModel == value)
+            {
+                return;
+            }
+
+            _selectedRemoteModel = value;
+            OnPropertyChanged();
+            RefreshRemoteDownloadOptions();
+        }
+    }
+
+    public ObservableCollection<RemoteGgufDownloadOptionRowViewModel> RemoteDownloadOptions { get; } = [];
+
+    public RemoteGgufDownloadOptionRowViewModel? SelectedRemoteDownloadOption
+    {
+        get => _selectedRemoteDownloadOption;
+        set
+        {
+            if (_selectedRemoteDownloadOption == value)
+            {
+                return;
+            }
+
+            _selectedRemoteDownloadOption = value;
+            OnPropertyChanged();
+        }
+    }
 
     public ObservableCollection<WizardStepRowViewModel> WizardSteps { get; } = [];
 
@@ -384,6 +424,7 @@ public sealed partial class HomeViewModel : ViewModelBase
                 RemoteModels.Add(new RemoteModelRowViewModel(model));
             }
 
+            SelectedRemoteModel = RemoteModels.FirstOrDefault();
             SetStatus(models.Count == 0
                 ? "Hugging Face не вернул GGUF-моделей по этому запросу."
                 : $"Hugging Face: найдено {models.Count} моделей.");
@@ -391,6 +432,43 @@ public sealed partial class HomeViewModel : ViewModelBase
         catch (HttpRequestException ex)
         {
             SetStatus($"Hugging Face недоступен: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task DownloadSelectedRemoteModelAsync()
+    {
+        if (SelectedRemoteDownloadOption is null)
+        {
+            SetStatus("Выберите конкретный GGUF-файл для скачивания.");
+            return;
+        }
+
+        if (ModelsFolderPath == "не указана" || string.IsNullOrWhiteSpace(ModelsFolderPath))
+        {
+            SetStatus("Сначала укажите папку моделей.");
+            return;
+        }
+
+        SetStatus($"Скачиваю {SelectedRemoteDownloadOption.Label}...");
+        try
+        {
+            var result = await _modelDownloadService.DownloadAsync(
+                new HuggingFaceModelDownloadRequest(
+                    SelectedRemoteDownloadOption.RepoId,
+                    SelectedRemoteDownloadOption.Option,
+                    ModelsFolderPath),
+                default,
+                progress => SetStatus(progress.IsSkipped
+                    ? $"Уже есть: {progress.FileName}"
+                    : $"Скачан файл {progress.FileIndex}/{progress.TotalFiles}: {progress.FileName}"));
+
+            RefreshLocalModels();
+            SetStatus($"Скачивание завершено: {result.DownloadedFiles.Count} скачано, {result.SkippedFiles.Count} уже были на диске.");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException)
+        {
+            SetStatus($"Не удалось скачать модель: {ex.Message}");
         }
     }
 
@@ -550,5 +628,16 @@ public sealed partial class HomeViewModel : ViewModelBase
         {
             SelectedLocalModel = LocalModels[0];
         }
+    }
+
+    private void RefreshRemoteDownloadOptions()
+    {
+        RemoteDownloadOptions.Clear();
+        foreach (var option in SelectedRemoteModel?.DownloadOptions ?? [])
+        {
+            RemoteDownloadOptions.Add(option);
+        }
+
+        SelectedRemoteDownloadOption = RemoteDownloadOptions.FirstOrDefault();
     }
 }

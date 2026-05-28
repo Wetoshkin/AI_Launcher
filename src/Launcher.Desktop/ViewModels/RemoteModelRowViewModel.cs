@@ -22,7 +22,7 @@ public sealed class RemoteModelRowViewModel(HuggingFaceModelSummary model)
 
     public IReadOnlyList<RemoteGgufDownloadOptionRowViewModel> DownloadOptions { get; } =
         HuggingFaceGgufFileSelector.SelectDownloadOptions(model)
-            .Select(option => new RemoteGgufDownloadOptionRowViewModel(option))
+            .Select(option => new RemoteGgufDownloadOptionRowViewModel(model.Id, option))
             .ToArray();
 
     public string DownloadOptionsText => $"{DownloadOptions.Count} GGUF";
