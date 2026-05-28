@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using Launcher.Agents.Commands;
@@ -42,6 +44,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     private ModelRowViewModel? _selectedLocalModel;
     private RemoteModelRowViewModel? _selectedRemoteModel;
     private RemoteGgufDownloadOptionRowViewModel? _selectedRemoteDownloadOption;
+    private bool _isDownloading;
+    private CancellationTokenSource? _downloadCancellation;
     private AgentKind _selectedAgent = AgentKind.Kilo;
     private RuntimeKind _selectedRuntime = RuntimeKind.LlamaCppTurboQuant;
 
@@ -104,6 +108,25 @@ public sealed partial class HomeViewModel : ViewModelBase
     public string ModelCountText { get; private set; } = "модели: проверка";
 
     public string StatusMessage { get; private set; } = "Выберите режим запуска или настройте папки.";
+
+    public string DownloadProgressText { get; private set; } = "Загрузок нет.";
+
+    public double DownloadProgressPercent { get; private set; }
+
+    public bool IsDownloading
+    {
+        get => _isDownloading;
+        private set
+        {
+            if (_isDownloading == value)
+            {
+                return;
+            }
+
+            _isDownloading = value;
+            OnPropertyChanged();
+        }
+    }
 
     public IFolderPicker? FolderPicker { get; set; }
 
@@ -451,6 +474,9 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         SetStatus($"Скачиваю {SelectedRemoteDownloadOption.Label}...");
+        IsDownloading = true;
+        _downloadCancellation?.Dispose();
+        _downloadCancellation = new CancellationTokenSource();
         try
         {
             var result = await _modelDownloadService.DownloadAsync(
@@ -458,24 +484,60 @@ public sealed partial class HomeViewModel : ViewModelBase
                     SelectedRemoteDownloadOption.RepoId,
                     SelectedRemoteDownloadOption.Option,
                     ModelsFolderPath),
-                default,
-                progress => SetStatus(progress.IsSkipped
-                    ? $"Уже есть: {progress.FileName}"
-                    : $"Скачан файл {progress.FileIndex}/{progress.TotalFiles}: {progress.FileName}"));
+                _downloadCancellation.Token,
+                UpdateDownloadProgress);
 
             RefreshLocalModels();
             SetStatus($"Скачивание завершено: {result.DownloadedFiles.Count} скачано, {result.SkippedFiles.Count} уже были на диске.");
+        }
+        catch (OperationCanceledException)
+        {
+            SetStatus("Скачивание отменено.");
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException)
         {
             SetStatus($"Не удалось скачать модель: {ex.Message}");
         }
+        finally
+        {
+            IsDownloading = false;
+            _downloadCancellation?.Dispose();
+            _downloadCancellation = null;
+        }
+    }
+
+    [RelayCommand]
+    private void CancelDownload()
+    {
+        if (!IsDownloading)
+        {
+            SetStatus("Активной загрузки нет.");
+            return;
+        }
+
+        _downloadCancellation?.Cancel();
     }
 
     private void SetStatus(string message)
     {
         StatusMessage = message;
         OnPropertyChanged(nameof(StatusMessage));
+    }
+
+    private void UpdateDownloadProgress(HuggingFaceDownloadProgress progress)
+    {
+        var percent = progress.TotalBytes is > 0
+            ? Math.Clamp(progress.BytesReceived * 100d / progress.TotalBytes.Value, 0, 100)
+            : 0;
+        DownloadProgressPercent = progress.IsSkipped ? 100 : percent;
+        DownloadProgressText = progress.IsSkipped
+            ? $"{progress.FileIndex}/{progress.TotalFiles} · уже есть · {progress.FileName}"
+            : string.Create(CultureInfo.InvariantCulture, $"{progress.FileIndex}/{progress.TotalFiles} · {progress.FileName} · {DownloadProgressPercent:0}%");
+        OnPropertyChanged(nameof(DownloadProgressPercent));
+        OnPropertyChanged(nameof(DownloadProgressText));
+        SetStatus(progress.IsSkipped
+            ? $"Уже есть: {progress.FileName}"
+            : $"Скачиваю файл {progress.FileIndex}/{progress.TotalFiles}: {progress.FileName}");
     }
 
     private void SetScenario(LaunchScenario scenario)

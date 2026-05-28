@@ -85,6 +85,30 @@ public sealed class HuggingFaceModelDownloadServiceTests
             CancellationToken.None));
     }
 
+    [Fact]
+    public async Task DownloadAsyncReportsIntermediateByteProgress()
+    {
+        using var temp = new TempDirectory();
+        var option = new HuggingFaceGgufDownloadOption(
+            "chunked.gguf",
+            "Q4_K_M",
+            IsSplit: false,
+            Files:
+            [
+                new HuggingFaceGgufFile("chunked.gguf", "https://hf/chunked", IsFirstSplitShard: true)
+            ]);
+        var progress = new List<HuggingFaceDownloadProgress>();
+        var service = new HuggingFaceModelDownloadService(new HttpClient(new ChunkedDownloadHandler("https://hf/chunked", new byte[200_000])));
+
+        await service.DownloadAsync(
+            new HuggingFaceModelDownloadRequest("owner/repo", option, temp.Path),
+            CancellationToken.None,
+            progress.Add);
+
+        Assert.Contains(progress, item => item.BytesReceived > 0 && item.BytesReceived < 200_000);
+        Assert.Contains(progress, item => item.BytesReceived == 200_000 && item.TotalBytes == 200_000);
+    }
+
     private sealed class FakeDownloadHandler(params (string Url, string Body)[] responses) : HttpMessageHandler
     {
         private readonly Dictionary<string, string> _responses = responses.ToDictionary(item => item.Url, item => item.Body);
@@ -99,6 +123,28 @@ public sealed class HuggingFaceModelDownloadServiceTests
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(body, Encoding.UTF8, "application/octet-stream")
+            });
+        }
+    }
+
+    private sealed class ChunkedDownloadHandler(string url, byte[] body) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.RequestUri!.ToString() != url)
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(body)
+                {
+                    Headers =
+                    {
+                        ContentLength = body.LongLength
+                    }
+                }
             });
         }
     }

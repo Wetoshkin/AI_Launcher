@@ -2,6 +2,8 @@ namespace Launcher.Models.HuggingFace;
 
 public sealed class HuggingFaceModelDownloadService(HttpClient httpClient) : IHuggingFaceModelDownloadService
 {
+    private const int BufferSize = 81920;
+
     public async Task<HuggingFaceModelDownloadResult> DownloadAsync(
         HuggingFaceModelDownloadRequest request,
         CancellationToken cancellationToken,
@@ -47,10 +49,30 @@ public sealed class HuggingFaceModelDownloadService(HttpClient httpClient) : IHu
                 File.Delete(tempPath);
             }
 
-            await using (var source = await response.Content.ReadAsStreamAsync(cancellationToken))
-            await using (var target = File.Create(tempPath))
+            try
             {
-                await source.CopyToAsync(target, cancellationToken);
+                await using (var source = await response.Content.ReadAsStreamAsync(cancellationToken))
+                await using (var target = File.Create(tempPath))
+                {
+                    await CopyWithProgressAsync(
+                        source,
+                        target,
+                        file.FileName,
+                        index + 1,
+                        totalFiles,
+                        response.Content.Headers.ContentLength,
+                        progress,
+                        cancellationToken);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                if (File.Exists(tempPath))
+                {
+                    File.Delete(tempPath);
+                }
+
+                throw;
             }
 
             if (File.Exists(targetPath))
@@ -62,16 +84,54 @@ public sealed class HuggingFaceModelDownloadService(HttpClient httpClient) : IHu
             downloaded.Add(targetPath);
 
             var length = new FileInfo(targetPath).Length;
-            progress?.Invoke(new HuggingFaceDownloadProgress(
-                file.FileName,
-                index + 1,
-                totalFiles,
-                length,
-                response.Content.Headers.ContentLength,
-                IsSkipped: false));
+            ReportProgress(file.FileName, index + 1, totalFiles, length, response.Content.Headers.ContentLength, progress, IsSkipped: false);
         }
 
         return new HuggingFaceModelDownloadResult(downloaded, skipped);
+    }
+
+    private static async Task CopyWithProgressAsync(
+        Stream source,
+        Stream target,
+        string fileName,
+        int fileIndex,
+        int totalFiles,
+        long? totalBytes,
+        Action<HuggingFaceDownloadProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        var buffer = new byte[BufferSize];
+        long received = 0;
+        while (true)
+        {
+            var read = await source.ReadAsync(buffer, cancellationToken);
+            if (read == 0)
+            {
+                break;
+            }
+
+            await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+            received += read;
+            ReportProgress(fileName, fileIndex, totalFiles, received, totalBytes, progress, IsSkipped: false);
+        }
+    }
+
+    private static void ReportProgress(
+        string fileName,
+        int fileIndex,
+        int totalFiles,
+        long bytesReceived,
+        long? totalBytes,
+        Action<HuggingFaceDownloadProgress>? progress,
+        bool IsSkipped)
+    {
+        progress?.Invoke(new HuggingFaceDownloadProgress(
+            fileName,
+            fileIndex,
+            totalFiles,
+            bytesReceived,
+            totalBytes,
+            IsSkipped));
     }
 
     private static string BuildRepoRoot(string modelsDirectory, string repoId)
