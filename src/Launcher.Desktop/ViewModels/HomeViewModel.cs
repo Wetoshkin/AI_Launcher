@@ -32,6 +32,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly string _defaultModelsDirectory = @"D:\AI\Models";
     private readonly HuggingFaceModelClient _huggingFaceClient;
     private readonly IHuggingFaceModelDownloadService _modelDownloadService;
+    private readonly ILauncherSettingsStore? _settingsStore;
     private readonly RuntimeDashboardService _runtimeDashboardService;
     private readonly RuntimeStartCoordinator _runtimeStartCoordinator;
     private LaunchPlan? _lastLaunchPlan;
@@ -63,7 +64,8 @@ public sealed partial class HomeViewModel : ViewModelBase
             new WindowsPortInspector(),
             new PortReleaseService(new ProcessCommandRunner()),
             new ProcessStarter()),
-        new HuggingFaceModelDownloadService(new HttpClient()))
+        new HuggingFaceModelDownloadService(new HttpClient()),
+        new LauncherSettingsFileStore(DefaultSettingsPath()))
     {
     }
 
@@ -71,10 +73,12 @@ public sealed partial class HomeViewModel : ViewModelBase
         HuggingFaceModelClient huggingFaceClient,
         RuntimeDashboardService runtimeDashboardService,
         RuntimeStartCoordinator runtimeStartCoordinator,
-        IHuggingFaceModelDownloadService modelDownloadService)
+        IHuggingFaceModelDownloadService modelDownloadService,
+        ILauncherSettingsStore? settingsStore = null)
     {
         _huggingFaceClient = huggingFaceClient;
         _modelDownloadService = modelDownloadService;
+        _settingsStore = settingsStore;
         _runtimeDashboardService = runtimeDashboardService;
         _runtimeStartCoordinator = runtimeStartCoordinator;
         _wizardState = LaunchWizardState.ForScenario(new LaunchScenario(
@@ -472,6 +476,63 @@ public sealed partial class HomeViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task LoadSettingsAsync()
+    {
+        if (_settingsStore is null)
+        {
+            return;
+        }
+
+        var settings = await _settingsStore.LoadAsync(default);
+        if (settings is null)
+        {
+            SetStatus("Сохранённые настройки пока не найдены.");
+            return;
+        }
+
+        ModelsFolderPath = settings.ModelsRoot;
+        ProjectsFolderPath = settings.ProjectsRoot ?? "не указана";
+        OnPropertyChanged(nameof(ModelsFolderPath));
+        OnPropertyChanged(nameof(ProjectsFolderPath));
+        RefreshLocalModels();
+
+        if (settings.Profiles.Count > 0)
+        {
+            Presets.Clear();
+            foreach (var profile in settings.Profiles)
+            {
+                Presets.Add(new PresetRowViewModel(profile));
+            }
+
+            SelectedPreset = Presets.FirstOrDefault();
+        }
+
+        SetStatus($"Настройки загружены: {settings.Profiles.Count} пресетов.");
+    }
+
+    [RelayCommand]
+    private async Task SaveCurrentPresetAsync()
+    {
+        if (_settingsStore is null)
+        {
+            SetStatus("Хранилище настроек недоступно.");
+            return;
+        }
+
+        var profile = BuildDraftProfile() with
+        {
+            Id = $"preset-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}",
+            Name = $"Быстрый запуск {Presets.Count + 1}"
+        };
+        var row = new PresetRowViewModel(profile);
+        Presets.Add(row);
+        SelectedPreset = row;
+
+        await _settingsStore.SaveAsync(BuildSettingsSnapshot(), default);
+        SetStatus($"Пресет сохранён: {profile.Name}.");
+    }
+
+    [RelayCommand]
     private async Task SearchHuggingFaceAsync()
     {
         if (string.IsNullOrWhiteSpace(HfSearchText))
@@ -748,6 +809,25 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         SelectedRemoteDownloadOption = RemoteDownloadOptions.FirstOrDefault();
     }
+
+    private LauncherSettings BuildSettingsSnapshot() => new(
+        ModelsFolderPath == "не указана" ? _defaultModelsDirectory : ModelsFolderPath,
+        ProjectsFolderPath == "не указана" ? null : ProjectsFolderPath,
+        RuntimeRoot: @"D:\AI\runtimes",
+        DownloadsRoot: Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "AI Launcher Studio",
+            "downloads"),
+        DefaultPort: 8080,
+        Language: "ru",
+        HelpMode: "pro",
+        Profiles: Presets.Select(preset => preset.Profile).ToArray());
+
+    private static string DefaultSettingsPath() => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "AI Launcher Studio",
+        "launcher-settings.json");
+
 
     private static IEnumerable<PresetRowViewModel> DefaultPresets()
     {

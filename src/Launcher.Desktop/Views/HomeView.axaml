@@ -38,6 +38,10 @@
                 Command="{Binding ApplySelectedPresetCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"/>
+        <Button Content="Сохранить текущий"
+                Command="{Binding SaveCurrentPresetCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"/>
       </StackPanel>
     </Border>
 

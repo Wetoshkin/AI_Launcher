@@ -27,6 +27,7 @@ public partial class App : Application
                 DataContext = viewModel,
             };
             viewModel.FolderPicker = new AvaloniaFolderPicker(window);
+            _ = viewModel.LoadSettingsCommand.ExecuteAsync(null);
             desktop.MainWindow = window;
         }
 
