@@ -42,6 +42,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
     private DecodingPresetRowViewModel _selectedDecodingPreset;
     private ModelRowViewModel? _selectedLocalModel;
+    private PresetRowViewModel? _selectedPreset;
     private RemoteModelRowViewModel? _selectedRemoteModel;
     private RemoteGgufDownloadOptionRowViewModel? _selectedRemoteDownloadOption;
     private bool _isDownloading;
@@ -82,6 +83,8 @@ public sealed partial class HomeViewModel : ViewModelBase
             RuntimeKind.LlamaCppTurboQuant));
         DecodingPresets = new ObservableCollection<DecodingPresetRowViewModel>(
             DecodingPresetCatalog.All.Select(preset => new DecodingPresetRowViewModel(preset)));
+        Presets = new ObservableCollection<PresetRowViewModel>(DefaultPresets());
+        _selectedPreset = Presets.FirstOrDefault();
         _selectedDecodingPreset = DecodingPresets[0];
         ModelsFolderPath = Directory.Exists(_defaultModelsDirectory)
             ? _defaultModelsDirectory
@@ -266,12 +269,22 @@ public sealed partial class HomeViewModel : ViewModelBase
         HuggingFaceSort.Trending
     ];
 
-    public ObservableCollection<string> Presets { get; } =
-    [
-        "Kilo · Qwen3 Coder · TurboQuant · 64k",
-        "OpenCode · Gemma · Ollama",
-        "Endpoint · Hermes · MTP · 8081"
-    ];
+    public ObservableCollection<PresetRowViewModel> Presets { get; }
+
+    public PresetRowViewModel? SelectedPreset
+    {
+        get => _selectedPreset;
+        set
+        {
+            if (_selectedPreset == value)
+            {
+                return;
+            }
+
+            _selectedPreset = value;
+            OnPropertyChanged();
+        }
+    }
 
     public IReadOnlyList<AgentKind> AgentOptions { get; } =
     [
@@ -423,6 +436,39 @@ public sealed partial class HomeViewModel : ViewModelBase
     {
         RefreshLocalModels();
         SetStatus("Каталог локальных моделей обновлён.");
+    }
+
+    [RelayCommand]
+    private void ApplySelectedPreset()
+    {
+        if (SelectedPreset is null)
+        {
+            SetStatus("Выберите пресет для быстрого запуска.");
+            return;
+        }
+
+        var profile = SelectedPreset.Profile;
+        _selectedAgent = profile.Agent == AgentKind.None ? _selectedAgent : profile.Agent;
+        _selectedRuntime = profile.Runtime;
+        OnPropertyChanged(nameof(SelectedAgent));
+        OnPropertyChanged(nameof(SelectedRuntime));
+
+        if (!string.IsNullOrWhiteSpace(profile.ProjectPath))
+        {
+            ProjectsFolderPath = profile.ProjectPath;
+            OnPropertyChanged(nameof(ProjectsFolderPath));
+        }
+
+        var decodingPreset = DecodingPresets.FirstOrDefault(preset => preset.Id == profile.AntiLoopPresetId);
+        if (decodingPreset is not null)
+        {
+            SelectedDecodingPreset = decodingPreset;
+        }
+
+        SetScenario(new LaunchScenario(profile.Mode, profile.Mode == LaunchMode.Agent ? profile.Agent : AgentKind.None, profile.Runtime));
+        RefreshLaunchReview();
+        _lastLaunchPlan = null;
+        SetStatus($"Пресет применён: {profile.Name}.");
     }
 
     [RelayCommand]
@@ -701,5 +747,42 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         SelectedRemoteDownloadOption = RemoteDownloadOptions.FirstOrDefault();
+    }
+
+    private static IEnumerable<PresetRowViewModel> DefaultPresets()
+    {
+        yield return new PresetRowViewModel(new LaunchProfile(
+            "kilo-qwen-turbo",
+            "Kilo · Qwen Coder · TurboQuant",
+            LaunchMode.Agent,
+            AgentKind.Kilo,
+            RuntimeKind.LlamaCppTurboQuant,
+            null,
+            "модель не выбрана",
+            65536,
+            8080,
+            "coding-safe"));
+        yield return new PresetRowViewModel(new LaunchProfile(
+            "opencode-ollama",
+            "OpenCode · Ollama",
+            LaunchMode.Agent,
+            AgentKind.OpenCode,
+            RuntimeKind.Ollama,
+            null,
+            "модель не выбрана",
+            32768,
+            11434,
+            "coding-safe"));
+        yield return new PresetRowViewModel(new LaunchProfile(
+            "endpoint-mtp",
+            "Сервер · MTP endpoint",
+            LaunchMode.Endpoint,
+            AgentKind.None,
+            RuntimeKind.LlamaCppMtp,
+            null,
+            "модель не выбрана",
+            65536,
+            8081,
+            "mtp-fast"));
     }
 }
