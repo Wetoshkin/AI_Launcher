@@ -7,7 +7,8 @@ namespace Launcher.Runtimes.Startup;
 public sealed class RuntimeStartCoordinator(
     IPortInspector portInspector,
     IPortReleaser portReleaser,
-    IProcessStarter processStarter)
+    IProcessStarter processStarter,
+    IEndpointHealthClient? endpointHealthClient = null)
 {
     public async Task<RuntimeStartResult> StartAsync(
         LaunchPlan plan,
@@ -39,7 +40,21 @@ public sealed class RuntimeStartCoordinator(
             new ProcessStartRequest(plan.Executable, plan.Arguments, plan.Environment, workingDirectory),
             cancellationToken);
         messages.Add($"Процесс запущен. PID: {result.ProcessId}.");
+        if (endpointHealthClient is not null && ShouldWaitForEndpoint(plan))
+        {
+            var health = await endpointHealthClient
+                .WaitUntilReadyAsync($"http://127.0.0.1:{port}/v1", Attempts: 30, Delay: TimeSpan.FromSeconds(1), cancellationToken);
+            messages.Add(health.Message);
+            if (!health.IsReady)
+            {
+                return new RuntimeStartResult(false, result.ProcessId, messages);
+            }
+        }
 
         return new RuntimeStartResult(true, result.ProcessId, messages);
     }
+
+    private static bool ShouldWaitForEndpoint(LaunchPlan plan) =>
+        Path.GetFileNameWithoutExtension(plan.Executable)
+            .Equals("llama-server", StringComparison.OrdinalIgnoreCase);
 }

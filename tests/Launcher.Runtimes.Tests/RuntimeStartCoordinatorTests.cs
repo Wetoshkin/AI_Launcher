@@ -37,6 +37,23 @@ public sealed class RuntimeStartCoordinatorTests
         Assert.Contains("postgres", result.Messages[0]);
     }
 
+    [Fact]
+    public async Task WaitsForEndpointHealthAfterStartingLlamaServer()
+    {
+        var health = new FakeEndpointHealthClient(new EndpointHealthResult(true, 2, "endpoint готов"));
+        var coordinator = new RuntimeStartCoordinator(
+            new FakePortInspector(null),
+            new FakePortReleaser(new PortReleaseResult(false, "none")),
+            new FakeProcessStarter(),
+            health);
+
+        var result = await coordinator.StartAsync(Plan(), 8080, null, CancellationToken.None);
+
+        Assert.True(result.Started);
+        Assert.Equal("http://127.0.0.1:8080/v1", health.LastBaseUrl);
+        Assert.Contains("endpoint готов", result.Messages);
+    }
+
     private static LaunchPlan Plan() => new("llama-server", new[] { "--port", "8080" }, new Dictionary<string, string>());
 
     private sealed class FakePortInspector(PortOwnerInfo? owner) : IPortInspector
@@ -59,5 +76,20 @@ public sealed class RuntimeStartCoordinatorTests
     {
         public Task<ProcessStartResult> StartAsync(ProcessStartRequest request, CancellationToken cancellationToken) =>
             Task.FromResult(new ProcessStartResult(99));
+    }
+
+    private sealed class FakeEndpointHealthClient(EndpointHealthResult result) : IEndpointHealthClient
+    {
+        public string? LastBaseUrl { get; private set; }
+
+        public Task<EndpointHealthResult> WaitUntilReadyAsync(
+            string baseUrl,
+            int Attempts,
+            TimeSpan Delay,
+            CancellationToken cancellationToken)
+        {
+            LastBaseUrl = baseUrl;
+            return Task.FromResult(result);
+        }
     }
 }
