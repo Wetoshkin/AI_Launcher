@@ -67,7 +67,8 @@ public sealed partial class HomeViewModel : ViewModelBase
             new RuntimeStartCoordinator(
             new WindowsPortInspector(),
             new PortReleaseService(new ProcessCommandRunner()),
-            new ProcessStarter()),
+            new ProcessStarter(),
+            new OpenAiEndpointHealthClient(new HttpClient())),
         new HuggingFaceModelDownloadService(new HttpClient()),
         new LauncherSettingsFileStore(DefaultSettingsPath()),
         new AgentCliCatalogService(new WindowsExecutableResolver()))
