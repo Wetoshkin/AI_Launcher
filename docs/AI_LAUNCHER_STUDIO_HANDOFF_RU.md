@@ -4,7 +4,7 @@
 
 - Рабочий каталог: `D:\AI\LlamaServerLauncherAvalonia\.worktrees\ai-launcher-studio-full-port`
 - Текущая ветка: `main-ai-launcher-studio-full-port`
-- Целевая публикация: `Wetoshkin/AI_Launcher`, ветка `main/ai-launcher-studio-full-port`
+- Целевая публикация: `Wetoshkin/AI_Launcher`, ветка `ai-launcher-studio-full-port`
 - Исходная база: форк `Wetoshkin/LlamaServerLauncherAvalonia`
 
 ## Что уже сделано
@@ -53,17 +53,28 @@
   - MTP требует `--spec-type draft-mtp`;
   - TurboQuant требует TurboQuant capability;
   - обычный llama.cpp/Ollama проходят отдельно.
+- Проверка совместимости runtime подключена в GUI:
+  - warning виден в preview/review;
+  - несовместимый runtime блокирует старт до запуска процесса.
+- Добавлен file picker для zip-архива runtime, рядом с ручным вводом пути.
+- В launch review добавлена оценка памяти:
+  - веса GGUF;
+  - KV-cache по выбранному контексту/runtime;
+  - runtime overhead;
+  - сравнение с последним проверенным свободным VRAM.
+- Добавлен GUI-контроль `MTP draft` для `--spec-draft-n-max`:
+  - диапазон 1..16;
+  - значение подставляется в команду `llama-server`;
+  - подсказка объясняет компромисс скорость/стабильность.
 
 ## Что ещё надо сделать
 
-- Подключить `RuntimeCompatibilityService` в GUI review/guard перед стартом.
 - Сделать полноценный runtime downloader/update manager из GitHub releases/официальных источников, а не только установку zip.
-- Добавить file picker для zip runtime archive вместо ручного ввода пути.
 - Вынести большой `HomeViewModel` на отдельные VM/экраны: Dashboard, Launch, Models, Runtimes, Agents, Logs, Settings.
 - Сделать реальные tabs/navigation вместо текущего длинного dashboard.
 - Добавить подробный лог процессов и live output `llama-server`/CLI агента в GUI.
-- Добавить настройку KV cache, MTP draft params, speculative decoding и anti-loop presets как полноценные controls.
-- Добавить VRAM forecast прямо в launch review для выбранной модели/context/KV.
+- Добавить настройку KV cache и остальные speculative decoding параметры как полноценные controls.
+- Улучшить VRAM forecast до per-GPU панели и учитывать K/V cache типы из GUI, когда они появятся.
 - Добавить end-to-end smoke tests запуска:
   - endpoint-only llama-server;
   - agent + local endpoint;
@@ -128,14 +139,21 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
 - `7b2f00e feat(models): show download progress and cancellation`
 - `722de75 feat(models): download Hugging Face GGUF files`
 - `d0f8c24 feat(models): expose Hugging Face GGUF downloads`
+- `cc85f02 feat(desktop): enforce runtime compatibility`
+- `2d1bf4d feat(desktop): choose runtime archive file`
+- `0ac065f feat(desktop): show launch memory forecast`
+- `a405a0e feat(desktop): control mtp draft tokens`
 
 ## Рекомендованный следующий срез для второго агента
 
-1. Взять `RuntimeCompatibilityService`.
-2. Подключить его в `HomeViewModel.BuildLaunchCommand` и `StartLaunchAsync`.
-3. Показывать результат в `LaunchEnvironmentLines` и блокировать старт, если runtime несовместим.
-4. Покрыть `Launcher.Desktop.Tests`:
-   - MTP выбран, runtime без MTP -> старт заблокирован;
-   - TurboQuant выбран, runtime без TurboQuant -> старт заблокирован;
-   - compatible runtime -> команда собирается.
-5. Запустить полный `dotnet build` + `dotnet test`.
+1. Сделать runtime downloader/update manager:
+   - получить список релизов llama.cpp/TurboQuant runtime;
+   - показать версии в GUI;
+   - скачать zip в downloads/cache;
+   - переиспользовать текущий `RuntimePackageInstaller`.
+2. Покрыть `Launcher.Runtimes.Tests` и `Launcher.Desktop.Tests`:
+   - релиз с подходящим asset выбирается;
+   - zip скачивается в безопасный путь;
+   - GUI показывает ошибку сети и не затирает установленный runtime;
+   - установка после скачивания обновляет `RuntimeStatus`.
+3. Запустить полный `dotnet build` + `dotnet test`.
