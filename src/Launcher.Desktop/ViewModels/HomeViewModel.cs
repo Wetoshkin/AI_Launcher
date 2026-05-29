@@ -217,6 +217,8 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public IFolderPicker? FolderPicker { get; set; }
 
+    public IFilePicker? FilePicker { get; set; }
+
     public ObservableCollection<ModelRowViewModel> LocalModels { get; } = [];
 
     public ModelRowViewModel? SelectedLocalModel
@@ -531,6 +533,26 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         var installed = statuses.Count(status => status.IsInstalled);
         SetStatus($"Агенты проверены: {installed}/{statuses.Count} доступны.");
+    }
+
+    [RelayCommand]
+    private async Task PickRuntimeArchiveAsync()
+    {
+        if (FilePicker is null)
+        {
+            SetStatus("Выбор runtime-архива пока недоступен: окно ещё не готово.");
+            return;
+        }
+
+        var file = await FilePicker.PickFileAsync("Выберите zip-архив runtime", [".zip"]);
+        if (string.IsNullOrWhiteSpace(file))
+        {
+            SetStatus("Выбор runtime-архива отменён.");
+            return;
+        }
+
+        RuntimeArchivePath = file;
+        SetStatus("Runtime-архив выбран.");
     }
 
     [RelayCommand]
