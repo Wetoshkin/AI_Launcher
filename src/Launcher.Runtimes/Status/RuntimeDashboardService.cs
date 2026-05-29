@@ -22,9 +22,12 @@ public sealed class RuntimeDashboardService(
         var portText = portOwner is null
             ? $"порт {port}: свободен"
             : $"порт {port}: занят {portOwner.ProcessName}";
+        var runtimes = runtimeCatalog is null
+            ? []
+            : await runtimeCatalog.ScanAsync(DefaultRuntimeRoots(), cancellationToken);
         var runtimeText = runtimeCatalog is null
             ? "runtime: требуется проверка llama.cpp"
-            : RuntimeText(await runtimeCatalog.ScanAsync(DefaultRuntimeRoots(), cancellationToken));
+            : RuntimeText(runtimes);
 
         return new RuntimeDashboardSnapshot(
             usedGpuGb,
@@ -32,7 +35,8 @@ public sealed class RuntimeDashboardService(
             IsPortFree: portOwner is null,
             gpuText,
             portText,
-            runtimeText);
+            runtimeText,
+            runtimes.FirstOrDefault());
     }
 
     private async Task<IReadOnlyList<GpuInfo>> SafeGetGpusAsync(CancellationToken cancellationToken)

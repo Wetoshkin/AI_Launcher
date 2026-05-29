@@ -1,0 +1,158 @@
+using Launcher.Core.LaunchPlans;
+using Launcher.Core.Scenarios;
+using Launcher.Desktop.Services;
+using Launcher.Desktop.ViewModels;
+using Launcher.Models.HuggingFace;
+using Launcher.Runtimes.Hardware;
+using Launcher.Runtimes.LlamaCpp;
+using Launcher.Runtimes.Ports;
+using Launcher.Runtimes.Processes;
+using Launcher.Runtimes.Startup;
+using Launcher.Runtimes.Status;
+
+namespace Launcher.Desktop.Tests;
+
+public sealed class RuntimeCompatibilityFlowTests
+{
+    [Fact]
+    public async Task BuildLaunchCommandShowsRuntimeCompatibilityWarnings()
+    {
+        using var temp = new TempDirectory();
+        var viewModel = CreateViewModel(Runtime(supportsMtp: false, supportsTurboQuant: true), modelsDirectory: temp.Path);
+        viewModel.SelectedRuntime = RuntimeKind.LlamaCppMtp;
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+        viewModel.BuildLaunchCommandCommand.Execute(null);
+
+        Assert.Contains(
+            "RUNTIME: Выбран MTP, но runtime не поддерживает --spec-type draft-mtp.",
+            viewModel.LaunchEnvironmentLines);
+    }
+
+    [Fact]
+    public async Task StartLaunchBlocksIncompatibleRuntimeBeforeProcessStart()
+    {
+        using var temp = new TempDirectory();
+        var starter = new CountingProcessStarter();
+        var viewModel = CreateViewModel(Runtime(supportsMtp: false, supportsTurboQuant: true), starter, temp.Path);
+        viewModel.SelectedRuntime = RuntimeKind.LlamaCppMtp;
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, starter.StartCount);
+        Assert.Equal("Запуск остановлен: Выбран MTP, но runtime не поддерживает --spec-type draft-mtp.", viewModel.StatusMessage);
+    }
+
+    private static HomeViewModel CreateViewModel(
+        LlamaRuntimeInfo runtime,
+        CountingProcessStarter? starter = null,
+        string? modelsDirectory = null)
+    {
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(
+                new EmptyGpuProbe(),
+                new EmptyPortInspector(),
+                new FakeRuntimeCatalog([runtime])),
+            new RuntimeStartCoordinator(
+                new EmptyPortInspector(),
+                new EmptyPortReleaser(),
+                starter ?? new CountingProcessStarter()),
+            new EmptyDownloadService());
+        if (modelsDirectory is not null)
+        {
+            viewModel.FolderPicker = new FixedFolderPicker(modelsDirectory);
+        }
+
+        return viewModel;
+    }
+
+    private static LlamaRuntimeInfo Runtime(bool supportsMtp, bool supportsTurboQuant) => new(
+        @"D:\AI\runtimes\llama-server.exe",
+        new LlamaServerCapabilities(
+            new HashSet<string>(),
+            new HashSet<string>(),
+            new HashSet<string>(),
+            supportsTurboQuant,
+            supportsMtp));
+
+    private sealed class FakeRuntimeCatalog(IReadOnlyList<LlamaRuntimeInfo> runtimes) : ILlamaRuntimeCatalog
+    {
+        public Task<IReadOnlyList<LlamaRuntimeInfo>> ScanAsync(IEnumerable<string> runtimeRoots, CancellationToken cancellationToken) =>
+            Task.FromResult(runtimes);
+    }
+
+    private sealed class EmptyDownloadService : IHuggingFaceModelDownloadService
+    {
+        public Task<HuggingFaceModelDownloadResult> DownloadAsync(
+            HuggingFaceModelDownloadRequest request,
+            CancellationToken cancellationToken,
+            Action<HuggingFaceDownloadProgress>? progress = null) =>
+            Task.FromResult(new HuggingFaceModelDownloadResult([], []));
+    }
+
+    private sealed class FixedFolderPicker(string path) : IFolderPicker
+    {
+        public Task<string?> PickFolderAsync(string title) => Task.FromResult<string?>(path);
+    }
+
+    private sealed class EmptyHttpHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.NotFound));
+    }
+
+    private sealed class EmptyGpuProbe : IGpuProbe
+    {
+        public Task<IReadOnlyList<GpuInfo>> GetGpusAsync(CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<GpuInfo>>([]);
+    }
+
+    private sealed class EmptyPortInspector : IPortInspector
+    {
+        public Task<PortOwnerInfo?> InspectAsync(int port, CancellationToken cancellationToken) =>
+            Task.FromResult<PortOwnerInfo?>(null);
+    }
+
+    private sealed class EmptyPortReleaser : IPortReleaser
+    {
+        public Task<PortReleaseResult> ReleaseIfSafeAsync(PortOwnerInfo owner, CancellationToken cancellationToken) =>
+            Task.FromResult(new PortReleaseResult(Released: false, "не требуется"));
+    }
+
+    private sealed class CountingProcessStarter : IProcessStarter
+    {
+        public int StartCount { get; private set; }
+
+        public Task<ProcessStartResult> StartAsync(ProcessStartRequest request, CancellationToken cancellationToken)
+        {
+            StartCount++;
+            return Task.FromResult(new ProcessStartResult(123));
+        }
+    }
+
+    private sealed class TempDirectory : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "runtime-compat-flow-" + Guid.NewGuid().ToString("N"));
+
+        public TempDirectory()
+        {
+            Directory.CreateDirectory(Path);
+            using var file = File.Create(System.IO.Path.Combine(Path, "Qwen3-Coder-Q4_K_M.gguf"));
+            file.SetLength(129L * 1024L * 1024L);
+        }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+            {
+                Directory.Delete(Path, recursive: true);
+            }
+        }
+    }
+}
