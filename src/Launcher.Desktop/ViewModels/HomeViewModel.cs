@@ -55,6 +55,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private RemoteGgufDownloadOptionRowViewModel? _selectedRemoteDownloadOption;
     private bool _isDownloading;
     private CancellationTokenSource? _downloadCancellation;
+    private LlamaRuntimeInfo? _bestRuntime;
     private AgentKind _selectedAgent = AgentKind.Kilo;
     private RuntimeKind _selectedRuntime = RuntimeKind.LlamaCppTurboQuant;
 
@@ -508,6 +509,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         GpuStatus = snapshot.GpuText;
         PortStatus = snapshot.PortText;
         RuntimeStatus = snapshot.RuntimeText;
+        _bestRuntime = snapshot.BestRuntime;
         OnPropertyChanged(nameof(GpuStatus));
         OnPropertyChanged(nameof(PortStatus));
         OnPropertyChanged(nameof(RuntimeStatus));
@@ -823,6 +825,11 @@ public sealed partial class HomeViewModel : ViewModelBase
             LaunchEnvironmentLines.Add(line);
         }
 
+        foreach (var line in RuntimeCompatibilityService.Check(profile, _bestRuntime).Messages)
+        {
+            LaunchEnvironmentLines.Add($"RUNTIME: {line}");
+        }
+
         if (profile.Mode == LaunchMode.Agent)
         {
             var status = AgentCliStatuses.FirstOrDefault(row => row.Name == profile.Agent.ToString());
@@ -843,6 +850,13 @@ public sealed partial class HomeViewModel : ViewModelBase
         if (!guard.CanLaunch)
         {
             SetStatus(string.Join(" ", guard.Messages));
+            return;
+        }
+
+        var compatibility = RuntimeCompatibilityService.Check(profile, _bestRuntime);
+        if (!compatibility.IsCompatible)
+        {
+            SetStatus($"Запуск остановлен: {string.Join(" ", compatibility.Messages)}");
             return;
         }
 

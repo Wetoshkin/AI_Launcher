@@ -1,3 +1,5 @@
+using Launcher.Runtimes.LlamaCpp;
+
 namespace Launcher.Runtimes.Status;
 
 public sealed record RuntimeDashboardSnapshot(
@@ -6,4 +8,5 @@ public sealed record RuntimeDashboardSnapshot(
     bool IsPortFree,
     string GpuText,
     string PortText,
-    string RuntimeText);
+    string RuntimeText,
+    LlamaRuntimeInfo? BestRuntime);
