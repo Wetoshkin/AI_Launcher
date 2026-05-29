@@ -21,6 +21,7 @@ using Launcher.Models.Catalog;
 using Launcher.Models.HuggingFace;
 using Launcher.Runtimes.Hardware;
 using Launcher.Runtimes.LlamaCpp;
+using Launcher.Runtimes.Memory;
 using Launcher.Runtimes.Ports;
 using Launcher.Runtimes.Processes;
 using Launcher.Runtimes.Startup;
@@ -56,6 +57,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     private bool _isDownloading;
     private CancellationTokenSource? _downloadCancellation;
     private LlamaRuntimeInfo? _bestRuntime;
+    private double? _lastGpuUsedGb;
+    private double? _lastGpuTotalGb;
     private AgentKind _selectedAgent = AgentKind.Kilo;
     private RuntimeKind _selectedRuntime = RuntimeKind.LlamaCppTurboQuant;
 
@@ -512,9 +515,12 @@ public sealed partial class HomeViewModel : ViewModelBase
         PortStatus = snapshot.PortText;
         RuntimeStatus = snapshot.RuntimeText;
         _bestRuntime = snapshot.BestRuntime;
+        _lastGpuUsedGb = snapshot.UsedGpuGb;
+        _lastGpuTotalGb = snapshot.TotalGpuGb;
         OnPropertyChanged(nameof(GpuStatus));
         OnPropertyChanged(nameof(PortStatus));
         OnPropertyChanged(nameof(RuntimeStatus));
+        RefreshLaunchReview();
         SetStatus(snapshot.IsPortFree
             ? "Окружение проверено: порт свободен."
             : "Порт занят. Если это llama-server, его можно будет освободить перед запуском.");
@@ -827,6 +833,11 @@ public sealed partial class HomeViewModel : ViewModelBase
         {
             LaunchReviewLines.Add(line);
         }
+
+        if (SelectedLocalModel is not null)
+        {
+            LaunchReviewLines.Add(BuildMemoryForecastLine(profile, SelectedLocalModel.Model));
+        }
     }
 
     [RelayCommand]
@@ -999,6 +1010,44 @@ public sealed partial class HomeViewModel : ViewModelBase
         "AI Launcher Studio",
         "launcher-settings.json");
 
+    private string BuildMemoryForecastLine(LaunchProfile profile, LocalModelFile model)
+    {
+        var estimate = MemoryEstimator.Estimate(
+            new ModelMemorySpec(model.SizeGb, ParametersFromSizeLabel(model), NativeContextTokens: null),
+            profile.ContextTokens,
+            KvCacheFor(profile.Runtime));
+        var budgetText = _lastGpuTotalGb is > 0 && _lastGpuUsedGb is { } usedGpuGb
+            ? GpuBudgetText(estimate.TotalGb, Math.Max(0.0, _lastGpuTotalGb.Value - usedGpuGb))
+            : "GPU ещё не проверен";
+
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"Память: веса {estimate.WeightsGb:0.0} ГБ + KV {estimate.KvCacheGb:0.0} ГБ + запас {estimate.OverheadGb:0.0} ГБ = {estimate.TotalGb:0.0} ГБ; {budgetText}.");
+    }
+
+    private static string GpuBudgetText(double requiredGb, double freeGpuGb)
+    {
+        var fitText = requiredGb <= freeGpuGb * 0.92
+            ? "поместится"
+            : "может не поместиться";
+        return string.Create(CultureInfo.InvariantCulture, $"GPU свободно {freeGpuGb:0.0} ГБ; {fitText}");
+    }
+
+    private static KvCacheProfile KvCacheFor(RuntimeKind runtime) => runtime == RuntimeKind.LlamaCppTurboQuant
+        ? new KvCacheProfile("q8_0", "turbo4")
+        : KvCacheProfile.Symmetric("q8_0");
+
+    private static double ParametersFromSizeLabel(LocalModelFile model)
+    {
+        if (model.SizeLabel is { Length: > 1 } label
+            && label.EndsWith("B", StringComparison.OrdinalIgnoreCase)
+            && double.TryParse(label[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+        {
+            return parsed;
+        }
+
+        return Math.Max(1.0, model.SizeGb * 2.0);
+    }
 
     private static IEnumerable<PresetRowViewModel> DefaultPresets()
     {
