@@ -191,17 +191,28 @@
       <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
         <StackPanel Spacing="8">
           <TextBlock Text="Проверка запуска" FontWeight="Bold" FontSize="15"/>
-          <ComboBox ItemsSource="{Binding DecodingPresets}"
-                    SelectedItem="{Binding SelectedDecodingPreset}">
-            <ComboBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:DecodingPresetRowViewModel">
-                <StackPanel>
-                  <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
-                  <TextBlock Text="{Binding Risk}" FontSize="11" Foreground="#A95508"/>
-                </StackPanel>
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
+          <Grid ColumnDefinitions="*,150" ColumnSpacing="10">
+            <ComboBox Grid.Column="0"
+                      ItemsSource="{Binding DecodingPresets}"
+                      SelectedItem="{Binding SelectedDecodingPreset}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:DecodingPresetRowViewModel">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Risk}" FontSize="11" Foreground="#A95508"/>
+                  </StackPanel>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <StackPanel Grid.Column="1" Spacing="4"
+                        ToolTip.Tip="--spec-draft-n-max: сколько draft-токенов MTP предлагает за шаг. Меньше стабильнее, больше агрессивнее.">
+              <TextBlock Text="MTP draft" FontWeight="Bold" FontSize="12"/>
+              <NumericUpDown Minimum="1"
+                             Maximum="16"
+                             Increment="1"
+                             Value="{Binding MtpDraftTokens}"/>
+            </StackPanel>
+          </Grid>
           <TextBlock Text="{Binding SelectedDecodingPreset.Description}"
                      Foreground="#765A36"
                      TextWrapping="Wrap"/>

@@ -47,6 +47,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private string _runtimeArchivePath = "";
     private string _runtimeRootPath = @"D:\AI\runtimes";
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
+    private int _mtpDraftTokens = 4;
     private int _port = 8080;
     private int _contextTokens = 65536;
     private DecodingPresetRowViewModel _selectedDecodingPreset;
@@ -193,6 +194,24 @@ public sealed partial class HomeViewModel : ViewModelBase
             }
 
             _contextTokens = normalized;
+            OnPropertyChanged();
+            RefreshLaunchReview();
+            _lastLaunchPlan = null;
+        }
+    }
+
+    public int MtpDraftTokens
+    {
+        get => _mtpDraftTokens;
+        set
+        {
+            var normalized = Math.Clamp(value, 1, 16);
+            if (_mtpDraftTokens == normalized)
+            {
+                return;
+            }
+
+            _mtpDraftTokens = normalized;
             OnPropertyChanged();
             RefreshLaunchReview();
             _lastLaunchPlan = null;
@@ -845,7 +864,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     {
         var profile = BuildDraftProfile();
         var plan = profile.Mode == LaunchMode.Endpoint
-            ? LlamaServerCommandBuilder.Build(profile, DecodingPresetCatalog.Get(SelectedDecodingPreset.Id))
+            ? LlamaServerCommandBuilder.Build(profile, BuildSelectedDecodingPreset())
             : BuildAgentPlan(profile);
         _lastLaunchPlan = plan;
         var preview = LaunchPlanFormatter.Format(plan);
@@ -938,6 +957,21 @@ public sealed partial class HomeViewModel : ViewModelBase
         };
 
         return builder.Build(request);
+    }
+
+    private DecodingPreset BuildSelectedDecodingPreset()
+    {
+        var preset = DecodingPresetCatalog.Get(SelectedDecodingPreset.Id);
+        if (!preset.EnableMtp)
+        {
+            return preset;
+        }
+
+        var arguments = new Dictionary<string, string>(preset.Arguments, StringComparer.OrdinalIgnoreCase)
+        {
+            ["--spec-draft-n-max"] = MtpDraftTokens.ToString(CultureInfo.InvariantCulture)
+        };
+        return preset with { Arguments = arguments };
     }
 
     private static string StepLabel(WizardStep step) => step switch
