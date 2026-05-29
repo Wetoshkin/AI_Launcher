@@ -147,6 +147,34 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task PickRuntimeArchiveCommandStoresSelectedZipPath()
+    {
+        var picker = new FixedFilePicker(@"D:\Downloads\llama-runtime.zip");
+        var viewModel = CreateViewModel();
+        viewModel.FilePicker = picker;
+
+        await viewModel.PickRuntimeArchiveCommand.ExecuteAsync(null);
+
+        Assert.Equal(@"D:\Downloads\llama-runtime.zip", viewModel.RuntimeArchivePath);
+        Assert.Equal("Runtime-архив выбран.", viewModel.StatusMessage);
+        Assert.Equal(".zip", Assert.Single(picker.LastExtensions));
+    }
+
+    [Fact]
+    public async Task PickRuntimeArchiveCommandKeepsExistingPathWhenCancelled()
+    {
+        var picker = new FixedFilePicker(null);
+        var viewModel = CreateViewModel();
+        viewModel.RuntimeArchivePath = @"D:\Downloads\old-runtime.zip";
+        viewModel.FilePicker = picker;
+
+        await viewModel.PickRuntimeArchiveCommand.ExecuteAsync(null);
+
+        Assert.Equal(@"D:\Downloads\old-runtime.zip", viewModel.RuntimeArchivePath);
+        Assert.Equal("Выбор runtime-архива отменён.", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public void AgentCliStatusRowShowsRussianMissingPath()
     {
         var row = new AgentCliStatusRowViewModel(new Launcher.Agents.Discovery.AgentCliStatus(
@@ -197,6 +225,17 @@ public sealed class PresetViewModelTests
         {
             LastRequest = request;
             return Task.FromResult(result);
+        }
+    }
+
+    private sealed class FixedFilePicker(string? path) : Launcher.Desktop.Services.IFilePicker
+    {
+        public IReadOnlyList<string> LastExtensions { get; private set; } = [];
+
+        public Task<string?> PickFileAsync(string title, IReadOnlyList<string> extensions)
+        {
+            LastExtensions = extensions;
+            return Task.FromResult(path);
         }
     }
 

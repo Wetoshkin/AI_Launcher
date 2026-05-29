@@ -249,8 +249,19 @@
           <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
             <StackPanel Grid.Column="0" Spacing="4">
               <TextBlock Text="Zip-архив runtime" FontWeight="Bold" FontSize="12"/>
-              <TextBox Text="{Binding RuntimeArchivePath}"
-                       PlaceholderText="D:\Downloads\llama-runtime.zip"/>
+              <Grid ColumnDefinitions="*,42" ColumnSpacing="6">
+                <TextBox Grid.Column="0"
+                         Text="{Binding RuntimeArchivePath}"
+                         PlaceholderText="D:\Downloads\llama-runtime.zip"/>
+                <Button Grid.Column="1"
+                        Command="{Binding PickRuntimeArchiveCommand}"
+                        ToolTip.Tip="Выбрать zip-архив runtime">
+                  <PathIcon Width="18"
+                            Height="18"
+                            Foreground="#C15F00"
+                            Data="M3,6 L8,6 L10,8 L21,8 L21,18 L3,18 Z M3,8 L21,8"/>
+                </Button>
+              </Grid>
             </StackPanel>
             <StackPanel Grid.Column="1" Spacing="4">
               <TextBlock Text="Папка установки" FontWeight="Bold" FontSize="12"/>
