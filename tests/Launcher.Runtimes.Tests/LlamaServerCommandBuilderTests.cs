@@ -34,6 +34,17 @@ public sealed class LlamaServerCommandBuilderTests
         Assert.Contains("--spec-draft-n-max", plan.Arguments);
     }
 
+    [Fact]
+    public void BuildsStableOpenAiModelAliasFromGgufFileName()
+    {
+        var profile = Profile("coding-safe");
+
+        var plan = LlamaServerCommandBuilder.Build(profile, DecodingPresetCatalog.Get("coding-safe"));
+
+        Assert.Contains("--alias", plan.Arguments);
+        Assert.Contains("local/qwen", plan.Arguments);
+    }
+
     private static LaunchProfile Profile(string presetId) => new(
         Id: "p1",
         Name: "Endpoint",
