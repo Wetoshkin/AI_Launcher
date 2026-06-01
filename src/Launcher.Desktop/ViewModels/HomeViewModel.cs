@@ -74,6 +74,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private CancellationTokenSource? _downloadCancellation;
     private CancellationTokenSource? _runtimeDownloadCancellation;
     private LlamaRuntimeInfo? _bestRuntime;
+    private string? _lastRuntimeVersionSource;
     private double? _lastGpuUsedGb;
     private double? _lastGpuTotalGb;
     private AgentKind _selectedAgent = AgentKind.Kilo;
@@ -679,6 +680,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         PortStatus = snapshot.PortText;
         RuntimeStatus = snapshot.RuntimeText;
         _bestRuntime = snapshot.BestRuntime;
+        _lastRuntimeVersionSource = snapshot.BestRuntime?.ExecutablePath ?? _lastRuntimeVersionSource;
         _lastGpuUsedGb = snapshot.UsedGpuGb;
         _lastGpuTotalGb = snapshot.TotalGpuGb;
         OnPropertyChanged(nameof(GpuStatus));
@@ -815,7 +817,7 @@ public sealed partial class HomeViewModel : ViewModelBase
             return RuntimeArchivePath;
         }
 
-        return _bestRuntime?.ExecutablePath ?? "";
+        return _bestRuntime?.ExecutablePath ?? _lastRuntimeVersionSource ?? "";
     }
 
     [RelayCommand]
@@ -953,6 +955,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     {
         if (result.Installed && !string.IsNullOrWhiteSpace(result.ExecutablePath))
         {
+            _lastRuntimeVersionSource = result.ExecutablePath;
             _bestRuntime = new LlamaRuntimeInfo(
                 result.ExecutablePath,
                 new LlamaServerCapabilities(
@@ -1028,6 +1031,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         ProjectsFolderPath = settings.ProjectsRoot ?? "не указана";
         RuntimeRootPath = settings.RuntimeRoot;
         RuntimeCacheRootPath = settings.DownloadsRoot;
+        _lastRuntimeVersionSource = settings.LastRuntimeVersionSource;
         OnPropertyChanged(nameof(ModelsFolderPath));
         OnPropertyChanged(nameof(ProjectsFolderPath));
         RefreshLocalModels();
@@ -1576,7 +1580,10 @@ public sealed partial class HomeViewModel : ViewModelBase
         DefaultPort: Port,
         Language: "ru",
         HelpMode: "pro",
-        Profiles: Presets.Select(preset => preset.Profile).ToArray());
+        Profiles: Presets.Select(preset => preset.Profile).ToArray())
+    {
+        LastRuntimeVersionSource = RuntimeVersionSource()
+    };
 
     private static string DefaultSettingsPath() => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

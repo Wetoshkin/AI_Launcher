@@ -131,6 +131,22 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task SaveCurrentPresetCommandPersistsDetectedRuntimeVersionSource()
+    {
+        var store = new MemorySettingsStore(null);
+        var executable = @"D:\AI\runtimes\b5300\llama-server.exe";
+        var viewModel = CreateViewModel(
+            settingsStore: store,
+            runtimeCatalog: new FakeRuntimeCatalog([Runtime(executable)]));
+
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+        await viewModel.SaveCurrentPresetCommand.ExecuteAsync(null);
+
+        Assert.NotNull(store.Saved);
+        Assert.Equal(executable, store.Saved.LastRuntimeVersionSource);
+    }
+
+    [Fact]
     public async Task InstallRuntimePackageCommandInstallsArchiveIntoRuntimeRoot()
     {
         var installer = new CapturingRuntimeInstaller(new RuntimePackageInstallResult(
@@ -313,6 +329,33 @@ public sealed class PresetViewModelTests
         viewModel.RuntimeArchivePath = "";
 
         await viewModel.CheckPortCommand.ExecuteAsync(null);
+        await viewModel.CheckRuntimeUpdateCommand.ExecuteAsync(null);
+
+        Assert.Equal("доступно обновление: b5300 -> b5400", viewModel.RuntimeUpdateStatus);
+    }
+
+    [Fact]
+    public async Task CheckRuntimeUpdateCommandUsesSavedRuntimeVersionSourceAfterSettingsLoad()
+    {
+        var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
+        var store = new MemorySettingsStore(new LauncherSettings(
+            ModelsRoot: @"D:\AI\Models",
+            ProjectsRoot: @"D:\AI\Projects",
+            RuntimeRoot: @"D:\AI\runtimes",
+            DownloadsRoot: @"D:\AI\downloads",
+            DefaultPort: 8080,
+            Language: "ru",
+            HelpMode: "pro",
+            Profiles: [])
+        {
+            LastRuntimeVersionSource = @"D:\AI\runtimes\b5300\llama-server.exe"
+        });
+        var viewModel = CreateViewModel(
+            settingsStore: store,
+            runtimeReleaseCatalog: new FakeRuntimeReleaseCatalog([package]));
+        viewModel.RuntimeArchivePath = "";
+
+        await viewModel.LoadSettingsCommand.ExecuteAsync(null);
         await viewModel.CheckRuntimeUpdateCommand.ExecuteAsync(null);
 
         Assert.Equal("доступно обновление: b5300 -> b5400", viewModel.RuntimeUpdateStatus);
