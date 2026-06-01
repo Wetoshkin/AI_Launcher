@@ -50,7 +50,10 @@ public sealed class ProfileSerializerTests
                     ContextTokens: 65536,
                     Port: 8080,
                     AntiLoopPresetId: "coding-safe")
-            ]);
+            ])
+        {
+            LastRuntimeVersionSource = @"D:\AI\runtimes\b5400\llama-server.exe"
+        };
 
         var json = ProfileSerializer.SerializeSettings(settings);
         var restored = ProfileSerializer.DeserializeSettings(json);
@@ -63,5 +66,6 @@ public sealed class ProfileSerializerTests
         Assert.Equal(settings.Language, restored.Language);
         Assert.Equal(settings.HelpMode, restored.HelpMode);
         Assert.Equal(settings.Profiles, restored.Profiles);
+        Assert.Equal(settings.LastRuntimeVersionSource, restored.LastRuntimeVersionSource);
     }
 }

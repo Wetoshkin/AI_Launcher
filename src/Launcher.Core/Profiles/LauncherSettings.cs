@@ -8,4 +8,7 @@ public sealed record LauncherSettings(
     int DefaultPort,
     string Language,
     string HelpMode,
-    IReadOnlyList<LaunchProfile> Profiles);
+    IReadOnlyList<LaunchProfile> Profiles)
+{
+    public string? LastRuntimeVersionSource { get; init; }
+}
