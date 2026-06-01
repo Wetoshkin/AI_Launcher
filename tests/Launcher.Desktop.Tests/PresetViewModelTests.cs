@@ -304,6 +304,21 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task CheckRuntimeUpdateCommandUsesDetectedRuntimeWhenArchivePathIsEmpty()
+    {
+        var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
+        var viewModel = CreateViewModel(
+            runtimeReleaseCatalog: new FakeRuntimeReleaseCatalog([package]),
+            runtimeCatalog: new FakeRuntimeCatalog([Runtime(@"D:\AI\runtimes\b5300\llama-server.exe")]));
+        viewModel.RuntimeArchivePath = "";
+
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+        await viewModel.CheckRuntimeUpdateCommand.ExecuteAsync(null);
+
+        Assert.Equal("доступно обновление: b5300 -> b5400", viewModel.RuntimeUpdateStatus);
+    }
+
+    [Fact]
     public void SelectedRuntimeReleaseProfileUpdatesRussianHint()
     {
         var viewModel = CreateViewModel();
@@ -427,9 +442,10 @@ public sealed class PresetViewModelTests
         IRuntimeReleaseCatalog? runtimeReleaseCatalog = null,
         IRuntimeReleaseDownloader? runtimeReleaseDownloader = null,
         IPortInspector? portInspector = null,
-        IPortReleaser? portReleaser = null) => new(
+        IPortReleaser? portReleaser = null,
+        ILlamaRuntimeCatalog? runtimeCatalog = null) => new(
         new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
-        new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+        new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector(), runtimeCatalog),
         new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
         new EmptyDownloadService(),
         settingsStore,
@@ -448,6 +464,15 @@ public sealed class PresetViewModelTests
         new Uri("https://github.com/runtime.zip"),
         sizeBytes,
         Prerelease: false);
+
+    private static LlamaRuntimeInfo Runtime(string executablePath) => new(
+        executablePath,
+        new LlamaServerCapabilities(
+            new HashSet<string>(),
+            new HashSet<string>(),
+            new HashSet<string>(),
+            SupportsTurboQuant: true,
+            SupportsMtp: false));
 
     private sealed class EmptyDownloadService : IHuggingFaceModelDownloadService
     {
@@ -486,6 +511,12 @@ public sealed class PresetViewModelTests
             LastProfile = profile;
             return Task.FromResult(packages);
         }
+    }
+
+    private sealed class FakeRuntimeCatalog(IReadOnlyList<LlamaRuntimeInfo> runtimes) : ILlamaRuntimeCatalog
+    {
+        public Task<IReadOnlyList<LlamaRuntimeInfo>> ScanAsync(IEnumerable<string> runtimeRoots, CancellationToken cancellationToken) =>
+            Task.FromResult(runtimes);
     }
 
     private sealed class FakeRuntimeReleaseDownloader(

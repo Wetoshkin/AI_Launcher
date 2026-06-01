@@ -795,7 +795,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         try
         {
             var packages = await _runtimeReleaseCatalog.ListPackagesAsync(SelectedRuntimeReleaseProfile, default);
-            var result = RuntimeUpdateService.Check(RuntimeArchivePath, packages);
+            var result = RuntimeUpdateService.Check(RuntimeVersionSource(), packages);
             RuntimeUpdateStatus = result.Message;
             OnPropertyChanged(nameof(RuntimeUpdateStatus));
             SetStatus($"Проверка обновления runtime: {result.Message}");
@@ -806,6 +806,16 @@ public sealed partial class HomeViewModel : ViewModelBase
             OnPropertyChanged(nameof(RuntimeUpdateStatus));
             SetStatus($"Не удалось проверить обновление runtime: {ex.Message}");
         }
+    }
+
+    private string RuntimeVersionSource()
+    {
+        if (!string.IsNullOrWhiteSpace(RuntimeArchivePath))
+        {
+            return RuntimeArchivePath;
+        }
+
+        return _bestRuntime?.ExecutablePath ?? "";
     }
 
     [RelayCommand]
