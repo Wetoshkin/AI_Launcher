@@ -62,7 +62,9 @@ public sealed partial class HomeViewModel : ViewModelBase
     private RemoteModelRowViewModel? _selectedRemoteModel;
     private RemoteGgufDownloadOptionRowViewModel? _selectedRemoteDownloadOption;
     private bool _isDownloading;
+    private bool _isRuntimeDownloading;
     private CancellationTokenSource? _downloadCancellation;
+    private CancellationTokenSource? _runtimeDownloadCancellation;
     private LlamaRuntimeInfo? _bestRuntime;
     private double? _lastGpuUsedGb;
     private double? _lastGpuTotalGb;
@@ -264,6 +266,21 @@ public sealed partial class HomeViewModel : ViewModelBase
             }
 
             _isDownloading = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsRuntimeDownloading
+    {
+        get => _isRuntimeDownloading;
+        private set
+        {
+            if (_isRuntimeDownloading == value)
+            {
+                return;
+            }
+
+            _isRuntimeDownloading = value;
             OnPropertyChanged();
         }
     }
@@ -738,21 +755,47 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         SetStatus($"Скачиваю runtime: {SelectedRuntimeReleasePackage.Package.AssetName}...");
+        IsRuntimeDownloading = true;
+        _runtimeDownloadCancellation?.Dispose();
+        _runtimeDownloadCancellation = new CancellationTokenSource();
         try
         {
             var result = await _runtimeReleaseDownloader.DownloadAsync(
                 new RuntimeReleaseDownloadRequest(SelectedRuntimeReleasePackage.Package, RuntimeCacheRootPath),
-                default,
+                _runtimeDownloadCancellation.Token,
                 UpdateRuntimeDownloadProgress);
             RuntimeArchivePath = result.ArchivePath;
             SetStatus($"Runtime скачан: {result.Message}");
             return result;
+        }
+        catch (OperationCanceledException)
+        {
+            SetStatus("Скачивание runtime отменено.");
+            return null;
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException or UnauthorizedAccessException)
         {
             SetStatus($"Не удалось скачать runtime: {ex.Message}");
             return null;
         }
+        finally
+        {
+            IsRuntimeDownloading = false;
+            _runtimeDownloadCancellation?.Dispose();
+            _runtimeDownloadCancellation = null;
+        }
+    }
+
+    [RelayCommand]
+    private void CancelRuntimeDownload()
+    {
+        if (!IsRuntimeDownloading)
+        {
+            SetStatus("Активной загрузки runtime нет.");
+            return;
+        }
+
+        _runtimeDownloadCancellation?.Cancel();
     }
 
     [RelayCommand]
