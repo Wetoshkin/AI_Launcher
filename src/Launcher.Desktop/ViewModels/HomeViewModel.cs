@@ -1206,7 +1206,9 @@ public sealed partial class HomeViewModel : ViewModelBase
             ? BuildServerPlan(profile)
             : BuildAgentPlan(profile);
         _lastLaunchPlan = plan;
-        var preview = LaunchPlanFormatter.Format(plan);
+        var preview = profile.Mode == LaunchMode.Agent
+            ? BuildAgentScenarioPreview(profile)
+            : LaunchPlanFormatter.Format(plan);
 
         LaunchCommandPreview = preview.CommandLine;
         OnPropertyChanged(nameof(LaunchCommandPreview));
@@ -1231,6 +1233,22 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         SetStatus("Команда запуска собрана. Проверьте её перед стартом.");
+    }
+
+    private LaunchPlanPreview BuildAgentScenarioPreview(LaunchProfile profile)
+    {
+        var serverProfile = profile with { Mode = LaunchMode.Endpoint, Agent = AgentKind.None };
+        var serverPreview = LaunchPlanFormatter.Format(BuildServerPlan(serverProfile));
+        var agentPreview = LaunchPlanFormatter.Format(BuildAgentPlan(profile));
+        var commandLine = string.Join(
+            Environment.NewLine,
+            $"SERVER: {serverPreview.CommandLine}",
+            $"AGENT: {agentPreview.CommandLine}");
+        var environmentLines = serverPreview.EnvironmentLines.Select(line => $"SERVER: {line}")
+            .Concat(agentPreview.EnvironmentLines.Select(line => $"AGENT: {line}"))
+            .ToArray();
+
+        return new LaunchPlanPreview(commandLine, environmentLines);
     }
 
     [RelayCommand]
