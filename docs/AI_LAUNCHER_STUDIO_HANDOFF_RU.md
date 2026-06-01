@@ -68,7 +68,8 @@
   - в GUI есть прогресс runtime download и отмена активного скачивания;
   - папки установки runtime и кэша выбираются через folder picker;
   - runtime root/cache сохраняются и загружаются из settings.
-  - update-check работает не только от выбранного zip-архива, но и от обнаруженного `llama-server.exe`, если путь содержит build tag вроде `b5300`.
+  - update-check работает не только от выбранного zip-архива, но и от обнаруженного `llama-server.exe`, если путь содержит build tag вроде `b5300`;
+  - источник версии runtime сохраняется в settings как `lastRuntimeVersionSource` и переживает перезапуск.
 - В launch review добавлена оценка памяти:
   - веса GGUF;
   - KV-cache по выбранному контексту/runtime;
@@ -115,7 +116,7 @@
 
 - Доработать runtime downloader/update manager:
   - добавить явный выбор источника/канала runtime;
-  - сохранять последнюю установленную версию runtime в settings, чтобы update-check не зависел только от имени папки/архива.
+  - показывать last installed/runtime version source в GUI явно, а не только в статусной строке.
 - Вынести большой `HomeViewModel` на отдельные VM/экраны: Dashboard, Launch, Models, Runtimes, Agents, Logs, Settings.
 - Довести tabs/navigation до отдельных view model и отдельных XAML views.
 - Добавить остальные speculative decoding параметры как полноценные controls.
@@ -212,6 +213,7 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
 - `c65b568 feat(desktop): clear process log`
 - `f01d061 build(desktop): add portable zip package script`
 - `2b211e2 fix(desktop): check updates for detected runtime`
+- `de2221a feat(desktop): persist runtime version source`
 
 ## Рекомендованный следующий срез для второго агента
 
@@ -226,6 +228,6 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
    - missing CLI/runtime/model.
 3. Улучшить runtime downloader:
    - channel/source в GUI;
-   - сохранять установленную версию runtime в settings;
+   - явно отображать установленную/сохранённую версию runtime;
    - подписи/подсказки к CPU/CUDA/Vulkan/ROCm профилям.
 4. Запустить полный `dotnet build` + `dotnet test`, затем проверить CI в GitHub Actions.
