@@ -10,6 +10,8 @@ public sealed class ProcessStarter : IProcessStarter
         {
             UseShellExecute = false,
             CreateNoWindow = true,
+            RedirectStandardOutput = request.OutputReceived is not null,
+            RedirectStandardError = request.OutputReceived is not null,
             WorkingDirectory = request.WorkingDirectory ?? Environment.CurrentDirectory
         };
 
@@ -25,6 +27,33 @@ public sealed class ProcessStarter : IProcessStarter
 
         var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException($"Не удалось запустить {request.Executable}.");
+        if (request.OutputReceived is not null)
+        {
+            _ = Task.Run(async () => await ReadProcessOutputAsync(process, request.OutputReceived, cancellationToken), cancellationToken);
+        }
+
         return Task.FromResult(new ProcessStartResult(process.Id));
+    }
+
+    private static async Task ReadProcessOutputAsync(
+        Process process,
+        Action<string> outputReceived,
+        CancellationToken cancellationToken)
+    {
+        async Task ReadStreamAsync(StreamReader reader, string prefix)
+        {
+            while (!reader.EndOfStream && !cancellationToken.IsCancellationRequested)
+            {
+                var line = await reader.ReadLineAsync(cancellationToken);
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    outputReceived($"{prefix}{line}");
+                }
+            }
+        }
+
+        await Task.WhenAll(
+            ReadStreamAsync(process.StandardOutput, ""),
+            ReadStreamAsync(process.StandardError, "ERR: "));
     }
 }

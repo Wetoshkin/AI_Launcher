@@ -70,6 +70,24 @@ public sealed class RuntimeCompatibilityFlowTests
         Assert.Equal("Процесс 3210 остановлен.", viewModel.StatusMessage);
     }
 
+    [Fact]
+    public async Task StartLaunchAppendsProcessOutputToLog()
+    {
+        using var temp = new TempDirectory();
+        var starter = new CountingProcessStarter(processId: 3210, outputLine: "llama server listening");
+        var viewModel = CreateViewModel(
+            Runtime(supportsMtp: false, supportsTurboQuant: true),
+            starter,
+            temp.Path);
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        Assert.Contains("llama server listening", viewModel.ProcessLogLines);
+    }
+
     private static HomeViewModel CreateViewModel(
         LlamaRuntimeInfo runtime,
         CountingProcessStarter? starter = null,
@@ -149,13 +167,18 @@ public sealed class RuntimeCompatibilityFlowTests
             Task.FromResult(new PortReleaseResult(Released: false, "не требуется"));
     }
 
-    private sealed class CountingProcessStarter(int processId = 123) : IProcessStarter
+    private sealed class CountingProcessStarter(int processId = 123, string? outputLine = null) : IProcessStarter
     {
         public int StartCount { get; private set; }
 
         public Task<ProcessStartResult> StartAsync(ProcessStartRequest request, CancellationToken cancellationToken)
         {
             StartCount++;
+            if (outputLine is not null)
+            {
+                request.OutputReceived?.Invoke(outputLine);
+            }
+
             return Task.FromResult(new ProcessStartResult(processId));
         }
     }
