@@ -298,6 +298,10 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public string RuntimeUpdateStatus { get; private set; } = "Обновление runtime: не проверялось.";
 
+    public string RuntimeVersionSourceText => string.IsNullOrWhiteSpace(RuntimeVersionSource())
+        ? "Источник версии runtime: не определён"
+        : $"Источник версии runtime: {RuntimeVersionSource()}";
+
     public bool IsDownloading
     {
         get => _isDownloading;
@@ -686,6 +690,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         OnPropertyChanged(nameof(GpuStatus));
         OnPropertyChanged(nameof(PortStatus));
         OnPropertyChanged(nameof(RuntimeStatus));
+        OnPropertyChanged(nameof(RuntimeVersionSourceText));
         RefreshLaunchReview();
         SetStatus(snapshot.IsPortFree
             ? "Окружение проверено: порт свободен."
@@ -968,6 +973,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         RuntimeStatus = $"runtime: {result.Message}";
         OnPropertyChanged(nameof(RuntimeStatus));
+        OnPropertyChanged(nameof(RuntimeVersionSourceText));
     }
 
     [RelayCommand]
@@ -1034,6 +1040,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         _lastRuntimeVersionSource = settings.LastRuntimeVersionSource;
         OnPropertyChanged(nameof(ModelsFolderPath));
         OnPropertyChanged(nameof(ProjectsFolderPath));
+        OnPropertyChanged(nameof(RuntimeVersionSourceText));
         RefreshLocalModels();
 
         if (settings.Profiles.Count > 0)

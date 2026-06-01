@@ -362,6 +362,28 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task LoadSettingsCommandShowsSavedRuntimeVersionSource()
+    {
+        var store = new MemorySettingsStore(new LauncherSettings(
+            ModelsRoot: @"D:\AI\Models",
+            ProjectsRoot: @"D:\AI\Projects",
+            RuntimeRoot: @"D:\AI\runtimes",
+            DownloadsRoot: @"D:\AI\downloads",
+            DefaultPort: 8080,
+            Language: "ru",
+            HelpMode: "pro",
+            Profiles: [])
+        {
+            LastRuntimeVersionSource = @"D:\AI\runtimes\b5300\llama-server.exe"
+        });
+        var viewModel = CreateViewModel(settingsStore: store);
+
+        await viewModel.LoadSettingsCommand.ExecuteAsync(null);
+
+        Assert.Equal(@"Источник версии runtime: D:\AI\runtimes\b5300\llama-server.exe", viewModel.RuntimeVersionSourceText);
+    }
+
+    [Fact]
     public void SelectedRuntimeReleaseProfileUpdatesRussianHint()
     {
         var viewModel = CreateViewModel();
