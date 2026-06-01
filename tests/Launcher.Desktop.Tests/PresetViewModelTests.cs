@@ -210,6 +210,36 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task DownloadAndInstallSelectedRuntimeReleaseCommandInstallsDownloadedArchive()
+    {
+        var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
+        var downloader = new FakeRuntimeReleaseDownloader(
+            new RuntimeReleaseDownloadResult(@"D:\AI\cache\b5400\llama.zip", Downloaded: true, Skipped: false, "архив скачан"));
+        var installer = new CapturingRuntimeInstaller(new RuntimePackageInstallResult(
+            Installed: true,
+            InstallDirectory: @"D:\AI\runtimes\llama",
+            ExecutablePath: @"D:\AI\runtimes\llama\llama-server.exe",
+            Message: "llama-server.exe найден"));
+        var viewModel = CreateViewModel(
+            runtimePackageInstaller: installer,
+            runtimeReleaseDownloader: downloader);
+        var row = new RuntimeReleasePackageRowViewModel(package);
+        viewModel.RuntimeReleasePackages.Add(row);
+        viewModel.SelectedRuntimeReleasePackage = row;
+        viewModel.RuntimeCacheRootPath = @"D:\AI\cache";
+        viewModel.RuntimeRootPath = @"D:\AI\runtimes";
+
+        await viewModel.DownloadAndInstallSelectedRuntimeReleaseCommand.ExecuteAsync(null);
+
+        Assert.NotNull(installer.LastRequest);
+        Assert.Equal(@"D:\AI\cache\b5400\llama.zip", installer.LastRequest.ArchivePath);
+        Assert.Equal(@"D:\AI\runtimes", installer.LastRequest.RuntimeRoot);
+        Assert.Equal("llama", installer.LastRequest.RuntimeId);
+        Assert.Equal("runtime: llama-server.exe найден", viewModel.RuntimeStatus);
+        Assert.Equal("Runtime скачан и установлен: llama-server.exe найден", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public void AgentCliStatusRowShowsRussianMissingPath()
     {
         var row = new AgentCliStatusRowViewModel(new Launcher.Agents.Discovery.AgentCliStatus(

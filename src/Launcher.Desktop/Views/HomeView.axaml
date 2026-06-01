@@ -284,6 +284,8 @@
                     Command="{Binding SearchRuntimeReleasesCommand}"/>
             <Button Content="Скачать выбранный"
                     Command="{Binding DownloadSelectedRuntimeReleaseCommand}"/>
+            <Button Content="Скачать и установить"
+                    Command="{Binding DownloadAndInstallSelectedRuntimeReleaseCommand}"/>
             <Button Content="Установить runtime"
                     Command="{Binding InstallRuntimePackageCommand}"
                     Background="#FF9B35"

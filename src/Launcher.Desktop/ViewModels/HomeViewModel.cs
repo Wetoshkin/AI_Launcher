@@ -631,10 +631,42 @@ public sealed partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private async Task DownloadSelectedRuntimeReleaseAsync()
     {
+        _ = await DownloadSelectedRuntimeReleaseArchiveAsync();
+    }
+
+    [RelayCommand]
+    private async Task DownloadAndInstallSelectedRuntimeReleaseAsync()
+    {
+        var download = await DownloadSelectedRuntimeReleaseArchiveAsync();
+        if (download is null)
+        {
+            return;
+        }
+
+        var runtimeId = Path.GetFileNameWithoutExtension(download.ArchivePath);
+        try
+        {
+            var result = await _runtimePackageInstaller.InstallAsync(
+                new RuntimePackageInstallRequest(download.ArchivePath, RuntimeRootPath, runtimeId),
+                default);
+            RuntimeStatus = $"runtime: {result.Message}";
+            OnPropertyChanged(nameof(RuntimeStatus));
+            SetStatus(result.Installed
+                ? $"Runtime скачан и установлен: {result.Message}"
+                : $"Runtime скачан, но не готов: {result.Message}");
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            SetStatus($"Runtime скачан, но установка не удалась: {ex.Message}");
+        }
+    }
+
+    private async Task<RuntimeReleaseDownloadResult?> DownloadSelectedRuntimeReleaseArchiveAsync()
+    {
         if (SelectedRuntimeReleasePackage is null)
         {
             SetStatus("Выберите runtime-пакет для скачивания.");
-            return;
+            return null;
         }
 
         SetStatus($"Скачиваю runtime: {SelectedRuntimeReleasePackage.Package.AssetName}...");
@@ -645,10 +677,12 @@ public sealed partial class HomeViewModel : ViewModelBase
                 default);
             RuntimeArchivePath = result.ArchivePath;
             SetStatus($"Runtime скачан: {result.Message}");
+            return result;
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException or UnauthorizedAccessException)
         {
             SetStatus($"Не удалось скачать runtime: {ex.Message}");
+            return null;
         }
     }
 
