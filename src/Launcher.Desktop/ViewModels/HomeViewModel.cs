@@ -833,6 +833,8 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         ModelsFolderPath = settings.ModelsRoot;
         ProjectsFolderPath = settings.ProjectsRoot ?? "не указана";
+        RuntimeRootPath = settings.RuntimeRoot;
+        RuntimeCacheRootPath = settings.DownloadsRoot;
         OnPropertyChanged(nameof(ModelsFolderPath));
         OnPropertyChanged(nameof(ProjectsFolderPath));
         RefreshLocalModels();
@@ -1195,11 +1197,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     private LauncherSettings BuildSettingsSnapshot() => new(
         ModelsFolderPath == "не указана" ? _defaultModelsDirectory : ModelsFolderPath,
         ProjectsFolderPath == "не указана" ? null : ProjectsFolderPath,
-        RuntimeRoot: @"D:\AI\runtimes",
-        DownloadsRoot: Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "AI Launcher Studio",
-            "downloads"),
+        RuntimeRoot: RuntimeRootPath,
+        DownloadsRoot: RuntimeCacheRootPath,
         DefaultPort: Port,
         Language: "ru",
         HelpMode: "pro",
