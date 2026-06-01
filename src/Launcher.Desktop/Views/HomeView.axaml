@@ -309,6 +309,8 @@
                       MinWidth="110"/>
             <Button Content="Найти runtime"
                     Command="{Binding SearchRuntimeReleasesCommand}"/>
+            <Button Content="Проверить обновление"
+                    Command="{Binding CheckRuntimeUpdateCommand}"/>
             <Button Content="Скачать выбранный"
                     Command="{Binding DownloadSelectedRuntimeReleaseCommand}"/>
             <Button Content="Скачать и установить"
@@ -328,6 +330,9 @@
                        Height="8"/>
           <TextBlock Text="{Binding RuntimeDownloadProgressText}"
                      Foreground="#765A36"
+                     FontSize="12"/>
+          <TextBlock Text="{Binding RuntimeUpdateStatus}"
+                     Foreground="#20677A"
                      FontSize="12"/>
           <ListBox ItemsSource="{Binding RuntimeReleasePackages}"
                    SelectedItem="{Binding SelectedRuntimeReleasePackage}"

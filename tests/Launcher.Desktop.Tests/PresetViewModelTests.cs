@@ -222,6 +222,20 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task CheckRuntimeUpdateCommandReportsAvailableUpdate()
+    {
+        var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
+        var viewModel = CreateViewModel(runtimeReleaseCatalog: new FakeRuntimeReleaseCatalog([package]));
+        viewModel.RuntimeArchivePath = @"D:\AI\cache\b5300\llama-b5300-bin-win-cuda-x64.zip";
+        viewModel.SelectedRuntimeReleaseProfile = RuntimeReleaseProfile.Cuda;
+
+        await viewModel.CheckRuntimeUpdateCommand.ExecuteAsync(null);
+
+        Assert.Equal("доступно обновление: b5300 -> b5400", viewModel.RuntimeUpdateStatus);
+        Assert.Equal("Проверка обновления runtime: доступно обновление: b5300 -> b5400", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public async Task DownloadSelectedRuntimeReleaseCommandStoresDownloadedArchivePath()
     {
         var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
