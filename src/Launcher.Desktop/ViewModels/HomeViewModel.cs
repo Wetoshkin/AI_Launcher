@@ -46,7 +46,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly RuntimeStartCoordinator _runtimeStartCoordinator;
     private readonly IProcessStopper _processStopper;
     private LaunchPlan? _lastLaunchPlan;
-    private int? _activeProcessId;
+    private readonly List<int> _activeProcessIds = [];
     private IReadOnlyList<LocalModelFile> _allModels = [];
     private LaunchWizardState _wizardState;
     private string _modelSearchText = "";
@@ -1184,7 +1184,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     {
         var profile = BuildDraftProfile();
         var plan = profile.Mode == LaunchMode.Endpoint
-            ? LlamaServerCommandBuilder.Build(profile, BuildSelectedDecodingPreset())
+            ? BuildServerPlan(profile)
             : BuildAgentPlan(profile);
         _lastLaunchPlan = plan;
         var preview = LaunchPlanFormatter.Format(plan);
@@ -1243,22 +1243,57 @@ public sealed partial class HomeViewModel : ViewModelBase
             return;
         }
 
-        var workingDirectory = profile.Mode == LaunchMode.Agent ? profile.ProjectPath : null;
         ProcessLogLines.Clear();
+        _activeProcessIds.Clear();
+        var result = profile.Mode == LaunchMode.Agent
+            ? await StartAgentScenarioAsync(profile)
+            : await StartSinglePlanAsync(_lastLaunchPlan, profile.Port, workingDirectory: null);
+        if (!result.Started)
+        {
+            SetStatus(string.Join(" ", result.Messages));
+            return;
+        }
+
+        ActiveProcessStatus = _activeProcessIds.Count == 0
+            ? "процесс: запуск завершён"
+            : $"процесс: запущен, PID {string.Join(", ", _activeProcessIds)}";
+        OnPropertyChanged(nameof(ActiveProcessStatus));
+        SetStatus(string.Join(" ", result.Messages));
+    }
+
+    private async Task<RuntimeStartResult> StartAgentScenarioAsync(LaunchProfile profile)
+    {
+        var messages = new List<string>();
+        var serverProfile = profile with { Mode = LaunchMode.Endpoint, Agent = AgentKind.None };
+        var serverResult = await StartSinglePlanAsync(BuildServerPlan(serverProfile), profile.Port, workingDirectory: null);
+        messages.AddRange(serverResult.Messages);
+        if (!serverResult.Started)
+        {
+            return new RuntimeStartResult(false, null, messages);
+        }
+
+        var agentResult = await StartSinglePlanAsync(BuildAgentPlan(profile), profile.Port, profile.ProjectPath);
+        messages.AddRange(agentResult.Messages);
+        return new RuntimeStartResult(agentResult.Started, agentResult.ProcessId, messages);
+    }
+
+    private async Task<RuntimeStartResult> StartSinglePlanAsync(
+        LaunchPlan plan,
+        int port,
+        string? workingDirectory)
+    {
         var result = await _runtimeStartCoordinator.StartAsync(
-            _lastLaunchPlan,
-            profile.Port,
+            plan,
+            port,
             workingDirectory,
             default,
             AppendProcessLogLine);
         if (result.Started && result.ProcessId is not null)
         {
-            _activeProcessId = result.ProcessId;
-            ActiveProcessStatus = $"процесс: запущен, PID {result.ProcessId}";
-            OnPropertyChanged(nameof(ActiveProcessStatus));
+            _activeProcessIds.Add(result.ProcessId.Value);
         }
 
-        SetStatus(string.Join(" ", result.Messages));
+        return result;
     }
 
     private void AppendProcessLogLine(string line)
@@ -1280,22 +1315,23 @@ public sealed partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private async Task StopLaunchAsync()
     {
-        if (_activeProcessId is null)
+        if (_activeProcessIds.Count == 0)
         {
             SetStatus("Активный процесс не запущен.");
             return;
         }
 
-        var processId = _activeProcessId.Value;
-        var result = await _processStopper.StopAsync(processId, default);
-        if (result.Stopped)
+        var messages = new List<string>();
+        foreach (var processId in _activeProcessIds.AsEnumerable().Reverse().ToArray())
         {
-            _activeProcessId = null;
-            ActiveProcessStatus = "процесс: остановлен";
-            OnPropertyChanged(nameof(ActiveProcessStatus));
+            var result = await _processStopper.StopAsync(processId, default);
+            messages.Add(result.Message);
         }
 
-        SetStatus(result.Message);
+        _activeProcessIds.Clear();
+        ActiveProcessStatus = "процесс: остановлен";
+        OnPropertyChanged(nameof(ActiveProcessStatus));
+        SetStatus(string.Join(" ", messages));
     }
 
     private LaunchProfile BuildDraftProfile() => new(
@@ -1309,6 +1345,14 @@ public sealed partial class HomeViewModel : ViewModelBase
             ContextTokens: ContextTokens,
             Port: Port,
             AntiLoopPresetId: SelectedDecodingPreset.Id);
+
+    private LaunchPlan BuildServerPlan(LaunchProfile profile)
+    {
+        var plan = LlamaServerCommandBuilder.Build(profile, BuildSelectedDecodingPreset());
+        return _bestRuntime is null
+            ? plan
+            : plan with { Executable = _bestRuntime.ExecutablePath };
+    }
 
     private static LaunchPlan BuildAgentPlan(LaunchProfile profile)
     {

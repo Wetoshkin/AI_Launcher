@@ -32,6 +32,20 @@ public sealed class RuntimeCompatibilityFlowTests
     }
 
     [Fact]
+    public async Task BuildLaunchCommandUsesDetectedRuntimeExecutablePath()
+    {
+        using var temp = new TempDirectory();
+        var viewModel = CreateViewModel(Runtime(supportsMtp: false, supportsTurboQuant: true), modelsDirectory: temp.Path);
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+        viewModel.BuildLaunchCommandCommand.Execute(null);
+
+        Assert.Contains(@"D:\AI\runtimes\llama-server.exe", viewModel.LaunchCommandPreview);
+    }
+
+    [Fact]
     public async Task StartLaunchBlocksIncompatibleRuntimeBeforeProcessStart()
     {
         using var temp = new TempDirectory();
@@ -86,6 +100,28 @@ public sealed class RuntimeCompatibilityFlowTests
         await viewModel.StartLaunchCommand.ExecuteAsync(null);
 
         Assert.Contains("llama server listening", viewModel.ProcessLogLines);
+    }
+
+    [Fact]
+    public async Task AgentLaunchStartsServerBeforeAgentCli()
+    {
+        using var temp = new TempDirectory();
+        var starter = new CountingProcessStarter(processIds: [3100, 3200]);
+        var viewModel = CreateViewModel(
+            Runtime(supportsMtp: false, supportsTurboQuant: true),
+            starter,
+            temp.Path);
+        viewModel.SelectAgentModeCommand.Execute(null);
+        viewModel.FolderPicker = new FixedFolderPicker(temp.Path);
+        await viewModel.ChooseProjectsFolderCommand.ExecuteAsync(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        Assert.Equal(2, starter.Requests.Count);
+        Assert.Equal(@"D:\AI\runtimes\llama-server.exe", starter.Requests[0].Executable);
+        Assert.Equal("kilo", starter.Requests[1].Executable);
     }
 
     private static HomeViewModel CreateViewModel(
@@ -167,19 +203,24 @@ public sealed class RuntimeCompatibilityFlowTests
             Task.FromResult(new PortReleaseResult(Released: false, "не требуется"));
     }
 
-    private sealed class CountingProcessStarter(int processId = 123, string? outputLine = null) : IProcessStarter
+    private sealed class CountingProcessStarter(int processId = 123, string? outputLine = null, IReadOnlyList<int>? processIds = null) : IProcessStarter
     {
         public int StartCount { get; private set; }
+        public List<ProcessStartRequest> Requests { get; } = [];
 
         public Task<ProcessStartResult> StartAsync(ProcessStartRequest request, CancellationToken cancellationToken)
         {
             StartCount++;
+            Requests.Add(request);
             if (outputLine is not null)
             {
                 request.OutputReceived?.Invoke(outputLine);
             }
 
-            return Task.FromResult(new ProcessStartResult(processId));
+            var selectedProcessId = processIds is not null && StartCount <= processIds.Count
+                ? processIds[StartCount - 1]
+                : processId;
+            return Task.FromResult(new ProcessStartResult(selectedProcessId));
         }
     }
 
