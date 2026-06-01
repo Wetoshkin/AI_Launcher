@@ -24,6 +24,14 @@ start-ai-launcher-studio.bat
 dotnet run --project src\Launcher.Desktop\Launcher.Desktop.csproj --no-restore
 ```
 
+Чтобы собрать обычную Windows-папку с `Launcher.Desktop.exe`, запустите:
+
+```bat
+publish-ai-launcher-studio.bat
+```
+
+Готовая сборка появится в `publish\AI-Launcher-Studio-win-x64`.
+
 ## Возможности
 
 ### Настройка сервера
