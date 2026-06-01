@@ -77,6 +77,15 @@
   - диапазон 1..16;
   - значение подставляется в команду `llama-server`;
   - подсказка объясняет компромисс скорость/стабильность.
+- Добавлены GUI-контролы KV cache:
+  - отдельный выбор `--cache-type-k` и `--cache-type-v`;
+  - TurboQuant default: `q8_0/turbo4`;
+  - обычный llama.cpp default: `q8_0/q8_0`;
+  - forecast памяти использует выбранные K/V типы.
+- Нижняя часть GUI разбита на вкладки:
+  - `Runtime`;
+  - `Агенты`;
+  - `Модели` с локальным каталогом и Hugging Face поиском.
 - Добавлена публикация Windows portable build:
   - `publish-ai-launcher-studio.bat`;
   - проверен старт опубликованного `Launcher.Desktop.exe`.
@@ -105,8 +114,8 @@
   - добавить явный выбор источника/канала runtime;
   - добавить update-check для уже установленного runtime.
 - Вынести большой `HomeViewModel` на отдельные VM/экраны: Dashboard, Launch, Models, Runtimes, Agents, Logs, Settings.
-- Сделать реальные tabs/navigation вместо текущего длинного dashboard.
-- Добавить настройку KV cache и остальные speculative decoding параметры как полноценные controls.
+- Довести tabs/navigation до отдельных view model и отдельных XAML views.
+- Добавить остальные speculative decoding параметры как полноценные controls.
 - Улучшить VRAM forecast до per-GPU панели и учитывать K/V cache типы из GUI, когда они появятся.
 - Добавить end-to-end smoke tests запуска:
   - endpoint-only llama-server;
@@ -194,12 +203,14 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
 - `c7354d7 fix(desktop): activate installed runtime`
 - `71ea0f5 fix(agents): align local model ids`
 - `2f366b9 feat(desktop): show full agent launch preview`
+- `b7c4c9e ci: add desktop build workflow`
+- `104f331 feat(desktop): control kv cache types`
 
 ## Рекомендованный следующий срез для второго агента
 
 1. Довести Launch UI до production-качества:
-   - вынести длинный dashboard в tabs/navigation;
-   - добавить полноценные controls для KV cache (`-ctk`, `-ctv`) и speculative decoding;
+   - вынести текущие вкладки в отдельные views/view models;
+   - добавить полноценные controls для speculative decoding;
    - добавить очистку лога и сохранение последнего launch log.
 2. Добавить end-to-end smoke tests:
    - endpoint-only с тестовым `llama-server` stub;
