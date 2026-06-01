@@ -43,7 +43,9 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly IPortReleaser _portReleaser;
     private readonly RuntimeDashboardService _runtimeDashboardService;
     private readonly RuntimeStartCoordinator _runtimeStartCoordinator;
+    private readonly IProcessStopper _processStopper;
     private LaunchPlan? _lastLaunchPlan;
+    private int? _activeProcessId;
     private IReadOnlyList<LocalModelFile> _allModels = [];
     private LaunchWizardState _wizardState;
     private string _modelSearchText = "";
@@ -107,7 +109,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         IRuntimeReleaseCatalog? runtimeReleaseCatalog = null,
         IRuntimeReleaseDownloader? runtimeReleaseDownloader = null,
         IPortInspector? portInspector = null,
-        IPortReleaser? portReleaser = null)
+        IPortReleaser? portReleaser = null,
+        IProcessStopper? processStopper = null)
     {
         _huggingFaceClient = huggingFaceClient;
         _modelDownloadService = modelDownloadService;
@@ -120,6 +123,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         _portReleaser = portReleaser ?? new PortReleaseService(new ProcessCommandRunner());
         _runtimeDashboardService = runtimeDashboardService;
         _runtimeStartCoordinator = runtimeStartCoordinator;
+        _processStopper = processStopper ?? new ProcessStopper();
         _wizardState = LaunchWizardState.ForScenario(new LaunchScenario(
             LaunchMode.Agent,
             AgentKind.Kilo,
@@ -146,6 +150,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     public string RuntimeStatus { get; private set; } = "runtime: требуется проверка";
 
     public string PortStatus { get; private set; } = "порт 8080: проверить";
+
+    public string ActiveProcessStatus { get; private set; } = "процесс: не запущен";
 
     public string ModelsFolderPath { get; private set; }
 
@@ -1236,7 +1242,35 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         var workingDirectory = profile.Mode == LaunchMode.Agent ? profile.ProjectPath : null;
         var result = await _runtimeStartCoordinator.StartAsync(_lastLaunchPlan, profile.Port, workingDirectory, default);
+        if (result.Started && result.ProcessId is not null)
+        {
+            _activeProcessId = result.ProcessId;
+            ActiveProcessStatus = $"процесс: запущен, PID {result.ProcessId}";
+            OnPropertyChanged(nameof(ActiveProcessStatus));
+        }
+
         SetStatus(string.Join(" ", result.Messages));
+    }
+
+    [RelayCommand]
+    private async Task StopLaunchAsync()
+    {
+        if (_activeProcessId is null)
+        {
+            SetStatus("Активный процесс не запущен.");
+            return;
+        }
+
+        var processId = _activeProcessId.Value;
+        var result = await _processStopper.StopAsync(processId, default);
+        if (result.Stopped)
+        {
+            _activeProcessId = null;
+            ActiveProcessStatus = "процесс: остановлен";
+            OnPropertyChanged(nameof(ActiveProcessStatus));
+        }
+
+        SetStatus(result.Message);
     }
 
     private LaunchProfile BuildDraftProfile() => new(
