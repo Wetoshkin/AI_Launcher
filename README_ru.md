@@ -8,6 +8,22 @@
 
 Создано с использованием [Avalonia UI](https://avaloniaui.net/) и .NET 8.
 
+## Быстрый запуск AI Launcher Studio
+
+Новая GUI-оболочка находится в `src/Launcher.Desktop`.
+
+На Windows можно запустить приложение двойным кликом по:
+
+```bat
+start-ai-launcher-studio.bat
+```
+
+Или из терминала:
+
+```powershell
+dotnet run --project src\Launcher.Desktop\Launcher.Desktop.csproj --no-restore
+```
+
 ## Возможности
 
 ### Настройка сервера
