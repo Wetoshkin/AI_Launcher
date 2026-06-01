@@ -13,6 +13,44 @@ namespace Launcher.Desktop.Tests;
 public sealed class HomeViewModelDownloadTests
 {
     [Fact]
+    public async Task SearchHuggingFaceCommandFiltersRemoteModelsBySelectedQuant()
+    {
+        var handler = new JsonHttpHandler("""
+        [
+          {
+            "id": "unsloth/Qwen3-Coder-GGUF",
+            "downloads": 100,
+            "likes": 10,
+            "tags": ["gguf"],
+            "siblings": [{"rfilename": "Qwen3-Coder-Q4_K_M.gguf"}]
+          },
+          {
+            "id": "unsloth/Qwen3-Coder-Q8-GGUF",
+            "downloads": 90,
+            "likes": 9,
+            "tags": ["gguf"],
+            "siblings": [{"rfilename": "Qwen3-Coder-Q8_0.gguf"}]
+          }
+        ]
+        """);
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(handler) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            new FakeDownloadService())
+        {
+            HfSearchText = "qwen coder",
+            HfQuantFilter = "Q4_K_M"
+        };
+
+        await viewModel.SearchHuggingFaceCommand.ExecuteAsync(null);
+
+        var row = Assert.Single(viewModel.RemoteModels);
+        Assert.Equal("unsloth/Qwen3-Coder-GGUF", row.Id);
+        Assert.Equal("Hugging Face: найдено 1 моделей.", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public async Task DownloadSelectedRemoteModelCommandPassesSelectedOptionToDownloadService()
     {
         using var temp = new TempDirectory();
@@ -183,6 +221,15 @@ public sealed class HomeViewModelDownloadTests
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.NotFound));
+    }
+
+    private sealed class JsonHttpHandler(string responseBody) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(responseBody)
+            });
     }
 
     private sealed class EmptyGpuProbe : IGpuProbe

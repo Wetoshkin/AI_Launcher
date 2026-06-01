@@ -52,6 +52,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private LaunchWizardState _wizardState;
     private string _modelSearchText = "";
     private string _hfSearchText = "qwen coder gguf";
+    private string _hfQuantFilter = "любой";
     private string _runtimeArchivePath = "";
     private string _runtimeRootPath = @"D:\AI\runtimes";
     private string _runtimeCacheRootPath = Path.Combine(
@@ -520,12 +521,36 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
     }
 
+    public string HfQuantFilter
+    {
+        get => _hfQuantFilter;
+        set
+        {
+            if (_hfQuantFilter == value)
+            {
+                return;
+            }
+
+            _hfQuantFilter = value;
+            OnPropertyChanged();
+        }
+    }
+
     public IReadOnlyList<HuggingFaceSort> HfSortOptions { get; } =
     [
         HuggingFaceSort.Downloads,
         HuggingFaceSort.Likes,
         HuggingFaceSort.LastModified,
         HuggingFaceSort.Trending
+    ];
+
+    public IReadOnlyList<string> HfQuantFilterOptions { get; } =
+    [
+        "любой",
+        "Q4_K_M",
+        "Q5_K_M",
+        "Q6_K",
+        "Q8_0"
     ];
 
     public ObservableCollection<PresetRowViewModel> Presets { get; }
@@ -1092,24 +1117,39 @@ public sealed partial class HomeViewModel : ViewModelBase
         try
         {
             var models = await _huggingFaceClient.SearchAsync(
-                new HuggingFaceModelSearchRequest(HfSearchText, HfSort, Limit: 10, GgufOnly: true),
+                new HuggingFaceModelSearchRequest(HfSearchText, HfSort, Limit: 50, GgufOnly: true),
                 default);
+            var filtered = models
+                .Where(MatchesHfQuantFilter)
+                .Take(10)
+                .ToArray();
 
             RemoteModels.Clear();
-            foreach (var model in models)
+            foreach (var model in filtered)
             {
                 RemoteModels.Add(new RemoteModelRowViewModel(model));
             }
 
             SelectedRemoteModel = RemoteModels.FirstOrDefault();
-            SetStatus(models.Count == 0
+            SetStatus(filtered.Length == 0
                 ? "Hugging Face не вернул GGUF-моделей по этому запросу."
-                : $"Hugging Face: найдено {models.Count} моделей.");
+                : $"Hugging Face: найдено {filtered.Length} моделей.");
         }
         catch (HttpRequestException ex)
         {
             SetStatus($"Hugging Face недоступен: {ex.Message}");
         }
+    }
+
+    private bool MatchesHfQuantFilter(HuggingFaceModelSummary model)
+    {
+        if (string.IsNullOrWhiteSpace(HfQuantFilter)
+            || HfQuantFilter.Equals("любой", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return model.SiblingFiles?.Any(file => file.Contains(HfQuantFilter, StringComparison.OrdinalIgnoreCase)) == true;
     }
 
     [RelayCommand]
