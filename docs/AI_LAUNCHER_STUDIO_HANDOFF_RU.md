@@ -57,6 +57,15 @@
   - warning виден в preview/review;
   - несовместимый runtime блокирует старт до запуска процесса.
 - Добавлен file picker для zip-архива runtime, рядом с ручным вводом пути.
+- Runtime downloader/update manager начат и подключён к GUI:
+  - GitHub releases/assets читаются через REST API;
+  - stable zip assets фильтруются по имени;
+  - выбранный runtime можно скачать в безопасный cache path;
+  - `.download` temp-файлы чистятся при отмене;
+  - уже скачанные архивы пропускаются по размеру;
+  - в GUI есть `Найти runtime`, `Скачать выбранный`, `Скачать и установить`;
+  - папки установки runtime и кэша выбираются через folder picker;
+  - runtime root/cache сохраняются и загружаются из settings.
 - В launch review добавлена оценка памяти:
   - веса GGUF;
   - KV-cache по выбранному контексту/runtime;
@@ -69,7 +78,11 @@
 
 ## Что ещё надо сделать
 
-- Сделать полноценный runtime downloader/update manager из GitHub releases/официальных источников, а не только установку zip.
+- Доработать runtime downloader/update manager:
+  - добавить явный выбор источника/канала runtime;
+  - различать CPU/CUDA/Vulkan/ROCm assets в GUI;
+  - добавить прогресс скачивания runtime-архива;
+  - добавить update-check для уже установленного runtime.
 - Вынести большой `HomeViewModel` на отдельные VM/экраны: Dashboard, Launch, Models, Runtimes, Agents, Logs, Settings.
 - Сделать реальные tabs/navigation вместо текущего длинного dashboard.
 - Добавить подробный лог процессов и live output `llama-server`/CLI агента в GUI.
@@ -143,17 +156,23 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
 - `2d1bf4d feat(desktop): choose runtime archive file`
 - `0ac065f feat(desktop): show launch memory forecast`
 - `a405a0e feat(desktop): control mtp draft tokens`
+- `bcf4370 feat(runtimes): read GitHub release assets`
+- `c33a7af feat(runtimes): download release assets to cache`
+- `d671abd feat(desktop): download runtime releases from gui`
+- `4ed6be8 feat(desktop): download and install runtime release`
+- `fb2d278 feat(desktop): choose runtime folders`
+- `186eade feat(desktop): persist runtime folders`
 
 ## Рекомендованный следующий срез для второго агента
 
-1. Сделать runtime downloader/update manager:
-   - получить список релизов llama.cpp/TurboQuant runtime;
-   - показать версии в GUI;
-   - скачать zip в downloads/cache;
-   - переиспользовать текущий `RuntimePackageInstaller`.
+1. Улучшить runtime downloader:
+   - добавить selector профилей CPU/CUDA/Vulkan/ROCm;
+   - показать channel/source в GUI;
+   - добавить progress callback в `RuntimeReleaseDownloadService`;
+   - отображать прогресс runtime download рядом с HF download progress.
 2. Покрыть `Launcher.Runtimes.Tests` и `Launcher.Desktop.Tests`:
-   - релиз с подходящим asset выбирается;
-   - zip скачивается в безопасный путь;
-   - GUI показывает ошибку сети и не затирает установленный runtime;
-   - установка после скачивания обновляет `RuntimeStatus`.
+   - выбор CUDA/Vulkan профиля фильтрует правильные assets;
+   - прогресс доходит до 100%;
+   - отмена удаляет `.download`;
+   - сетевой сбой не меняет `RuntimeArchivePath`.
 3. Запустить полный `dotnet build` + `dotnet test`.
