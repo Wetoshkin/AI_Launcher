@@ -125,6 +125,28 @@ public sealed class RuntimeCompatibilityFlowTests
     }
 
     [Fact]
+    public async Task AgentLaunchWritesProjectConfigBeforeStartingCli()
+    {
+        using var temp = new TempDirectory();
+        var starter = new CountingProcessStarter(processIds: [3100, 3200]);
+        var viewModel = CreateViewModel(
+            Runtime(supportsMtp: false, supportsTurboQuant: true),
+            starter,
+            temp.Path);
+        viewModel.SelectAgentModeCommand.Execute(null);
+        viewModel.FolderPicker = new FixedFolderPicker(temp.Path);
+        await viewModel.ChooseProjectsFolderCommand.ExecuteAsync(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        var configPath = Path.Combine(temp.Path, "kilo.jsonc");
+        Assert.True(File.Exists(configPath));
+        Assert.Contains("kilo.jsonc обновлён.", viewModel.ProcessLogLines);
+    }
+
+    [Fact]
     public async Task StartLaunchReportsProcessStartFailureWithoutThrowing()
     {
         using var temp = new TempDirectory();
