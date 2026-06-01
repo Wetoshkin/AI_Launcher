@@ -10,7 +10,14 @@ public sealed record RuntimeReleaseDownloadResult(
     bool Skipped,
     string Message);
 
-public sealed class RuntimeReleaseDownloadService(HttpClient httpClient)
+public interface IRuntimeReleaseDownloader
+{
+    Task<RuntimeReleaseDownloadResult> DownloadAsync(
+        RuntimeReleaseDownloadRequest request,
+        CancellationToken cancellationToken);
+}
+
+public sealed class RuntimeReleaseDownloadService(HttpClient httpClient) : IRuntimeReleaseDownloader
 {
     private const int BufferSize = 81920;
 

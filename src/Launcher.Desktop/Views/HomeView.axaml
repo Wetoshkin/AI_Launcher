@@ -280,6 +280,10 @@
             </StackPanel>
           </Grid>
           <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Найти runtime"
+                    Command="{Binding SearchRuntimeReleasesCommand}"/>
+            <Button Content="Скачать выбранный"
+                    Command="{Binding DownloadSelectedRuntimeReleaseCommand}"/>
             <Button Content="Установить runtime"
                     Command="{Binding InstallRuntimePackageCommand}"
                     Background="#FF9B35"
@@ -287,6 +291,25 @@
             <Button Content="Проверить runtime"
                     Command="{Binding CheckPortCommand}"/>
           </StackPanel>
+          <ListBox ItemsSource="{Binding RuntimeReleasePackages}"
+                   SelectedItem="{Binding SelectedRuntimeReleasePackage}"
+                   MaxHeight="160">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:RuntimeReleasePackageRowViewModel">
+                <Grid ColumnDefinitions="*,130" ColumnSpacing="8" Margin="0,4">
+                  <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding Title}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Url}" Foreground="#8A7660" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                  </StackPanel>
+                  <TextBlock Grid.Column="1"
+                             Text="{Binding Summary}"
+                             Foreground="#A95508"
+                             VerticalAlignment="Center"
+                             HorizontalAlignment="Right"/>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
         </StackPanel>
       </Border>
 

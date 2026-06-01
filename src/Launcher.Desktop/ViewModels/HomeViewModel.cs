@@ -36,6 +36,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly IHuggingFaceModelDownloadService _modelDownloadService;
     private readonly AgentCliCatalogService _agentCliCatalogService;
     private readonly IRuntimePackageInstaller _runtimePackageInstaller;
+    private readonly IRuntimeReleaseCatalog _runtimeReleaseCatalog;
+    private readonly IRuntimeReleaseDownloader _runtimeReleaseDownloader;
     private readonly ILauncherSettingsStore? _settingsStore;
     private readonly RuntimeDashboardService _runtimeDashboardService;
     private readonly RuntimeStartCoordinator _runtimeStartCoordinator;
@@ -46,6 +48,10 @@ public sealed partial class HomeViewModel : ViewModelBase
     private string _hfSearchText = "qwen coder gguf";
     private string _runtimeArchivePath = "";
     private string _runtimeRootPath = @"D:\AI\runtimes";
+    private string _runtimeCacheRootPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "AI Launcher Studio",
+        "runtime-downloads");
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
     private int _mtpDraftTokens = 4;
     private int _port = 8080;
@@ -80,7 +86,9 @@ public sealed partial class HomeViewModel : ViewModelBase
         new HuggingFaceModelDownloadService(new HttpClient()),
         new LauncherSettingsFileStore(DefaultSettingsPath()),
         new AgentCliCatalogService(new WindowsExecutableResolver()),
-        new RuntimePackageInstaller())
+        new RuntimePackageInstaller(),
+        new RuntimeReleaseCatalogService(new GitHubReleaseClient(new HttpClient())),
+        new RuntimeReleaseDownloadService(new HttpClient()))
     {
     }
 
@@ -91,12 +99,16 @@ public sealed partial class HomeViewModel : ViewModelBase
         IHuggingFaceModelDownloadService modelDownloadService,
         ILauncherSettingsStore? settingsStore = null,
         AgentCliCatalogService? agentCliCatalogService = null,
-        IRuntimePackageInstaller? runtimePackageInstaller = null)
+        IRuntimePackageInstaller? runtimePackageInstaller = null,
+        IRuntimeReleaseCatalog? runtimeReleaseCatalog = null,
+        IRuntimeReleaseDownloader? runtimeReleaseDownloader = null)
     {
         _huggingFaceClient = huggingFaceClient;
         _modelDownloadService = modelDownloadService;
         _agentCliCatalogService = agentCliCatalogService ?? new AgentCliCatalogService(new WindowsExecutableResolver());
         _runtimePackageInstaller = runtimePackageInstaller ?? new RuntimePackageInstaller();
+        _runtimeReleaseCatalog = runtimeReleaseCatalog ?? new RuntimeReleaseCatalogService(new GitHubReleaseClient(new HttpClient()));
+        _runtimeReleaseDownloader = runtimeReleaseDownloader ?? new RuntimeReleaseDownloadService(new HttpClient());
         _settingsStore = settingsStore;
         _runtimeDashboardService = runtimeDashboardService;
         _runtimeStartCoordinator = runtimeStartCoordinator;
@@ -161,6 +173,21 @@ public sealed partial class HomeViewModel : ViewModelBase
             }
 
             _runtimeRootPath = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string RuntimeCacheRootPath
+    {
+        get => _runtimeCacheRootPath;
+        set
+        {
+            if (_runtimeCacheRootPath == value)
+            {
+                return;
+            }
+
+            _runtimeCacheRootPath = value;
             OnPropertyChanged();
         }
     }
@@ -303,7 +330,26 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public ObservableCollection<AgentCliStatusRowViewModel> AgentCliStatuses { get; } = [];
 
+    public ObservableCollection<RuntimeReleasePackageRowViewModel> RuntimeReleasePackages { get; } = [];
+
     public string LaunchCommandPreview { get; private set; } = "Команда ещё не собрана.";
+
+    private RuntimeReleasePackageRowViewModel? _selectedRuntimeReleasePackage;
+
+    public RuntimeReleasePackageRowViewModel? SelectedRuntimeReleasePackage
+    {
+        get => _selectedRuntimeReleasePackage;
+        set
+        {
+            if (_selectedRuntimeReleasePackage == value)
+            {
+                return;
+            }
+
+            _selectedRuntimeReleasePackage = value;
+            OnPropertyChanged();
+        }
+    }
 
     public ObservableCollection<DecodingPresetRowViewModel> DecodingPresets { get; }
 
@@ -558,6 +604,52 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         var installed = statuses.Count(status => status.IsInstalled);
         SetStatus($"Агенты проверены: {installed}/{statuses.Count} доступны.");
+    }
+
+    [RelayCommand]
+    private async Task SearchRuntimeReleasesAsync()
+    {
+        SetStatus("Ищу runtime-пакеты llama.cpp...");
+        try
+        {
+            var packages = await _runtimeReleaseCatalog.ListPackagesAsync(default);
+            RuntimeReleasePackages.Clear();
+            foreach (var package in packages.Take(12))
+            {
+                RuntimeReleasePackages.Add(new RuntimeReleasePackageRowViewModel(package));
+            }
+
+            SelectedRuntimeReleasePackage = RuntimeReleasePackages.FirstOrDefault();
+            SetStatus($"Найдено runtime-пакетов: {RuntimeReleasePackages.Count}.");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException)
+        {
+            SetStatus($"Не удалось получить runtime-релизы: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task DownloadSelectedRuntimeReleaseAsync()
+    {
+        if (SelectedRuntimeReleasePackage is null)
+        {
+            SetStatus("Выберите runtime-пакет для скачивания.");
+            return;
+        }
+
+        SetStatus($"Скачиваю runtime: {SelectedRuntimeReleasePackage.Package.AssetName}...");
+        try
+        {
+            var result = await _runtimeReleaseDownloader.DownloadAsync(
+                new RuntimeReleaseDownloadRequest(SelectedRuntimeReleasePackage.Package, RuntimeCacheRootPath),
+                default);
+            RuntimeArchivePath = result.ArchivePath;
+            SetStatus($"Runtime скачан: {result.Message}");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            SetStatus($"Не удалось скачать runtime: {ex.Message}");
+        }
     }
 
     [RelayCommand]
