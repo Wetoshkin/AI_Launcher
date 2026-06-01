@@ -322,6 +322,9 @@
                   Command="{Binding StopLaunchCommand}"
                   Classes="ghost"
                   HorizontalAlignment="Left"/>
+          <Button Content="Очистить лог"
+                  Command="{Binding ClearProcessLogCommand}"
+                  HorizontalAlignment="Left"/>
           <TextBlock Text="{Binding ActiveProcessStatus}"
                      Foreground="#20677A"
                      FontWeight="Bold"/>
