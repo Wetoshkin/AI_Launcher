@@ -380,8 +380,17 @@ public sealed partial class HomeViewModel : ViewModelBase
 
             _selectedRuntimeReleaseProfile = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(RuntimeReleaseProfileHint));
         }
     }
+
+    public string RuntimeReleaseProfileHint => SelectedRuntimeReleaseProfile switch
+    {
+        RuntimeReleaseProfile.Cuda => "CUDA: NVIDIA GPU, обычно самый быстрый вариант для RTX.",
+        RuntimeReleaseProfile.Vulkan => "Vulkan: универсальный GPU runtime, часто подходит для NVIDIA/AMD/Intel.",
+        RuntimeReleaseProfile.Rocm => "ROCm: AMD GPU runtime для совместимых Radeon/Instinct.",
+        _ => "CPU: запуск без GPU-ускорения, самый совместимый вариант."
+    };
 
     public RuntimeReleasePackageRowViewModel? SelectedRuntimeReleasePackage
     {

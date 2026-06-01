@@ -236,6 +236,16 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public void SelectedRuntimeReleaseProfileUpdatesRussianHint()
+    {
+        var viewModel = CreateViewModel();
+
+        viewModel.SelectedRuntimeReleaseProfile = RuntimeReleaseProfile.Cuda;
+
+        Assert.Equal("CUDA: NVIDIA GPU, обычно самый быстрый вариант для RTX.", viewModel.RuntimeReleaseProfileHint);
+    }
+
+    [Fact]
     public async Task DownloadSelectedRuntimeReleaseCommandStoresDownloadedArchivePath()
     {
         var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
