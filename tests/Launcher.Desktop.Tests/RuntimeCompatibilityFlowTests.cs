@@ -124,9 +124,27 @@ public sealed class RuntimeCompatibilityFlowTests
         Assert.Equal("kilo", starter.Requests[1].Executable);
     }
 
+    [Fact]
+    public async Task StartLaunchReportsProcessStartFailureWithoutThrowing()
+    {
+        using var temp = new TempDirectory();
+        var viewModel = CreateViewModel(
+            Runtime(supportsMtp: false, supportsTurboQuant: true),
+            new ThrowingProcessStarter("kilo не найден"),
+            temp.Path);
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        Assert.Equal("Запуск не удался: kilo не найден", viewModel.StatusMessage);
+        Assert.Equal("процесс: ошибка запуска", viewModel.ActiveProcessStatus);
+    }
+
     private static HomeViewModel CreateViewModel(
         LlamaRuntimeInfo runtime,
-        CountingProcessStarter? starter = null,
+        IProcessStarter? starter = null,
         string? modelsDirectory = null,
         IProcessStopper? stopper = null)
     {
@@ -233,6 +251,12 @@ public sealed class RuntimeCompatibilityFlowTests
             StoppedProcessId = processId;
             return Task.FromResult(new ProcessStopResult(true, $"Процесс {processId} остановлен."));
         }
+    }
+
+    private sealed class ThrowingProcessStarter(string message) : IProcessStarter
+    {
+        public Task<ProcessStartResult> StartAsync(ProcessStartRequest request, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException(message);
     }
 
     private sealed class TempDirectory : IDisposable
