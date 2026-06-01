@@ -99,6 +99,8 @@ public sealed class PresetViewModelTests
         Assert.Equal("Сохранённый Kilo", preset.Name);
         Assert.Equal(@"D:\AI\Models", viewModel.ModelsFolderPath);
         Assert.Equal(@"D:\AI\Projects", viewModel.ProjectsFolderPath);
+        Assert.Equal(@"D:\AI\runtimes", viewModel.RuntimeRootPath);
+        Assert.Equal(@"D:\AI\downloads", viewModel.RuntimeCacheRootPath);
     }
 
     [Fact]
@@ -110,10 +112,14 @@ public sealed class PresetViewModelTests
         viewModel.SelectedRuntime = RuntimeKind.LlamaCppMtp;
         viewModel.Port = 8081;
         viewModel.ContextTokens = 131072;
+        viewModel.RuntimeRootPath = @"D:\AI\runtimes-custom";
+        viewModel.RuntimeCacheRootPath = @"D:\AI\runtime-cache-custom";
 
         await viewModel.SaveCurrentPresetCommand.ExecuteAsync(null);
 
         Assert.NotNull(store.Saved);
+        Assert.Equal(@"D:\AI\runtimes-custom", store.Saved.RuntimeRoot);
+        Assert.Equal(@"D:\AI\runtime-cache-custom", store.Saved.DownloadsRoot);
         Assert.Equal(4, store.Saved.Profiles.Count);
         var profile = store.Saved.Profiles.Last();
         Assert.Equal("Быстрый запуск 4", profile.Name);
