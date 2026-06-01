@@ -804,8 +804,7 @@ public sealed partial class HomeViewModel : ViewModelBase
             var result = await _runtimePackageInstaller.InstallAsync(
                 new RuntimePackageInstallRequest(download.ArchivePath, RuntimeRootPath, runtimeId),
                 default);
-            RuntimeStatus = $"runtime: {result.Message}";
-            OnPropertyChanged(nameof(RuntimeStatus));
+            ActivateInstalledRuntime(result);
             SetStatus(result.Installed
                 ? $"Runtime скачан и установлен: {result.Message}"
                 : $"Runtime скачан, но не готов: {result.Message}");
@@ -904,8 +903,7 @@ public sealed partial class HomeViewModel : ViewModelBase
             var result = await _runtimePackageInstaller.InstallAsync(
                 new RuntimePackageInstallRequest(RuntimeArchivePath, RuntimeRootPath, runtimeId),
                 default);
-            RuntimeStatus = $"runtime: {result.Message}";
-            OnPropertyChanged(nameof(RuntimeStatus));
+            ActivateInstalledRuntime(result);
             SetStatus(result.Installed
                 ? $"Runtime установлен: {result.Message}"
                 : $"Runtime распакован, но не готов: {result.Message}");
@@ -914,6 +912,24 @@ public sealed partial class HomeViewModel : ViewModelBase
         {
             SetStatus($"Не удалось установить runtime: {ex.Message}");
         }
+    }
+
+    private void ActivateInstalledRuntime(RuntimePackageInstallResult result)
+    {
+        if (result.Installed && !string.IsNullOrWhiteSpace(result.ExecutablePath))
+        {
+            _bestRuntime = new LlamaRuntimeInfo(
+                result.ExecutablePath,
+                new LlamaServerCapabilities(
+                    Flags: new HashSet<string>(),
+                    CacheTypes: new HashSet<string>(),
+                    SpecTypes: new HashSet<string>(),
+                    SupportsTurboQuant: true,
+                    SupportsMtp: false));
+        }
+
+        RuntimeStatus = $"runtime: {result.Message}";
+        OnPropertyChanged(nameof(RuntimeStatus));
     }
 
     [RelayCommand]
