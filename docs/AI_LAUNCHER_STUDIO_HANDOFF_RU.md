@@ -77,6 +77,27 @@
   - диапазон 1..16;
   - значение подставляется в команду `llama-server`;
   - подсказка объясняет компромисс скорость/стабильность.
+- Добавлена публикация Windows portable build:
+  - `publish-ai-launcher-studio.bat`;
+  - проверен старт опубликованного `Launcher.Desktop.exe`.
+- Добавлен запуск server перед agent CLI:
+  - для agent-сценария поднимается `llama-server`;
+  - после готовности endpoint пишется `kilo.jsonc` или `opencode.json`;
+  - затем запускается выбранный CLI агента.
+- Добавлен live output процессов в GUI:
+  - stdout/stderr `llama-server` и CLI агента идут в лог-панель;
+  - активные PID можно остановить кнопкой `Остановить`.
+- Установленный runtime сразу активируется в GUI:
+  - команда запуска использует найденный `llama-server.exe`;
+  - отдельный повторный scan больше не нужен для базового запуска.
+- Agent/server model id синхронизирован:
+  - `llama-server` получает `--alias local/<имя GGUF>`;
+  - agent CLI и проектные конфиги используют тот же provider model id;
+  - preview agent-сценария показывает обе стадии: `SERVER` и `AGENT`.
+- Добавлен GitHub Actions CI:
+  - restore/build/test решения;
+  - publish Windows portable artifact;
+  - проверка наличия опубликованного exe.
 
 ## Что ещё надо сделать
 
@@ -85,7 +106,6 @@
   - добавить update-check для уже установленного runtime.
 - Вынести большой `HomeViewModel` на отдельные VM/экраны: Dashboard, Launch, Models, Runtimes, Agents, Logs, Settings.
 - Сделать реальные tabs/navigation вместо текущего длинного dashboard.
-- Добавить подробный лог процессов и live output `llama-server`/CLI агента в GUI.
 - Добавить настройку KV cache и остальные speculative decoding параметры как полноценные controls.
 - Улучшить VRAM forecast до per-GPU панели и учитывать K/V cache типы из GUI, когда они появятся.
 - Добавить end-to-end smoke tests запуска:
@@ -94,10 +114,9 @@
   - busy port release;
   - missing CLI/runtime/model.
 - Добавить packaging/release:
-  - `dotnet publish`;
-  - portable Windows artifact;
   - installer или zip build;
-  - GitHub Actions CI.
+  - release workflow/tag publishing;
+  - подпись/хэши артефактов.
 - Добавить браузерную/визуальную проверку GUI скриншотами после крупных UI-изменений.
 - Улучшить Hugging Face UX:
   - отдельные фильтры family/quant/size/MTP/vision/tools;
@@ -165,15 +184,30 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
 - `826fc9e feat(runtimes): filter release assets by profile`
 - `2e1ad17 feat(runtimes): report runtime download progress`
 - `6cb39fa feat(desktop): cancel runtime downloads`
+- `dbe2362 style(desktop): rebuild studio home screen`
+- `0599164 build(desktop): add studio publish script`
+- `4d7e040 feat(desktop): release occupied llama server port`
+- `adbf6cd feat(desktop): stop active launch process`
+- `0a1cd96 feat(desktop): stream process output to launch log`
+- `a0d36ed feat(desktop): start server before agent cli`
+- `43a16d1 feat(agents): write local project configs`
+- `c7354d7 fix(desktop): activate installed runtime`
+- `71ea0f5 fix(agents): align local model ids`
+- `2f366b9 feat(desktop): show full agent launch preview`
 
 ## Рекомендованный следующий срез для второго агента
 
-1. Улучшить runtime downloader:
-   - показать channel/source в GUI;
-   - добавить update-check для уже установленного runtime;
-   - добавить подписи/подсказки к CPU/CUDA/Vulkan/ROCm профилям.
-2. Покрыть `Launcher.Runtimes.Tests` и `Launcher.Desktop.Tests`:
-   - уже установленный runtime сравнивается с последним release;
-   - GUI показывает "актуален / доступно обновление";
-   - сетевой сбой не меняет `RuntimeArchivePath`.
-3. Запустить полный `dotnet build` + `dotnet test`.
+1. Довести Launch UI до production-качества:
+   - вынести длинный dashboard в tabs/navigation;
+   - добавить полноценные controls для KV cache (`-ctk`, `-ctv`) и speculative decoding;
+   - добавить очистку лога и сохранение последнего launch log.
+2. Добавить end-to-end smoke tests:
+   - endpoint-only с тестовым `llama-server` stub;
+   - agent + local endpoint;
+   - occupied port release;
+   - missing CLI/runtime/model.
+3. Улучшить runtime downloader:
+   - channel/source в GUI;
+   - update-check для уже установленного runtime;
+   - подписи/подсказки к CPU/CUDA/Vulkan/ROCm профилям.
+4. Запустить полный `dotnet build` + `dotnet test`, затем проверить CI в GitHub Actions.

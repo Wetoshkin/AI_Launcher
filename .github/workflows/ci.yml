@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  build-test-publish:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore .\llama-server-launcher-avalonia.sln
+
+      - name: Build
+        run: dotnet build .\llama-server-launcher-avalonia.sln --no-restore
+
+      - name: Test
+        run: dotnet test .\llama-server-launcher-avalonia.sln --no-build
+
+      - name: Publish AI Launcher Studio
+        run: dotnet publish .\src\Launcher.Desktop\Launcher.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o .\publish\AI-Launcher-Studio-win-x64
+
+      - name: Verify published executable
+        shell: pwsh
+        run: |
+          $exe = ".\publish\AI-Launcher-Studio-win-x64\Launcher.Desktop.exe"
+          if (-not (Test-Path $exe)) {
+            throw "Published executable not found: $exe"
+          }
+
+      - name: Upload portable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Launcher-Studio-win-x64
+          path: .\publish\AI-Launcher-Studio-win-x64\
