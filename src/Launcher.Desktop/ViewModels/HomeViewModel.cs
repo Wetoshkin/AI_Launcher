@@ -255,6 +255,8 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public double RuntimeDownloadProgressPercent { get; private set; }
 
+    public string RuntimeUpdateStatus { get; private set; } = "Обновление runtime: не проверялось.";
+
     public bool IsDownloading
     {
         get => _isDownloading;
@@ -710,6 +712,26 @@ public sealed partial class HomeViewModel : ViewModelBase
         catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException)
         {
             SetStatus($"Не удалось получить runtime-релизы: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task CheckRuntimeUpdateAsync()
+    {
+        SetStatus("Проверяю обновление runtime...");
+        try
+        {
+            var packages = await _runtimeReleaseCatalog.ListPackagesAsync(SelectedRuntimeReleaseProfile, default);
+            var result = RuntimeUpdateService.Check(RuntimeArchivePath, packages);
+            RuntimeUpdateStatus = result.Message;
+            OnPropertyChanged(nameof(RuntimeUpdateStatus));
+            SetStatus($"Проверка обновления runtime: {result.Message}");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException)
+        {
+            RuntimeUpdateStatus = $"ошибка проверки: {ex.Message}";
+            OnPropertyChanged(nameof(RuntimeUpdateStatus));
+            SetStatus($"Не удалось проверить обновление runtime: {ex.Message}");
         }
     }
 
