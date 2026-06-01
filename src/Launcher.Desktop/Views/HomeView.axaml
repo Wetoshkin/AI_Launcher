@@ -257,7 +257,7 @@
       <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
         <StackPanel Spacing="8">
           <TextBlock Text="Runtime llama.cpp" FontWeight="Bold" FontSize="15"/>
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+          <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
             <StackPanel Grid.Column="0" Spacing="4">
               <TextBlock Text="Zip-архив runtime" FontWeight="Bold" FontSize="12"/>
               <Grid ColumnDefinitions="*,42" ColumnSpacing="6">
@@ -276,7 +276,31 @@
             </StackPanel>
             <StackPanel Grid.Column="1" Spacing="4">
               <TextBlock Text="Папка установки" FontWeight="Bold" FontSize="12"/>
-              <TextBox Text="{Binding RuntimeRootPath}"/>
+              <Grid ColumnDefinitions="*,42" ColumnSpacing="6">
+                <TextBox Grid.Column="0" Text="{Binding RuntimeRootPath}"/>
+                <Button Grid.Column="1"
+                        Command="{Binding ChooseRuntimeRootFolderCommand}"
+                        ToolTip.Tip="Выбрать папку установки runtime">
+                  <PathIcon Width="18"
+                            Height="18"
+                            Foreground="#247187"
+                            Data="M3,6 L8,6 L10,8 L21,8 L21,18 L3,18 Z M3,8 L21,8"/>
+                </Button>
+              </Grid>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="4">
+              <TextBlock Text="Кэш загрузок" FontWeight="Bold" FontSize="12"/>
+              <Grid ColumnDefinitions="*,42" ColumnSpacing="6">
+                <TextBox Grid.Column="0" Text="{Binding RuntimeCacheRootPath}"/>
+                <Button Grid.Column="1"
+                        Command="{Binding ChooseRuntimeCacheFolderCommand}"
+                        ToolTip.Tip="Выбрать папку кэша runtime">
+                  <PathIcon Width="18"
+                            Height="18"
+                            Foreground="#C15F00"
+                            Data="M3,6 L8,6 L10,8 L21,8 L21,18 L3,18 Z M3,8 L21,8"/>
+                </Button>
+              </Grid>
             </StackPanel>
           </Grid>
           <StackPanel Orientation="Horizontal" Spacing="8">

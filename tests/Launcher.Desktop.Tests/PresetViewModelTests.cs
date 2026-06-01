@@ -175,6 +175,30 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task ChooseRuntimeRootFolderCommandUpdatesRuntimeRootPath()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.FolderPicker = new FixedFolderPicker(@"D:\AI\runtimes-new");
+
+        await viewModel.ChooseRuntimeRootFolderCommand.ExecuteAsync(null);
+
+        Assert.Equal(@"D:\AI\runtimes-new", viewModel.RuntimeRootPath);
+        Assert.Equal("Папка установки runtime обновлена.", viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task ChooseRuntimeCacheFolderCommandUpdatesRuntimeCacheRootPath()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.FolderPicker = new FixedFolderPicker(@"D:\AI\runtime-cache");
+
+        await viewModel.ChooseRuntimeCacheFolderCommand.ExecuteAsync(null);
+
+        Assert.Equal(@"D:\AI\runtime-cache", viewModel.RuntimeCacheRootPath);
+        Assert.Equal("Папка кэша runtime обновлена.", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public async Task SearchRuntimeReleasesCommandDisplaysSelectablePackages()
     {
         var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
@@ -332,6 +356,11 @@ public sealed class PresetViewModelTests
             LastExtensions = extensions;
             return Task.FromResult(path);
         }
+    }
+
+    private sealed class FixedFolderPicker(string path) : Launcher.Desktop.Services.IFolderPicker
+    {
+        public Task<string?> PickFolderAsync(string title) => Task.FromResult<string?>(path);
     }
 
     private sealed class MemorySettingsStore(LauncherSettings? initial) : ILauncherSettingsStore
