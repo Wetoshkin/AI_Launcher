@@ -226,7 +226,8 @@ public sealed class PresetViewModelTests
     {
         var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
         var downloader = new FakeRuntimeReleaseDownloader(
-            new RuntimeReleaseDownloadResult(@"D:\AI\cache\b5400\llama.zip", Downloaded: true, Skipped: false, "архив скачан"));
+            new RuntimeReleaseDownloadResult(@"D:\AI\cache\b5400\llama.zip", Downloaded: true, Skipped: false, "архив скачан"),
+            new RuntimeReleaseDownloadProgress("llama.zip", 64, 128, IsSkipped: false));
         var viewModel = CreateViewModel(runtimeReleaseDownloader: downloader);
         var row = new RuntimeReleasePackageRowViewModel(package);
         viewModel.RuntimeReleasePackages.Add(row);
@@ -239,6 +240,7 @@ public sealed class PresetViewModelTests
         Assert.Equal(package, downloader.LastRequest.Package);
         Assert.Equal(@"D:\AI\cache", downloader.LastRequest.CacheRoot);
         Assert.Equal(@"D:\AI\cache\b5400\llama.zip", viewModel.RuntimeArchivePath);
+        Assert.Equal("Runtime: llama.zip · 50%", viewModel.RuntimeDownloadProgressText);
         Assert.Equal("Runtime скачан: архив скачан", viewModel.StatusMessage);
     }
 
@@ -352,13 +354,23 @@ public sealed class PresetViewModelTests
         }
     }
 
-    private sealed class FakeRuntimeReleaseDownloader(RuntimeReleaseDownloadResult result) : IRuntimeReleaseDownloader
+    private sealed class FakeRuntimeReleaseDownloader(
+        RuntimeReleaseDownloadResult result,
+        RuntimeReleaseDownloadProgress? progress = null) : IRuntimeReleaseDownloader
     {
         public RuntimeReleaseDownloadRequest? LastRequest { get; private set; }
 
-        public Task<RuntimeReleaseDownloadResult> DownloadAsync(RuntimeReleaseDownloadRequest request, CancellationToken cancellationToken)
+        public Task<RuntimeReleaseDownloadResult> DownloadAsync(
+            RuntimeReleaseDownloadRequest request,
+            CancellationToken cancellationToken,
+            Action<RuntimeReleaseDownloadProgress>? progressCallback = null)
         {
             LastRequest = request;
+            if (progress is not null)
+            {
+                progressCallback?.Invoke(progress);
+            }
+
             return Task.FromResult(result);
         }
     }

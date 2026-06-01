@@ -10,10 +10,12 @@ public sealed class RuntimeReleaseDownloadServiceTests
     {
         using var temp = new TempDirectory();
         var service = new RuntimeReleaseDownloadService(new HttpClient(new StaticContentHandler("runtime zip")));
+        var progressEvents = new List<RuntimeReleaseDownloadProgress>();
 
         var result = await service.DownloadAsync(
             new RuntimeReleaseDownloadRequest(Package("b5400", "llama-b5400-win-x64.zip", sizeBytes: 11), temp.Path),
-            CancellationToken.None);
+            CancellationToken.None,
+            progressEvents.Add);
 
         var expectedPath = System.IO.Path.Combine(temp.Path, "b5400", "llama-b5400-win-x64.zip");
         Assert.True(result.Downloaded);
@@ -21,6 +23,11 @@ public sealed class RuntimeReleaseDownloadServiceTests
         Assert.Equal(expectedPath, result.ArchivePath);
         Assert.Equal("runtime zip", await File.ReadAllTextAsync(expectedPath));
         Assert.False(File.Exists(expectedPath + ".download"));
+        var finalProgress = Assert.Single(progressEvents.Where(progress => progress.BytesReceived == progress.TotalBytes));
+        Assert.Equal("llama-b5400-win-x64.zip", finalProgress.AssetName);
+        Assert.Equal(11, finalProgress.BytesReceived);
+        Assert.Equal(11, finalProgress.TotalBytes);
+        Assert.False(finalProgress.IsSkipped);
     }
 
     [Fact]
@@ -33,15 +40,20 @@ public sealed class RuntimeReleaseDownloadServiceTests
         await File.WriteAllTextAsync(targetPath, "cached");
         var handler = new StaticContentHandler("network");
         var service = new RuntimeReleaseDownloadService(new HttpClient(handler));
+        var progressEvents = new List<RuntimeReleaseDownloadProgress>();
 
         var result = await service.DownloadAsync(
             new RuntimeReleaseDownloadRequest(Package("b5400", "llama.zip", sizeBytes: 6), temp.Path),
-            CancellationToken.None);
+            CancellationToken.None,
+            progressEvents.Add);
 
         Assert.True(result.Skipped);
         Assert.False(result.Downloaded);
         Assert.Equal(0, handler.RequestCount);
         Assert.Equal("cached", await File.ReadAllTextAsync(targetPath));
+        var progress = Assert.Single(progressEvents);
+        Assert.True(progress.IsSkipped);
+        Assert.Equal(6, progress.BytesReceived);
     }
 
     [Fact]

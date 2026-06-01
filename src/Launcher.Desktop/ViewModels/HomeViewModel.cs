@@ -249,6 +249,10 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public double DownloadProgressPercent { get; private set; }
 
+    public string RuntimeDownloadProgressText { get; private set; } = "Runtime загрузок нет.";
+
+    public double RuntimeDownloadProgressPercent { get; private set; }
+
     public bool IsDownloading
     {
         get => _isDownloading;
@@ -738,7 +742,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         {
             var result = await _runtimeReleaseDownloader.DownloadAsync(
                 new RuntimeReleaseDownloadRequest(SelectedRuntimeReleasePackage.Package, RuntimeCacheRootPath),
-                default);
+                default,
+                UpdateRuntimeDownloadProgress);
             RuntimeArchivePath = result.ArchivePath;
             SetStatus($"Runtime скачан: {result.Message}");
             return result;
@@ -1012,6 +1017,19 @@ public sealed partial class HomeViewModel : ViewModelBase
         SetStatus(progress.IsSkipped
             ? $"Уже есть: {progress.FileName}"
             : $"Скачиваю файл {progress.FileIndex}/{progress.TotalFiles}: {progress.FileName}");
+    }
+
+    private void UpdateRuntimeDownloadProgress(RuntimeReleaseDownloadProgress progress)
+    {
+        var percent = progress.TotalBytes is > 0
+            ? Math.Clamp(progress.BytesReceived * 100d / progress.TotalBytes.Value, 0, 100)
+            : 0;
+        RuntimeDownloadProgressPercent = progress.IsSkipped ? 100 : percent;
+        RuntimeDownloadProgressText = progress.IsSkipped
+            ? $"Runtime: уже есть · {progress.AssetName}"
+            : string.Create(CultureInfo.InvariantCulture, $"Runtime: {progress.AssetName} · {RuntimeDownloadProgressPercent:0}%");
+        OnPropertyChanged(nameof(RuntimeDownloadProgressPercent));
+        OnPropertyChanged(nameof(RuntimeDownloadProgressText));
     }
 
     private void SetScenario(LaunchScenario scenario)

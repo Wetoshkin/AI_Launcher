@@ -10,11 +10,18 @@ public sealed record RuntimeReleaseDownloadResult(
     bool Skipped,
     string Message);
 
+public sealed record RuntimeReleaseDownloadProgress(
+    string AssetName,
+    long BytesReceived,
+    long? TotalBytes,
+    bool IsSkipped);
+
 public interface IRuntimeReleaseDownloader
 {
     Task<RuntimeReleaseDownloadResult> DownloadAsync(
         RuntimeReleaseDownloadRequest request,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        Action<RuntimeReleaseDownloadProgress>? progress = null);
 }
 
 public sealed class RuntimeReleaseDownloadService(HttpClient httpClient) : IRuntimeReleaseDownloader
@@ -23,7 +30,8 @@ public sealed class RuntimeReleaseDownloadService(HttpClient httpClient) : IRunt
 
     public async Task<RuntimeReleaseDownloadResult> DownloadAsync(
         RuntimeReleaseDownloadRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Action<RuntimeReleaseDownloadProgress>? progress = null)
     {
         if (string.IsNullOrWhiteSpace(request.CacheRoot))
         {
@@ -37,6 +45,12 @@ public sealed class RuntimeReleaseDownloadService(HttpClient httpClient) : IRunt
             && new FileInfo(targetPath).Length > 0
             && (request.Package.SizeBytes <= 0 || new FileInfo(targetPath).Length == request.Package.SizeBytes))
         {
+            var length = new FileInfo(targetPath).Length;
+            progress?.Invoke(new RuntimeReleaseDownloadProgress(
+                request.Package.AssetName,
+                length,
+                request.Package.SizeBytes > 0 ? request.Package.SizeBytes : length,
+                IsSkipped: true));
             return new RuntimeReleaseDownloadResult(targetPath, Downloaded: false, Skipped: true, "архив уже скачан");
         }
 
@@ -57,7 +71,13 @@ public sealed class RuntimeReleaseDownloadService(HttpClient httpClient) : IRunt
             await using (var source = await response.Content.ReadAsStreamAsync(cancellationToken))
             await using (var target = File.Create(tempPath))
             {
-                await CopyAsync(source, target, cancellationToken);
+                await CopyAsync(
+                    source,
+                    target,
+                    request.Package.AssetName,
+                    response.Content.Headers.ContentLength ?? request.Package.SizeBytes,
+                    progress,
+                    cancellationToken);
             }
         }
         catch (OperationCanceledException)
@@ -79,9 +99,16 @@ public sealed class RuntimeReleaseDownloadService(HttpClient httpClient) : IRunt
         return new RuntimeReleaseDownloadResult(targetPath, Downloaded: true, Skipped: false, "архив скачан");
     }
 
-    private static async Task CopyAsync(Stream source, Stream target, CancellationToken cancellationToken)
+    private static async Task CopyAsync(
+        Stream source,
+        Stream target,
+        string assetName,
+        long? totalBytes,
+        Action<RuntimeReleaseDownloadProgress>? progress,
+        CancellationToken cancellationToken)
     {
         var buffer = new byte[BufferSize];
+        long received = 0;
         while (true)
         {
             var read = await source.ReadAsync(buffer, cancellationToken);
@@ -91,6 +118,8 @@ public sealed class RuntimeReleaseDownloadService(HttpClient httpClient) : IRunt
             }
 
             await target.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+            received += read;
+            progress?.Invoke(new RuntimeReleaseDownloadProgress(assetName, received, totalBytes, IsSkipped: false));
         }
     }
 
