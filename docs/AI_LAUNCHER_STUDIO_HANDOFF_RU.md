@@ -20,6 +20,12 @@
 - Добавлен выбор папки моделей и проектов.
 - Добавлен локальный каталог GGUF с поиском и выбором конкретной модели.
 - Добавлен Hugging Face GGUF search с сортировкой, downloads/likes/tags, фильтром `gguf`.
+- Добавлен Hugging Face quant-фильтр по GGUF-файлам:
+  - `любой`;
+  - `Q4_K_M`;
+  - `Q5_K_M`;
+  - `Q6_K`;
+  - `Q8_0`.
 - Добавлен выбор конкретных `.gguf` файлов внутри HF repo:
   - фильтруются `mmproj` и не-GGUF файлы;
   - split-shards группируются в один вариант скачивания;
@@ -132,7 +138,7 @@
   - подпись/хэши артефактов.
 - Добавить браузерную/визуальную проверку GUI скриншотами после крупных UI-изменений.
 - Улучшить Hugging Face UX:
-  - отдельные фильтры family/quant/size/MTP/vision/tools;
+  - отдельные фильтры family/size/MTP/vision/tools;
   - отображение размера файлов, если API/metadata позволяют;
   - очередь загрузок.
 - Не коммитить `runtimes/`, модели, скачанные GGUF, временные `.download`.
@@ -214,6 +220,8 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
 - `f01d061 build(desktop): add portable zip package script`
 - `2b211e2 fix(desktop): check updates for detected runtime`
 - `de2221a feat(desktop): persist runtime version source`
+- `c0bddcf feat(desktop): show runtime version source`
+- `eca06c8 feat(models): filter hugging face results by quant`
 
 ## Рекомендованный следующий срез для второго агента
 
