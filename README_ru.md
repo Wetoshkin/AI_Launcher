@@ -32,6 +32,14 @@ publish-ai-launcher-studio.bat
 
 Готовая сборка появится в `publish\AI-Launcher-Studio-win-x64`.
 
+Чтобы сразу получить переносимый zip-архив, запустите:
+
+```bat
+package-ai-launcher-studio.bat
+```
+
+Архив появится в `publish\AI-Launcher-Studio-win-x64.zip`.
+
 ## Возможности
 
 ### Настройка сервера

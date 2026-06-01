@@ -88,6 +88,8 @@
   - `Модели` с локальным каталогом и Hugging Face поиском.
 - Добавлена публикация Windows portable build:
   - `publish-ai-launcher-studio.bat`;
+  - `package-ai-launcher-studio.bat`;
+  - локальный zip: `publish\AI-Launcher-Studio-win-x64.zip`;
   - проверен старт опубликованного `Launcher.Desktop.exe`.
 - Добавлен запуск server перед agent CLI:
   - для agent-сценария поднимается `llama-server`;
@@ -123,7 +125,7 @@
   - busy port release;
   - missing CLI/runtime/model.
 - Добавить packaging/release:
-  - installer или zip build;
+  - installer;
   - release workflow/tag publishing;
   - подпись/хэши артефактов.
 - Добавить браузерную/визуальную проверку GUI скриншотами после крупных UI-изменений.
