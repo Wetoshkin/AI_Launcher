@@ -537,14 +537,18 @@
 
       <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
         <StackPanel Spacing="10">
-          <Grid ColumnDefinitions="*,150,Auto" ColumnSpacing="10">
+          <Grid ColumnDefinitions="*,150,130,Auto" ColumnSpacing="10">
             <TextBox Grid.Column="0"
                      PlaceholderText="Поиск Hugging Face GGUF"
                      Text="{Binding HfSearchText}"/>
             <ComboBox Grid.Column="1"
                       ItemsSource="{Binding HfSortOptions}"
                       SelectedItem="{Binding HfSort}"/>
-            <Button Grid.Column="2"
+            <ComboBox Grid.Column="2"
+                      ItemsSource="{Binding HfQuantFilterOptions}"
+                      SelectedItem="{Binding HfQuantFilter}"
+                      ToolTip.Tip="Фильтр по имени GGUF-файла в репозитории: Q4_K_M, Q5_K_M, Q6_K, Q8_0."/>
+            <Button Grid.Column="3"
                     Content="Найти"
                     Command="{Binding SearchHuggingFaceCommand}"/>
           </Grid>
