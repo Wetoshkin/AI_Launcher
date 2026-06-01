@@ -191,6 +191,23 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task AgentLaunchCommandPreviewShowsServerAndAgentStages()
+    {
+        using var temp = new TempDirectory();
+        var viewModel = CreateViewModel();
+        viewModel.FolderPicker = new FixedFolderPicker(temp.Path);
+        viewModel.SelectAgentModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+
+        viewModel.BuildLaunchCommandCommand.Execute(null);
+
+        Assert.Contains("SERVER:", viewModel.LaunchCommandPreview);
+        Assert.Contains("AGENT:", viewModel.LaunchCommandPreview);
+        Assert.Contains("--alias local/Qwen3-Coder-Q4_K_M", viewModel.LaunchCommandPreview);
+        Assert.Contains("kilo -m local/Qwen3-Coder-Q4_K_M", viewModel.LaunchCommandPreview);
+    }
+
+    [Fact]
     public async Task PickRuntimeArchiveCommandStoresSelectedZipPath()
     {
         var picker = new FixedFilePicker(@"D:\Downloads\llama-runtime.zip");
