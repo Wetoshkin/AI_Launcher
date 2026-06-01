@@ -335,6 +335,30 @@ public sealed partial class HomeViewModel : ViewModelBase
     public string LaunchCommandPreview { get; private set; } = "Команда ещё не собрана.";
 
     private RuntimeReleasePackageRowViewModel? _selectedRuntimeReleasePackage;
+    private RuntimeReleaseProfile _selectedRuntimeReleaseProfile = RuntimeReleaseProfile.Cuda;
+
+    public IReadOnlyList<RuntimeReleaseProfile> RuntimeReleaseProfileOptions { get; } =
+    [
+        RuntimeReleaseProfile.Cpu,
+        RuntimeReleaseProfile.Cuda,
+        RuntimeReleaseProfile.Vulkan,
+        RuntimeReleaseProfile.Rocm
+    ];
+
+    public RuntimeReleaseProfile SelectedRuntimeReleaseProfile
+    {
+        get => _selectedRuntimeReleaseProfile;
+        set
+        {
+            if (_selectedRuntimeReleaseProfile == value)
+            {
+                return;
+            }
+
+            _selectedRuntimeReleaseProfile = value;
+            OnPropertyChanged();
+        }
+    }
 
     public RuntimeReleasePackageRowViewModel? SelectedRuntimeReleasePackage
     {
@@ -652,7 +676,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         SetStatus("Ищу runtime-пакеты llama.cpp...");
         try
         {
-            var packages = await _runtimeReleaseCatalog.ListPackagesAsync(default);
+            var packages = await _runtimeReleaseCatalog.ListPackagesAsync(SelectedRuntimeReleaseProfile, default);
             RuntimeReleasePackages.Clear();
             foreach (var package in packages.Take(12))
             {

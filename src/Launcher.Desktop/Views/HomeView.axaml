@@ -304,6 +304,9 @@
             </StackPanel>
           </Grid>
           <StackPanel Orientation="Horizontal" Spacing="8">
+            <ComboBox ItemsSource="{Binding RuntimeReleaseProfileOptions}"
+                      SelectedItem="{Binding SelectedRuntimeReleaseProfile}"
+                      MinWidth="110"/>
             <Button Content="Найти runtime"
                     Command="{Binding SearchRuntimeReleasesCommand}"/>
             <Button Content="Скачать выбранный"
