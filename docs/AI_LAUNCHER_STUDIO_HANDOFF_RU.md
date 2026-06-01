@@ -59,11 +59,13 @@
 - Добавлен file picker для zip-архива runtime, рядом с ручным вводом пути.
 - Runtime downloader/update manager начат и подключён к GUI:
   - GitHub releases/assets читаются через REST API;
-  - stable zip assets фильтруются по имени;
+  - stable zip assets фильтруются по имени и runtime-профилю;
+  - доступны профили `CPU`, `CUDA`, `Vulkan`, `ROCm`;
   - выбранный runtime можно скачать в безопасный cache path;
   - `.download` temp-файлы чистятся при отмене;
   - уже скачанные архивы пропускаются по размеру;
   - в GUI есть `Найти runtime`, `Скачать выбранный`, `Скачать и установить`;
+  - в GUI есть прогресс runtime download и отмена активного скачивания;
   - папки установки runtime и кэша выбираются через folder picker;
   - runtime root/cache сохраняются и загружаются из settings.
 - В launch review добавлена оценка памяти:
@@ -80,8 +82,6 @@
 
 - Доработать runtime downloader/update manager:
   - добавить явный выбор источника/канала runtime;
-  - различать CPU/CUDA/Vulkan/ROCm assets в GUI;
-  - добавить прогресс скачивания runtime-архива;
   - добавить update-check для уже установленного runtime.
 - Вынести большой `HomeViewModel` на отдельные VM/экраны: Dashboard, Launch, Models, Runtimes, Agents, Logs, Settings.
 - Сделать реальные tabs/navigation вместо текущего длинного dashboard.
@@ -162,17 +162,18 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
 - `4ed6be8 feat(desktop): download and install runtime release`
 - `fb2d278 feat(desktop): choose runtime folders`
 - `186eade feat(desktop): persist runtime folders`
+- `826fc9e feat(runtimes): filter release assets by profile`
+- `2e1ad17 feat(runtimes): report runtime download progress`
+- `6cb39fa feat(desktop): cancel runtime downloads`
 
 ## Рекомендованный следующий срез для второго агента
 
 1. Улучшить runtime downloader:
-   - добавить selector профилей CPU/CUDA/Vulkan/ROCm;
    - показать channel/source в GUI;
-   - добавить progress callback в `RuntimeReleaseDownloadService`;
-   - отображать прогресс runtime download рядом с HF download progress.
+   - добавить update-check для уже установленного runtime;
+   - добавить подписи/подсказки к CPU/CUDA/Vulkan/ROCm профилям.
 2. Покрыть `Launcher.Runtimes.Tests` и `Launcher.Desktop.Tests`:
-   - выбор CUDA/Vulkan профиля фильтрует правильные assets;
-   - прогресс доходит до 100%;
-   - отмена удаляет `.download`;
+   - уже установленный runtime сравнивается с последним release;
+   - GUI показывает "актуален / доступно обновление";
    - сетевой сбой не меняет `RuntimeArchivePath`.
 3. Запустить полный `dotnet build` + `dotnet test`.
