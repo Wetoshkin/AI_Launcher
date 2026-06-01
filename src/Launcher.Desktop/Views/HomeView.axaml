@@ -3,29 +3,81 @@
              xmlns:vm="using:Launcher.Desktop.ViewModels"
              x:Class="Launcher.Desktop.Views.HomeView"
              x:DataType="vm:HomeViewModel">
-  <Grid ColumnDefinitions="220,*" Background="#F6F2EB" Margin="18">
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="#2C241B"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="Padding" Value="12,8"/>
+      <Setter Property="Background" Value="#FFF9F0"/>
+      <Setter Property="BorderBrush" Value="#E6CBA6"/>
+      <Setter Property="Foreground" Value="#33291F"/>
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="#E86F16"/>
+      <Setter Property="BorderBrush" Value="#E86F16"/>
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.ghost">
+      <Setter Property="Background" Value="#FFF4E5"/>
+      <Setter Property="BorderBrush" Value="#F0C99B"/>
+      <Setter Property="Foreground" Value="#8C4508"/>
+    </Style>
+    <Style Selector="ListBox">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Margin" Value="0,0,0,10"/>
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FFF0D9"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FFE4BD"/>
+      <Setter Property="Foreground" Value="#2C241B"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FFD8A3"/>
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="MinHeight" Value="36"/>
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="MinHeight" Value="36"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid ColumnDefinitions="280,*" Background="#F7EFE3">
     <Border Grid.Column="0"
-            Background="#FFFAF2"
-            BorderBrush="#EADCC9"
-            BorderThickness="1"
-            CornerRadius="22"
-            Padding="14">
-      <StackPanel Spacing="12">
-        <TextBlock Text="Пресеты" FontWeight="Bold" FontSize="16"/>
-        <TextBlock Text="быстрый запуск" FontSize="11" Foreground="#7B6C5B"/>
+            Background="#FFF7EA"
+            BorderBrush="#E7C89D"
+            BorderThickness="0,0,1,0"
+            Padding="20,22">
+      <StackPanel Spacing="14">
+        <StackPanel Spacing="2">
+          <TextBlock Text="Пресеты" FontWeight="Bold" FontSize="18"/>
+          <TextBlock Text="быстрый запуск сохранённых профилей" FontSize="12" Foreground="#806B54"/>
+        </StackPanel>
         <ListBox ItemsSource="{Binding Presets}"
                  SelectedItem="{Binding SelectedPreset}"
-                 MaxHeight="420">
+                 MaxHeight="500">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:PresetRowViewModel">
               <Border Background="White"
-                      BorderBrush="#EADCC9"
+                      BorderBrush="#E7C89D"
                       BorderThickness="1"
-                      CornerRadius="14"
-                      Padding="10"
-                      Margin="0,0,0,8">
-                <StackPanel Spacing="4">
-                  <TextBlock Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                      CornerRadius="12"
+                      MinHeight="108"
+                      Padding="14"
+                      Margin="0,0,0,2">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" TextWrapping="Wrap"/>
                   <TextBlock Text="{Binding Summary}" FontSize="11" Foreground="#A95508" TextWrapping="Wrap"/>
                   <TextBlock Text="{Binding ProjectPath}" FontSize="11" Foreground="#7B6C5B" TextTrimming="CharacterEllipsis"/>
                   <TextBlock Text="{Binding ModelPath}" FontSize="11" Foreground="#7B6C5B" TextTrimming="CharacterEllipsis"/>
@@ -37,54 +89,58 @@
         <Button Content="Применить пресет"
                 Command="{Binding ApplySelectedPresetCommand}"
                 HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"/>
+                HorizontalContentAlignment="Center"
+                Classes="primary"/>
         <Button Content="Сохранить текущий"
                 Command="{Binding SaveCurrentPresetCommand}"
                 HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"/>
+                HorizontalContentAlignment="Center"
+                Classes="ghost"/>
       </StackPanel>
     </Border>
 
-    <StackPanel Grid.Column="1" Margin="18,0,0,0" Spacing="16">
+    <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="24,22,24,28" Spacing="16">
       <DockPanel LastChildFill="False">
         <StackPanel DockPanel.Dock="Left" Spacing="4">
-          <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="Bold" Foreground="#20242C"/>
-          <TextBlock Text="{Binding Subtitle}" FontSize="13" Foreground="#6F7785"/>
+          <TextBlock Text="{Binding Title}" FontSize="32" FontWeight="Bold" Foreground="#201710"/>
+          <TextBlock Text="{Binding Subtitle}" FontSize="13" Foreground="#76614C"/>
         </StackPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
-          <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="12" Padding="10,7">
-            <TextBlock Text="{Binding GpuStatus}"/>
+          <Border Background="#FFF9F0" BorderBrush="#E6CBA6" BorderThickness="1" CornerRadius="12" Padding="12,8" MinWidth="132">
+            <TextBlock Text="{Binding GpuStatus}" Foreground="#4B3B2A"/>
           </Border>
           <Button Content="{Binding PortStatus}"
                   Command="{Binding CheckPortCommand}"
-                  Background="#FFF0DB"
-                  BorderBrush="#FFBD74"
-                  Foreground="#A95508"/>
-          <Border Background="#EEF8FB" BorderBrush="#C8E6EE" BorderThickness="1" CornerRadius="12" Padding="10,7">
+                  Classes="ghost"/>
+          <Border Background="#ECF9F8" BorderBrush="#A8DAD6" BorderThickness="1" CornerRadius="12" Padding="12,8" MinWidth="190">
             <TextBlock Text="{Binding RuntimeStatus}" Foreground="#20677A"/>
           </Border>
         </StackPanel>
       </DockPanel>
 
-      <Grid ColumnDefinitions="*,150,Auto,Auto" ColumnSpacing="8">
+      <Grid ColumnDefinitions="*,170,Auto,Auto" ColumnSpacing="10">
         <ItemsControl Grid.Column="0" ItemsSource="{Binding WizardSteps}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="8"/>
+              <WrapPanel/>
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:WizardStepRowViewModel">
-              <Border Background="#FFFAF2"
-                      BorderBrush="#EADCC9"
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,8,8">
+              <Border Background="#FFF9F0"
+                      BorderBrush="#E6CBA6"
                       BorderThickness="1"
-                      CornerRadius="10"
-                      Padding="8,6">
+                      CornerRadius="11"
+                      Padding="10,7">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <TextBlock Text="{Binding Number}" Foreground="#C15F00" FontWeight="Bold"/>
                   <TextBlock Text="{Binding Label}" Foreground="#574A3C"/>
                 </StackPanel>
               </Border>
+              <TextBlock Text="›" FontSize="18" Foreground="#C89A67" VerticalAlignment="Center"/>
+              </StackPanel>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
@@ -94,41 +150,57 @@
                    Foreground="#C15F00"
                    FontWeight="Bold"
                    TextTrimming="CharacterEllipsis"/>
-        <Button Grid.Column="2" Content="Назад" Command="{Binding PreviousStepCommand}"/>
-        <Button Grid.Column="3" Content="Далее" Command="{Binding NextStepCommand}"/>
+        <Button Grid.Column="2" Content="Назад" Command="{Binding PreviousStepCommand}" Classes="ghost"/>
+        <Button Grid.Column="3" Content="Далее" Command="{Binding NextStepCommand}" Classes="primary"/>
       </Grid>
 
       <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
         <Button Grid.Column="0"
-                MinHeight="220"
-                Background="White"
-                BorderBrush="#FF9B35"
+                MinHeight="190"
+                Background="#FFF9F0"
+                BorderBrush="#E86F16"
                 BorderThickness="2"
                 Command="{Binding SelectAgentModeCommand}"
                 HorizontalContentAlignment="Stretch">
-          <StackPanel Margin="18">
-            <TextBlock Text="ПРОЕКТ" Foreground="#C15F00" FontWeight="Bold"/>
-            <TextBlock Text="Запустить агента" FontSize="30" FontWeight="Bold" Margin="0,42,0,8"/>
-            <TextBlock Text="проект · агент · модель · runtime · старт" Foreground="#697386"/>
-          </StackPanel>
+          <Grid Margin="18" RowDefinitions="Auto,*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Background="#E86F16" CornerRadius="10" Padding="10,5">
+                <TextBlock Text="РЕЖИМ" Foreground="White" FontWeight="Bold" FontSize="12"/>
+              </Border>
+              <TextBlock Text="проект + агент" Foreground="#8C4508" FontWeight="Bold" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="8">
+              <TextBlock Text="Запустить агента" FontSize="30" FontWeight="Bold" Foreground="#201710"/>
+              <TextBlock Text="OpenCode, Kilo, Claw или Aider внутри выбранной папки проекта." Foreground="#6F5A45" TextWrapping="Wrap"/>
+            </StackPanel>
+            <TextBlock Grid.Row="2" Text="Нажмите, чтобы выбрать этот режим" Foreground="#C15F00" FontWeight="Bold"/>
+          </Grid>
         </Button>
         <Button Grid.Column="1"
-                MinHeight="220"
-                Background="White"
-                BorderBrush="#70B8C7"
+                MinHeight="190"
+                Background="#F6FEFC"
+                BorderBrush="#38A3A5"
                 BorderThickness="2"
                 Command="{Binding SelectEndpointModeCommand}"
                 HorizontalContentAlignment="Stretch">
-          <StackPanel Margin="18">
-            <TextBlock Text="СЕРВЕР" Foreground="#247187" FontWeight="Bold"/>
-            <TextBlock Text="Поднять endpoint" FontSize="30" FontWeight="Bold" Margin="0,42,0,8"/>
-            <TextBlock Text="модель · контекст · KV · MTP · сервер" Foreground="#697386"/>
-          </StackPanel>
+          <Grid Margin="18" RowDefinitions="Auto,*,Auto">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Background="#247187" CornerRadius="10" Padding="10,5">
+                <TextBlock Text="РЕЖИМ" Foreground="White" FontWeight="Bold" FontSize="12"/>
+              </Border>
+              <TextBlock Text="только endpoint" Foreground="#20677A" FontWeight="Bold" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="8">
+              <TextBlock Text="Поднять сервер" FontSize="30" FontWeight="Bold" Foreground="#201710"/>
+              <TextBlock Text="llama-server endpoint для Hermes, OpenClaw или внешнего клиента." Foreground="#526B6E" TextWrapping="Wrap"/>
+            </StackPanel>
+            <TextBlock Grid.Row="2" Text="Нажмите, чтобы выбрать этот режим" Foreground="#247187" FontWeight="Bold"/>
+          </Grid>
         </Button>
       </Grid>
 
       <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-        <Button Grid.Column="0" HorizontalContentAlignment="Stretch" Padding="14" Command="{Binding ChooseModelsFolderCommand}">
+        <Button Grid.Column="0" HorizontalContentAlignment="Stretch" Padding="16" Command="{Binding ChooseModelsFolderCommand}" Background="#FFF9F0" BorderBrush="#E6CBA6">
           <Grid ColumnDefinitions="34,*">
             <PathIcon Grid.Column="0"
                       Width="22"
@@ -136,13 +208,13 @@
                       Foreground="#C15F00"
                       Data="M3,6 L8,6 L10,8 L21,8 L21,18 L3,18 Z M3,8 L21,8"/>
             <StackPanel Grid.Column="1">
-              <TextBlock Text="Папка моделей" FontWeight="Bold"/>
+              <TextBlock Text="Папка моделей" FontWeight="Bold" Foreground="#2C241B"/>
               <TextBlock Text="{Binding ModelsFolderPath}" Foreground="#7B6C5B" FontSize="12"/>
               <TextBlock Text="{Binding ModelCountText}" Foreground="#A95508" FontSize="12"/>
             </StackPanel>
           </Grid>
         </Button>
-        <Button Grid.Column="1" HorizontalContentAlignment="Stretch" Padding="14" Command="{Binding ChooseProjectsFolderCommand}">
+        <Button Grid.Column="1" HorizontalContentAlignment="Stretch" Padding="16" Command="{Binding ChooseProjectsFolderCommand}" Background="#FFF9F0" BorderBrush="#E6CBA6">
           <Grid ColumnDefinitions="34,*">
             <PathIcon Grid.Column="0"
                       Width="22"
@@ -150,7 +222,7 @@
                       Foreground="#247187"
                       Data="M3,6 L8,6 L10,8 L21,8 L21,18 L3,18 Z M3,8 L21,8"/>
             <StackPanel Grid.Column="1">
-              <TextBlock Text="Папка проектов" FontWeight="Bold"/>
+              <TextBlock Text="Папка проектов" FontWeight="Bold" Foreground="#2C241B"/>
               <TextBlock Text="{Binding ProjectsFolderPath}" Foreground="#A95508" FontSize="12"/>
             </StackPanel>
           </Grid>
@@ -159,24 +231,24 @@
 
       <Grid ColumnDefinitions="*,*,140,160" ColumnSpacing="12">
         <StackPanel Grid.Column="0" Spacing="6">
-          <TextBlock Text="Агент" FontWeight="Bold"/>
+          <TextBlock Text="Агент" FontWeight="Bold" Foreground="#6F5A45"/>
           <ComboBox ItemsSource="{Binding AgentOptions}"
                     SelectedItem="{Binding SelectedAgent}"/>
         </StackPanel>
         <StackPanel Grid.Column="1" Spacing="6">
-          <TextBlock Text="Runtime" FontWeight="Bold"/>
+          <TextBlock Text="Runtime" FontWeight="Bold" Foreground="#6F5A45"/>
           <ComboBox ItemsSource="{Binding RuntimeOptions}"
                     SelectedItem="{Binding SelectedRuntime}"/>
         </StackPanel>
         <StackPanel Grid.Column="2" Spacing="6">
-          <TextBlock Text="Порт" FontWeight="Bold"/>
+          <TextBlock Text="Порт" FontWeight="Bold" Foreground="#6F5A45"/>
           <NumericUpDown Minimum="1"
                          Maximum="65535"
                          Increment="1"
                          Value="{Binding Port}"/>
         </StackPanel>
         <StackPanel Grid.Column="3" Spacing="6">
-          <TextBlock Text="Контекст" FontWeight="Bold"/>
+          <TextBlock Text="Контекст" FontWeight="Bold" Foreground="#6F5A45"/>
           <NumericUpDown Minimum="1024"
                          Maximum="1048576"
                          Increment="1024"
@@ -221,8 +293,7 @@
                   HorizontalAlignment="Left"/>
           <Button Content="Запустить"
                   Command="{Binding StartLaunchCommand}"
-                  Background="#FF9B35"
-                  Foreground="White"
+                  Classes="primary"
                   HorizontalAlignment="Left"/>
           <Border Background="#1F2328" CornerRadius="8" Padding="10">
             <TextBlock Text="{Binding LaunchCommandPreview}"
@@ -319,8 +390,7 @@
                     Command="{Binding CancelRuntimeDownloadCommand}"/>
             <Button Content="Установить runtime"
                     Command="{Binding InstallRuntimePackageCommand}"
-                    Background="#FF9B35"
-                    Foreground="White"/>
+                    Classes="primary"/>
             <Button Content="Проверить runtime"
                     Command="{Binding CheckPortCommand}"/>
           </StackPanel>
@@ -499,8 +569,7 @@
                     Content="Скачать выбранный GGUF"
                     Command="{Binding DownloadSelectedRemoteModelCommand}"
                     VerticalAlignment="Top"
-                    Background="#FF9B35"
-                    Foreground="White"/>
+                    Classes="primary"/>
           </Grid>
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
             <StackPanel Grid.Column="0" Spacing="4">
@@ -521,5 +590,6 @@
         </StackPanel>
       </Border>
     </StackPanel>
+    </ScrollViewer>
   </Grid>
 </UserControl>
