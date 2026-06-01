@@ -607,6 +607,46 @@ public sealed partial class HomeViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task ChooseRuntimeRootFolderAsync()
+    {
+        if (FolderPicker is null)
+        {
+            SetStatus("Выбор папки установки runtime пока недоступен: окно ещё не готово.");
+            return;
+        }
+
+        var folder = await FolderPicker.PickFolderAsync("Выберите папку установки runtime");
+        if (string.IsNullOrWhiteSpace(folder))
+        {
+            SetStatus("Выбор папки установки runtime отменён.");
+            return;
+        }
+
+        RuntimeRootPath = folder;
+        SetStatus("Папка установки runtime обновлена.");
+    }
+
+    [RelayCommand]
+    private async Task ChooseRuntimeCacheFolderAsync()
+    {
+        if (FolderPicker is null)
+        {
+            SetStatus("Выбор папки кэша runtime пока недоступен: окно ещё не готово.");
+            return;
+        }
+
+        var folder = await FolderPicker.PickFolderAsync("Выберите папку кэша runtime");
+        if (string.IsNullOrWhiteSpace(folder))
+        {
+            SetStatus("Выбор папки кэша runtime отменён.");
+            return;
+        }
+
+        RuntimeCacheRootPath = folder;
+        SetStatus("Папка кэша runtime обновлена.");
+    }
+
+    [RelayCommand]
     private async Task SearchRuntimeReleasesAsync()
     {
         SetStatus("Ищу runtime-пакеты llama.cpp...");
