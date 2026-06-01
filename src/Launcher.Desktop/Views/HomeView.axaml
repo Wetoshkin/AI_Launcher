@@ -320,6 +320,13 @@
             <Button Content="Проверить runtime"
                     Command="{Binding CheckPortCommand}"/>
           </StackPanel>
+          <ProgressBar Minimum="0"
+                       Maximum="100"
+                       Value="{Binding RuntimeDownloadProgressPercent}"
+                       Height="8"/>
+          <TextBlock Text="{Binding RuntimeDownloadProgressText}"
+                     Foreground="#765A36"
+                     FontSize="12"/>
           <ListBox ItemsSource="{Binding RuntimeReleasePackages}"
                    SelectedItem="{Binding SelectedRuntimeReleasePackage}"
                    MaxHeight="160">
