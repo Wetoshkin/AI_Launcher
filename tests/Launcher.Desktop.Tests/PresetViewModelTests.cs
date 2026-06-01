@@ -153,6 +153,29 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task InstalledRuntimeIsUsedForLaunchCommandWithoutExtraScan()
+    {
+        using var temp = new TempDirectory();
+        var executable = @"D:\AI\runtimes\llama-runtime\llama-server.exe";
+        var installer = new CapturingRuntimeInstaller(new RuntimePackageInstallResult(
+            Installed: true,
+            InstallDirectory: @"D:\AI\runtimes\llama-runtime",
+            ExecutablePath: executable,
+            Message: "llama-server.exe найден"));
+        var viewModel = CreateViewModel(runtimePackageInstaller: installer);
+        viewModel.RuntimeArchivePath = @"D:\Downloads\llama-runtime.zip";
+        viewModel.RuntimeRootPath = @"D:\AI\runtimes";
+        viewModel.FolderPicker = new FixedFolderPicker(temp.Path);
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+
+        await viewModel.InstallRuntimePackageCommand.ExecuteAsync(null);
+        viewModel.BuildLaunchCommandCommand.Execute(null);
+
+        Assert.Contains(executable, viewModel.LaunchCommandPreview);
+    }
+
+    [Fact]
     public async Task PickRuntimeArchiveCommandStoresSelectedZipPath()
     {
         var picker = new FixedFilePicker(@"D:\Downloads\llama-runtime.zip");
@@ -481,6 +504,26 @@ public sealed class PresetViewModelTests
     private sealed class FixedFolderPicker(string path) : Launcher.Desktop.Services.IFolderPicker
     {
         public Task<string?> PickFolderAsync(string title) => Task.FromResult<string?>(path);
+    }
+
+    private sealed class TempDirectory : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "preset-vm-" + Guid.NewGuid().ToString("N"));
+
+        public TempDirectory()
+        {
+            Directory.CreateDirectory(Path);
+            using var file = File.Create(System.IO.Path.Combine(Path, "Qwen3-Coder-Q4_K_M.gguf"));
+            file.SetLength(128L * 1024L * 1024L);
+        }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+            {
+                Directory.Delete(Path, recursive: true);
+            }
+        }
     }
 
     private sealed class MemorySettingsStore(LauncherSettings? initial) : ILauncherSettingsStore
