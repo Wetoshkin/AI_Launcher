@@ -48,10 +48,33 @@ public sealed class RuntimeCompatibilityFlowTests
         Assert.Equal("Запуск остановлен: Выбран MTP, но runtime не поддерживает --spec-type draft-mtp.", viewModel.StatusMessage);
     }
 
+    [Fact]
+    public async Task StopLaunchCommandStopsStartedProcessAndClearsStatus()
+    {
+        using var temp = new TempDirectory();
+        var stopper = new RecordingProcessStopper();
+        var viewModel = CreateViewModel(
+            Runtime(supportsMtp: false, supportsTurboQuant: true),
+            new CountingProcessStarter(processId: 3210),
+            temp.Path,
+            stopper);
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+        await viewModel.StopLaunchCommand.ExecuteAsync(null);
+
+        Assert.Equal(3210, stopper.StoppedProcessId);
+        Assert.Equal("процесс: остановлен", viewModel.ActiveProcessStatus);
+        Assert.Equal("Процесс 3210 остановлен.", viewModel.StatusMessage);
+    }
+
     private static HomeViewModel CreateViewModel(
         LlamaRuntimeInfo runtime,
         CountingProcessStarter? starter = null,
-        string? modelsDirectory = null)
+        string? modelsDirectory = null,
+        IProcessStopper? stopper = null)
     {
         var viewModel = new HomeViewModel(
             new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
@@ -63,7 +86,8 @@ public sealed class RuntimeCompatibilityFlowTests
                 new EmptyPortInspector(),
                 new EmptyPortReleaser(),
                 starter ?? new CountingProcessStarter()),
-            new EmptyDownloadService());
+            new EmptyDownloadService(),
+            processStopper: stopper);
         if (modelsDirectory is not null)
         {
             viewModel.FolderPicker = new FixedFolderPicker(modelsDirectory);
@@ -125,14 +149,25 @@ public sealed class RuntimeCompatibilityFlowTests
             Task.FromResult(new PortReleaseResult(Released: false, "не требуется"));
     }
 
-    private sealed class CountingProcessStarter : IProcessStarter
+    private sealed class CountingProcessStarter(int processId = 123) : IProcessStarter
     {
         public int StartCount { get; private set; }
 
         public Task<ProcessStartResult> StartAsync(ProcessStartRequest request, CancellationToken cancellationToken)
         {
             StartCount++;
-            return Task.FromResult(new ProcessStartResult(123));
+            return Task.FromResult(new ProcessStartResult(processId));
+        }
+    }
+
+    private sealed class RecordingProcessStopper : IProcessStopper
+    {
+        public int? StoppedProcessId { get; private set; }
+
+        public Task<ProcessStopResult> StopAsync(int processId, CancellationToken cancellationToken)
+        {
+            StoppedProcessId = processId;
+            return Task.FromResult(new ProcessStopResult(true, $"Процесс {processId} остановлен."));
         }
     }
 
