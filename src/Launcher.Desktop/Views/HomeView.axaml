@@ -51,6 +51,13 @@
     <Style Selector="TextBox">
       <Setter Property="MinHeight" Value="36"/>
     </Style>
+    <Style Selector="TabControl">
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+    <Style Selector="TabItem">
+      <Setter Property="Padding" Value="14,9"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
   </UserControl.Styles>
 
   <Grid ColumnDefinitions="280,*" Background="#F7EFE3">
@@ -356,13 +363,8 @@
         </StackPanel>
       </Border>
 
-      <UniformGrid Columns="4">
-        <Button Content="Модели"/>
-        <Button Content="Рантаймы" Command="{Binding CheckPortCommand}"/>
-        <Button Content="Агенты" Command="{Binding CheckAgentsCommand}"/>
-        <Button Content="Журнал"/>
-      </UniformGrid>
-
+      <TabControl>
+        <TabItem Header="Runtime">
       <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
         <StackPanel Spacing="8">
           <TextBlock Text="Runtime llama.cpp" FontWeight="Bold" FontSize="15"/>
@@ -467,7 +469,9 @@
           </ListBox>
         </StackPanel>
       </Border>
+        </TabItem>
 
+        <TabItem Header="Агенты">
       <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
         <StackPanel Spacing="8">
           <Grid ColumnDefinitions="*,Auto">
@@ -490,7 +494,10 @@
           </ItemsControl>
         </StackPanel>
       </Border>
+        </TabItem>
 
+        <TabItem Header="Модели">
+      <StackPanel Spacing="16">
       <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
         <StackPanel Spacing="10">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
@@ -627,6 +634,9 @@
           </Grid>
         </StackPanel>
       </Border>
+      </StackPanel>
+        </TabItem>
+      </TabControl>
     </StackPanel>
     </ScrollViewer>
   </Grid>
