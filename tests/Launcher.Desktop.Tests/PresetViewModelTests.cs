@@ -175,6 +175,41 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task SearchRuntimeReleasesCommandDisplaysSelectablePackages()
+    {
+        var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
+        var viewModel = CreateViewModel(runtimeReleaseCatalog: new FakeRuntimeReleaseCatalog([package]));
+
+        await viewModel.SearchRuntimeReleasesCommand.ExecuteAsync(null);
+
+        var row = Assert.Single(viewModel.RuntimeReleasePackages);
+        Assert.Equal(package, row.Package);
+        Assert.Same(row, viewModel.SelectedRuntimeReleasePackage);
+        Assert.Equal("Найдено runtime-пакетов: 1.", viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task DownloadSelectedRuntimeReleaseCommandStoresDownloadedArchivePath()
+    {
+        var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
+        var downloader = new FakeRuntimeReleaseDownloader(
+            new RuntimeReleaseDownloadResult(@"D:\AI\cache\b5400\llama.zip", Downloaded: true, Skipped: false, "архив скачан"));
+        var viewModel = CreateViewModel(runtimeReleaseDownloader: downloader);
+        var row = new RuntimeReleasePackageRowViewModel(package);
+        viewModel.RuntimeReleasePackages.Add(row);
+        viewModel.SelectedRuntimeReleasePackage = row;
+        viewModel.RuntimeCacheRootPath = @"D:\AI\cache";
+
+        await viewModel.DownloadSelectedRuntimeReleaseCommand.ExecuteAsync(null);
+
+        Assert.NotNull(downloader.LastRequest);
+        Assert.Equal(package, downloader.LastRequest.Package);
+        Assert.Equal(@"D:\AI\cache", downloader.LastRequest.CacheRoot);
+        Assert.Equal(@"D:\AI\cache\b5400\llama.zip", viewModel.RuntimeArchivePath);
+        Assert.Equal("Runtime скачан: архив скачан", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public void AgentCliStatusRowShowsRussianMissingPath()
     {
         var row = new AgentCliStatusRowViewModel(new Launcher.Agents.Discovery.AgentCliStatus(
@@ -193,14 +228,27 @@ public sealed class PresetViewModelTests
 
     private static HomeViewModel CreateViewModel(
         ILauncherSettingsStore? settingsStore = null,
-        IRuntimePackageInstaller? runtimePackageInstaller = null) => new(
+        IRuntimePackageInstaller? runtimePackageInstaller = null,
+        IRuntimeReleaseCatalog? runtimeReleaseCatalog = null,
+        IRuntimeReleaseDownloader? runtimeReleaseDownloader = null) => new(
         new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
         new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
         new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
         new EmptyDownloadService(),
         settingsStore,
         agentCliCatalogService: null,
-        runtimePackageInstaller: runtimePackageInstaller ?? new EmptyRuntimeInstaller());
+        runtimePackageInstaller: runtimePackageInstaller ?? new EmptyRuntimeInstaller(),
+        runtimeReleaseCatalog: runtimeReleaseCatalog,
+        runtimeReleaseDownloader: runtimeReleaseDownloader);
+
+    private static RuntimeReleasePackage RuntimePackage(string tag, string assetName, long sizeBytes) => new(
+        tag,
+        $"Release {tag}",
+        PublishedAt: new DateTimeOffset(2026, 5, 28, 0, 0, 0, TimeSpan.Zero),
+        assetName,
+        new Uri("https://github.com/runtime.zip"),
+        sizeBytes,
+        Prerelease: false);
 
     private sealed class EmptyDownloadService : IHuggingFaceModelDownloadService
     {
@@ -222,6 +270,23 @@ public sealed class PresetViewModelTests
         public RuntimePackageInstallRequest? LastRequest { get; private set; }
 
         public Task<RuntimePackageInstallResult> InstallAsync(RuntimePackageInstallRequest request, CancellationToken cancellationToken)
+        {
+            LastRequest = request;
+            return Task.FromResult(result);
+        }
+    }
+
+    private sealed class FakeRuntimeReleaseCatalog(IReadOnlyList<RuntimeReleasePackage> packages) : IRuntimeReleaseCatalog
+    {
+        public Task<IReadOnlyList<RuntimeReleasePackage>> ListPackagesAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(packages);
+    }
+
+    private sealed class FakeRuntimeReleaseDownloader(RuntimeReleaseDownloadResult result) : IRuntimeReleaseDownloader
+    {
+        public RuntimeReleaseDownloadRequest? LastRequest { get; private set; }
+
+        public Task<RuntimeReleaseDownloadResult> DownloadAsync(RuntimeReleaseDownloadRequest request, CancellationToken cancellationToken)
         {
             LastRequest = request;
             return Task.FromResult(result);
