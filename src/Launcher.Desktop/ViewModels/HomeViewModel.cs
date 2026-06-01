@@ -45,6 +45,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly RuntimeDashboardService _runtimeDashboardService;
     private readonly RuntimeStartCoordinator _runtimeStartCoordinator;
     private readonly IProcessStopper _processStopper;
+    private readonly AgentProjectConfigWriter _agentProjectConfigWriter;
     private LaunchPlan? _lastLaunchPlan;
     private readonly List<int> _activeProcessIds = [];
     private IReadOnlyList<LocalModelFile> _allModels = [];
@@ -111,7 +112,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         IRuntimeReleaseDownloader? runtimeReleaseDownloader = null,
         IPortInspector? portInspector = null,
         IPortReleaser? portReleaser = null,
-        IProcessStopper? processStopper = null)
+        IProcessStopper? processStopper = null,
+        AgentProjectConfigWriter? agentProjectConfigWriter = null)
     {
         _huggingFaceClient = huggingFaceClient;
         _modelDownloadService = modelDownloadService;
@@ -125,6 +127,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         _runtimeDashboardService = runtimeDashboardService;
         _runtimeStartCoordinator = runtimeStartCoordinator;
         _processStopper = processStopper ?? new ProcessStopper();
+        _agentProjectConfigWriter = agentProjectConfigWriter ?? new AgentProjectConfigWriter();
         _wizardState = LaunchWizardState.ForScenario(new LaunchScenario(
             LaunchMode.Agent,
             AgentKind.Kilo,
@@ -1275,7 +1278,10 @@ public sealed partial class HomeViewModel : ViewModelBase
             return new RuntimeStartResult(false, null, messages);
         }
 
-        var agentResult = await StartSinglePlanAsync(BuildAgentPlan(profile), profile.Port, profile.ProjectPath);
+        var request = BuildAgentRequest(profile);
+        var config = await _agentProjectConfigWriter.WriteAsync(request, default);
+        AppendProcessLogLine(config.Message);
+        var agentResult = await StartSinglePlanAsync(BuildAgentPlan(request), profile.Port, profile.ProjectPath);
         messages.AddRange(agentResult.Messages);
         return new RuntimeStartResult(agentResult.Started, agentResult.ProcessId, messages);
     }
@@ -1309,7 +1315,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     private void AppendProcessLogLine(string line)
     {
-        if (!Dispatcher.UIThread.CheckAccess())
+        if (Avalonia.Application.Current is not null && !Dispatcher.UIThread.CheckAccess())
         {
             Dispatcher.UIThread.Post(() => AppendProcessLogLine(line));
             return;
@@ -1365,15 +1371,17 @@ public sealed partial class HomeViewModel : ViewModelBase
             : plan with { Executable = _bestRuntime.ExecutablePath };
     }
 
-    private static LaunchPlan BuildAgentPlan(LaunchProfile profile)
-    {
-        var request = new AgentLaunchRequest(
-            profile.Agent,
-            profile.ProjectPath ?? "",
-            "local/llama.cpp/model",
-            $"http://127.0.0.1:{profile.Port}/v1");
+    private static AgentLaunchRequest BuildAgentRequest(LaunchProfile profile) => new(
+        profile.Agent,
+        profile.ProjectPath ?? "",
+        "local/llama.cpp/model",
+        $"http://127.0.0.1:{profile.Port}/v1");
 
-        IAgentCommandBuilder builder = profile.Agent switch
+    private static LaunchPlan BuildAgentPlan(LaunchProfile profile) => BuildAgentPlan(BuildAgentRequest(profile));
+
+    private static LaunchPlan BuildAgentPlan(AgentLaunchRequest request)
+    {
+        IAgentCommandBuilder builder = request.Agent switch
         {
             AgentKind.OpenCode => new OpenCodeCommandBuilder(),
             AgentKind.Claw => new ClawCommandBuilder(),
