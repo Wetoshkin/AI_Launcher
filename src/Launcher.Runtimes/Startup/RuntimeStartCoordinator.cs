@@ -14,7 +14,8 @@ public sealed class RuntimeStartCoordinator(
         LaunchPlan plan,
         int port,
         string? workingDirectory,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Action<string>? outputReceived = null)
     {
         var messages = new List<string>();
         var portOwner = await portInspector.InspectAsync(port, cancellationToken);
@@ -37,7 +38,7 @@ public sealed class RuntimeStartCoordinator(
         }
 
         var result = await processStarter.StartAsync(
-            new ProcessStartRequest(plan.Executable, plan.Arguments, plan.Environment, workingDirectory),
+            new ProcessStartRequest(plan.Executable, plan.Arguments, plan.Environment, workingDirectory, outputReceived),
             cancellationToken);
         messages.Add($"Процесс запущен. PID: {result.ProcessId}.");
         if (endpointHealthClient is not null && ShouldWaitForEndpoint(plan))

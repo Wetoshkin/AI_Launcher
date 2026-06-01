@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Launcher.Agents.Commands;
 using Launcher.Agents.Discovery;
@@ -362,6 +363,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     public ObservableCollection<string> LaunchReviewLines { get; } = [];
 
     public ObservableCollection<string> LaunchEnvironmentLines { get; } = [];
+
+    public ObservableCollection<string> ProcessLogLines { get; } = [];
 
     public ObservableCollection<AgentCliStatusRowViewModel> AgentCliStatuses { get; } = [];
 
@@ -1241,7 +1244,13 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         var workingDirectory = profile.Mode == LaunchMode.Agent ? profile.ProjectPath : null;
-        var result = await _runtimeStartCoordinator.StartAsync(_lastLaunchPlan, profile.Port, workingDirectory, default);
+        ProcessLogLines.Clear();
+        var result = await _runtimeStartCoordinator.StartAsync(
+            _lastLaunchPlan,
+            profile.Port,
+            workingDirectory,
+            default,
+            AppendProcessLogLine);
         if (result.Started && result.ProcessId is not null)
         {
             _activeProcessId = result.ProcessId;
@@ -1250,6 +1259,22 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         SetStatus(string.Join(" ", result.Messages));
+    }
+
+    private void AppendProcessLogLine(string line)
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => AppendProcessLogLine(line));
+            return;
+        }
+
+        if (ProcessLogLines.Count >= 300)
+        {
+            ProcessLogLines.RemoveAt(0);
+        }
+
+        ProcessLogLines.Add(line);
     }
 
     [RelayCommand]
