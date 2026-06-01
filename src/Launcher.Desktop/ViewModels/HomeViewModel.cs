@@ -1390,7 +1390,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private static AgentLaunchRequest BuildAgentRequest(LaunchProfile profile) => new(
         profile.Agent,
         profile.ProjectPath ?? "",
-        "local/llama.cpp/model",
+        LaunchProfileModelIds.ProviderModelId(profile),
         $"http://127.0.0.1:{profile.Port}/v1");
 
     private static LaunchPlan BuildAgentPlan(LaunchProfile profile) => BuildAgentPlan(BuildAgentRequest(profile));

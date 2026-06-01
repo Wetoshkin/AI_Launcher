@@ -12,6 +12,8 @@ public static class LlamaServerCommandBuilder
         {
             "-m",
             profile.ModelPath,
+            "--alias",
+            LaunchProfileModelIds.ProviderModelId(profile),
             "--ctx-size",
             profile.ContextTokens.ToString(),
             "--port",

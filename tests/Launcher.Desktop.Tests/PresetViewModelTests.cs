@@ -176,6 +176,21 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task AgentLaunchCommandUsesSelectedGgufNameAsProviderModel()
+    {
+        using var temp = new TempDirectory();
+        var viewModel = CreateViewModel();
+        viewModel.FolderPicker = new FixedFolderPicker(temp.Path);
+        viewModel.SelectAgentModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+
+        viewModel.BuildLaunchCommandCommand.Execute(null);
+
+        Assert.Contains("local/Qwen3-Coder-Q4_K_M", viewModel.LaunchCommandPreview);
+        Assert.DoesNotContain("local/llama.cpp/model", viewModel.LaunchCommandPreview);
+    }
+
+    [Fact]
     public async Task PickRuntimeArchiveCommandStoresSelectedZipPath()
     {
         var picker = new FixedFilePicker(@"D:\Downloads\llama-runtime.zip");
