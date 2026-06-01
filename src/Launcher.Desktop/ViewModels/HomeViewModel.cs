@@ -39,6 +39,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly IRuntimeReleaseCatalog _runtimeReleaseCatalog;
     private readonly IRuntimeReleaseDownloader _runtimeReleaseDownloader;
     private readonly ILauncherSettingsStore? _settingsStore;
+    private readonly IPortInspector _portInspector;
+    private readonly IPortReleaser _portReleaser;
     private readonly RuntimeDashboardService _runtimeDashboardService;
     private readonly RuntimeStartCoordinator _runtimeStartCoordinator;
     private LaunchPlan? _lastLaunchPlan;
@@ -103,7 +105,9 @@ public sealed partial class HomeViewModel : ViewModelBase
         AgentCliCatalogService? agentCliCatalogService = null,
         IRuntimePackageInstaller? runtimePackageInstaller = null,
         IRuntimeReleaseCatalog? runtimeReleaseCatalog = null,
-        IRuntimeReleaseDownloader? runtimeReleaseDownloader = null)
+        IRuntimeReleaseDownloader? runtimeReleaseDownloader = null,
+        IPortInspector? portInspector = null,
+        IPortReleaser? portReleaser = null)
     {
         _huggingFaceClient = huggingFaceClient;
         _modelDownloadService = modelDownloadService;
@@ -112,6 +116,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         _runtimeReleaseCatalog = runtimeReleaseCatalog ?? new RuntimeReleaseCatalogService(new GitHubReleaseClient(new HttpClient()));
         _runtimeReleaseDownloader = runtimeReleaseDownloader ?? new RuntimeReleaseDownloadService(new HttpClient());
         _settingsStore = settingsStore;
+        _portInspector = portInspector ?? new WindowsPortInspector();
+        _portReleaser = portReleaser ?? new PortReleaseService(new ProcessCommandRunner());
         _runtimeDashboardService = runtimeDashboardService;
         _runtimeStartCoordinator = runtimeStartCoordinator;
         _wizardState = LaunchWizardState.ForScenario(new LaunchScenario(
@@ -645,6 +651,27 @@ public sealed partial class HomeViewModel : ViewModelBase
         SetStatus(snapshot.IsPortFree
             ? "Окружение проверено: порт свободен."
             : "Порт занят. Если это llama-server, его можно будет освободить перед запуском.");
+    }
+
+    [RelayCommand]
+    private async Task ReleasePortAsync()
+    {
+        SetStatus($"Проверяю, можно ли освободить порт {Port}...");
+        var owner = await _portInspector.InspectAsync(Port, default);
+        if (owner is null)
+        {
+            PortStatus = $"порт {Port}: свободен";
+            OnPropertyChanged(nameof(PortStatus));
+            SetStatus($"Порт {Port} уже свободен.");
+            return;
+        }
+
+        var result = await _portReleaser.ReleaseIfSafeAsync(owner, default);
+        PortStatus = result.Released
+            ? $"порт {Port}: освобождён"
+            : $"порт {Port}: занят";
+        OnPropertyChanged(nameof(PortStatus));
+        SetStatus(result.Message);
     }
 
     [RelayCommand]

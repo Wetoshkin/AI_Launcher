@@ -246,6 +246,10 @@
                          Maximum="65535"
                          Increment="1"
                          Value="{Binding Port}"/>
+          <Button Content="Освободить"
+                  Command="{Binding ReleasePortCommand}"
+                  Classes="ghost"
+                  ToolTip.Tip="Останавливает только безопасно распознанный llama-server на выбранном порту"/>
         </StackPanel>
         <StackPanel Grid.Column="3" Spacing="6">
           <TextBlock Text="Контекст" FontWeight="Bold" Foreground="#6F5A45"/>

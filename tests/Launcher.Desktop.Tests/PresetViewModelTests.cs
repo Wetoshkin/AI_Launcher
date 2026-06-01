@@ -246,6 +246,22 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task ReleasePortCommandStopsSafeLlamaServerOwner()
+    {
+        var owner = new PortOwnerInfo(8080, 4242, "llama-server", @"D:\AI\runtimes\llama-server.exe", false, null);
+        var releaser = new RecordingPortReleaser(new PortReleaseResult(true, "Остановлен llama-server на порту 8080."));
+        var viewModel = CreateViewModel(
+            portInspector: new FixedPortInspector(owner),
+            portReleaser: releaser);
+
+        await viewModel.ReleasePortCommand.ExecuteAsync(null);
+
+        Assert.Same(owner, releaser.ReleasedOwner);
+        Assert.Equal("порт 8080: освобождён", viewModel.PortStatus);
+        Assert.Equal("Остановлен llama-server на порту 8080.", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public async Task DownloadSelectedRuntimeReleaseCommandStoresDownloadedArchivePath()
     {
         var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
@@ -341,7 +357,9 @@ public sealed class PresetViewModelTests
         ILauncherSettingsStore? settingsStore = null,
         IRuntimePackageInstaller? runtimePackageInstaller = null,
         IRuntimeReleaseCatalog? runtimeReleaseCatalog = null,
-        IRuntimeReleaseDownloader? runtimeReleaseDownloader = null) => new(
+        IRuntimeReleaseDownloader? runtimeReleaseDownloader = null,
+        IPortInspector? portInspector = null,
+        IPortReleaser? portReleaser = null) => new(
         new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
         new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
         new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
@@ -350,7 +368,9 @@ public sealed class PresetViewModelTests
         agentCliCatalogService: null,
         runtimePackageInstaller: runtimePackageInstaller ?? new EmptyRuntimeInstaller(),
         runtimeReleaseCatalog: runtimeReleaseCatalog,
-        runtimeReleaseDownloader: runtimeReleaseDownloader);
+        runtimeReleaseDownloader: runtimeReleaseDownloader,
+        portInspector: portInspector,
+        portReleaser: portReleaser);
 
     private static RuntimeReleasePackage RuntimePackage(string tag, string assetName, long sizeBytes) => new(
         tag,
@@ -495,10 +515,27 @@ public sealed class PresetViewModelTests
             Task.FromResult<PortOwnerInfo?>(null);
     }
 
+    private sealed class FixedPortInspector(PortOwnerInfo? owner) : IPortInspector
+    {
+        public Task<PortOwnerInfo?> InspectAsync(int port, CancellationToken cancellationToken) =>
+            Task.FromResult(owner);
+    }
+
     private sealed class EmptyPortReleaser : IPortReleaser
     {
         public Task<PortReleaseResult> ReleaseIfSafeAsync(PortOwnerInfo owner, CancellationToken cancellationToken) =>
             Task.FromResult(new PortReleaseResult(Released: false, "не требуется"));
+    }
+
+    private sealed class RecordingPortReleaser(PortReleaseResult result) : IPortReleaser
+    {
+        public PortOwnerInfo? ReleasedOwner { get; private set; }
+
+        public Task<PortReleaseResult> ReleaseIfSafeAsync(PortOwnerInfo owner, CancellationToken cancellationToken)
+        {
+            ReleasedOwner = owner;
+            return Task.FromResult(result);
+        }
     }
 
     private sealed class EmptyProcessStarter : IProcessStarter
