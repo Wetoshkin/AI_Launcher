@@ -59,6 +59,28 @@ public sealed class GitHubReleaseClientTests
         Assert.Equal(new Uri("https://github.com/runtime.zip"), package.DownloadUrl);
     }
 
+    [Theory]
+    [InlineData(RuntimeReleaseProfile.Cpu, "llama-b5400-bin-win-x64.zip")]
+    [InlineData(RuntimeReleaseProfile.Cuda, "llama-b5400-bin-win-cuda-cu12.4-x64.zip")]
+    [InlineData(RuntimeReleaseProfile.Vulkan, "llama-b5400-bin-win-vulkan-x64.zip")]
+    [InlineData(RuntimeReleaseProfile.Rocm, "llama-b5400-bin-win-hip-radeon-x64.zip")]
+    public void RuntimeReleaseAssetSelectorUsesRuntimeProfileFragments(
+        RuntimeReleaseProfile profile,
+        string expectedAsset)
+    {
+        var packages = RuntimeReleaseAssetSelector.SelectZipPackages(
+        [
+            Release("b5400", draft: false, prerelease: false,
+                Asset("llama-b5400-bin-win-x64.zip"),
+                Asset("llama-b5400-bin-win-cuda-cu12.4-x64.zip"),
+                Asset("llama-b5400-bin-win-vulkan-x64.zip"),
+                Asset("llama-b5400-bin-win-hip-radeon-x64.zip"))
+        ], RuntimeReleaseProfileFragments.For(profile));
+
+        var package = Assert.Single(packages);
+        Assert.Equal(expectedAsset, package.AssetName);
+    }
+
     private static GitHubRelease Release(
         string tag,
         bool draft,

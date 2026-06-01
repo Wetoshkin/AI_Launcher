@@ -208,10 +208,13 @@ public sealed class PresetViewModelTests
     public async Task SearchRuntimeReleasesCommandDisplaysSelectablePackages()
     {
         var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
-        var viewModel = CreateViewModel(runtimeReleaseCatalog: new FakeRuntimeReleaseCatalog([package]));
+        var catalog = new FakeRuntimeReleaseCatalog([package]);
+        var viewModel = CreateViewModel(runtimeReleaseCatalog: catalog);
+        viewModel.SelectedRuntimeReleaseProfile = RuntimeReleaseProfile.Cuda;
 
         await viewModel.SearchRuntimeReleasesCommand.ExecuteAsync(null);
 
+        Assert.Equal(RuntimeReleaseProfile.Cuda, catalog.LastProfile);
         var row = Assert.Single(viewModel.RuntimeReleasePackages);
         Assert.Equal(package, row.Package);
         Assert.Same(row, viewModel.SelectedRuntimeReleasePackage);
@@ -338,8 +341,15 @@ public sealed class PresetViewModelTests
 
     private sealed class FakeRuntimeReleaseCatalog(IReadOnlyList<RuntimeReleasePackage> packages) : IRuntimeReleaseCatalog
     {
-        public Task<IReadOnlyList<RuntimeReleasePackage>> ListPackagesAsync(CancellationToken cancellationToken) =>
-            Task.FromResult(packages);
+        public RuntimeReleaseProfile? LastProfile { get; private set; }
+
+        public Task<IReadOnlyList<RuntimeReleasePackage>> ListPackagesAsync(
+            RuntimeReleaseProfile profile,
+            CancellationToken cancellationToken)
+        {
+            LastProfile = profile;
+            return Task.FromResult(packages);
+        }
     }
 
     private sealed class FakeRuntimeReleaseDownloader(RuntimeReleaseDownloadResult result) : IRuntimeReleaseDownloader
