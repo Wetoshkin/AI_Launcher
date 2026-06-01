@@ -267,7 +267,7 @@
       <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
         <StackPanel Spacing="8">
           <TextBlock Text="Проверка запуска" FontWeight="Bold" FontSize="15"/>
-          <Grid ColumnDefinitions="*,150" ColumnSpacing="10">
+          <Grid ColumnDefinitions="*,130,130,150" ColumnSpacing="10">
             <ComboBox Grid.Column="0"
                       ItemsSource="{Binding DecodingPresets}"
                       SelectedItem="{Binding SelectedDecodingPreset}">
@@ -281,6 +281,18 @@
               </ComboBox.ItemTemplate>
             </ComboBox>
             <StackPanel Grid.Column="1" Spacing="4"
+                        ToolTip.Tip="-ctk / --cache-type-k: тип KV-cache для ключей. q8_0 обычно безопасный баланс, turbo* экономит VRAM только в совместимых runtime.">
+              <TextBlock Text="KV ключи" FontWeight="Bold" FontSize="12"/>
+              <ComboBox ItemsSource="{Binding KvCacheOptions}"
+                        SelectedItem="{Binding SelectedKvCacheK}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="4"
+                        ToolTip.Tip="-ctv / --cache-type-v: тип KV-cache для значений. TurboQuant чаще всего даёт выигрыш именно на V-cache, но требует совместимый llama-server.">
+              <TextBlock Text="KV значения" FontWeight="Bold" FontSize="12"/>
+              <ComboBox ItemsSource="{Binding KvCacheOptions}"
+                        SelectedItem="{Binding SelectedKvCacheV}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="3" Spacing="4"
                         ToolTip.Tip="--spec-draft-n-max: сколько draft-токенов MTP предлагает за шаг. Меньше стабильнее, больше агрессивнее.">
               <TextBlock Text="MTP draft" FontWeight="Bold" FontSize="12"/>
               <NumericUpDown Minimum="1"
