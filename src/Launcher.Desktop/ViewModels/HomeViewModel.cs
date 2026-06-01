@@ -1260,16 +1260,7 @@ public sealed partial class HomeViewModel : ViewModelBase
             return;
         }
 
-        if (!result.Started)
-        {
-            SetStatus(string.Join(" ", result.Messages));
-            return;
-        }
-
-        ActiveProcessStatus = _activeProcessIds.Count == 0
-            ? "процесс: запуск завершён"
-            : $"процесс: запущен, PID {string.Join(", ", _activeProcessIds)}";
-        OnPropertyChanged(nameof(ActiveProcessStatus));
+        RefreshActiveProcessStatus();
         SetStatus(string.Join(" ", result.Messages));
     }
 
@@ -1300,12 +1291,20 @@ public sealed partial class HomeViewModel : ViewModelBase
             workingDirectory,
             default,
             AppendProcessLogLine);
-        if (result.Started && result.ProcessId is not null)
+        if (result.ProcessId is not null)
         {
             _activeProcessIds.Add(result.ProcessId.Value);
         }
 
         return result;
+    }
+
+    private void RefreshActiveProcessStatus()
+    {
+        ActiveProcessStatus = _activeProcessIds.Count == 0
+            ? "процесс: запуск завершён"
+            : $"процесс: запущен, PID {string.Join(", ", _activeProcessIds)}";
+        OnPropertyChanged(nameof(ActiveProcessStatus));
     }
 
     private void AppendProcessLogLine(string line)

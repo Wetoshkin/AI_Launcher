@@ -142,11 +142,31 @@ public sealed class RuntimeCompatibilityFlowTests
         Assert.Equal("процесс: ошибка запуска", viewModel.ActiveProcessStatus);
     }
 
+    [Fact]
+    public async Task StartLaunchKeepsProcessControllableWhenEndpointHealthFails()
+    {
+        using var temp = new TempDirectory();
+        var viewModel = CreateViewModel(
+            Runtime(supportsMtp: false, supportsTurboQuant: true),
+            new CountingProcessStarter(processId: 777),
+            temp.Path,
+            healthClient: new FixedEndpointHealthClient(new EndpointHealthResult(false, 30, "endpoint не ответил")));
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        Assert.Equal("процесс: запущен, PID 777", viewModel.ActiveProcessStatus);
+        Assert.Contains("endpoint не ответил", viewModel.StatusMessage);
+    }
+
     private static HomeViewModel CreateViewModel(
         LlamaRuntimeInfo runtime,
         IProcessStarter? starter = null,
         string? modelsDirectory = null,
-        IProcessStopper? stopper = null)
+        IProcessStopper? stopper = null,
+        IEndpointHealthClient? healthClient = null)
     {
         var viewModel = new HomeViewModel(
             new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
@@ -157,7 +177,8 @@ public sealed class RuntimeCompatibilityFlowTests
             new RuntimeStartCoordinator(
                 new EmptyPortInspector(),
                 new EmptyPortReleaser(),
-                starter ?? new CountingProcessStarter()),
+                starter ?? new CountingProcessStarter(),
+                healthClient),
             new EmptyDownloadService(),
             processStopper: stopper);
         if (modelsDirectory is not null)
@@ -257,6 +278,16 @@ public sealed class RuntimeCompatibilityFlowTests
     {
         public Task<ProcessStartResult> StartAsync(ProcessStartRequest request, CancellationToken cancellationToken) =>
             throw new InvalidOperationException(message);
+    }
+
+    private sealed class FixedEndpointHealthClient(EndpointHealthResult result) : IEndpointHealthClient
+    {
+        public Task<EndpointHealthResult> WaitUntilReadyAsync(
+            string baseUrl,
+            int Attempts,
+            TimeSpan Delay,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(result);
     }
 
     private sealed class TempDirectory : IDisposable
