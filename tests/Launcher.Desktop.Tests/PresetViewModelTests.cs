@@ -275,6 +275,28 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task CancelRuntimeDownloadCommandCancelsActiveDownload()
+    {
+        var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
+        var downloader = new BlockingRuntimeReleaseDownloader();
+        var viewModel = CreateViewModel(runtimeReleaseDownloader: downloader);
+        var row = new RuntimeReleasePackageRowViewModel(package);
+        viewModel.RuntimeReleasePackages.Add(row);
+        viewModel.SelectedRuntimeReleasePackage = row;
+
+        var downloadTask = viewModel.DownloadSelectedRuntimeReleaseCommand.ExecuteAsync(null);
+        await downloader.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.True(viewModel.IsRuntimeDownloading);
+        viewModel.CancelRuntimeDownloadCommand.Execute(null);
+        await downloadTask;
+
+        Assert.True(downloader.WasCanceled);
+        Assert.False(viewModel.IsRuntimeDownloading);
+        Assert.Equal("Скачивание runtime отменено.", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public void AgentCliStatusRowShowsRussianMissingPath()
     {
         var row = new AgentCliStatusRowViewModel(new Launcher.Agents.Discovery.AgentCliStatus(
@@ -372,6 +394,32 @@ public sealed class PresetViewModelTests
             }
 
             return Task.FromResult(result);
+        }
+    }
+
+    private sealed class BlockingRuntimeReleaseDownloader : IRuntimeReleaseDownloader
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool WasCanceled { get; private set; }
+
+        public async Task<RuntimeReleaseDownloadResult> DownloadAsync(
+            RuntimeReleaseDownloadRequest request,
+            CancellationToken cancellationToken,
+            Action<RuntimeReleaseDownloadProgress>? progressCallback = null)
+        {
+            Started.SetResult();
+            try
+            {
+                await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                WasCanceled = true;
+                throw;
+            }
+
+            throw new InvalidOperationException("Test downloader should be canceled.");
         }
     }
 
