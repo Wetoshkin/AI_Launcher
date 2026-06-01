@@ -1245,9 +1245,21 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         ProcessLogLines.Clear();
         _activeProcessIds.Clear();
-        var result = profile.Mode == LaunchMode.Agent
-            ? await StartAgentScenarioAsync(profile)
-            : await StartSinglePlanAsync(_lastLaunchPlan, profile.Port, workingDirectory: null);
+        RuntimeStartResult result;
+        try
+        {
+            result = profile.Mode == LaunchMode.Agent
+                ? await StartAgentScenarioAsync(profile)
+                : await StartSinglePlanAsync(_lastLaunchPlan, profile.Port, workingDirectory: null);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException)
+        {
+            ActiveProcessStatus = "процесс: ошибка запуска";
+            OnPropertyChanged(nameof(ActiveProcessStatus));
+            SetStatus($"Запуск не удался: {ex.Message}");
+            return;
+        }
+
         if (!result.Started)
         {
             SetStatus(string.Join(" ", result.Messages));
