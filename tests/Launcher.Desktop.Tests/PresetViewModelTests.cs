@@ -208,6 +208,19 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public void ClearProcessLogCommandRemovesExistingLogLines()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.ProcessLogLines.Add("server started");
+        viewModel.ProcessLogLines.Add("agent started");
+
+        viewModel.ClearProcessLogCommand.Execute(null);
+
+        Assert.Empty(viewModel.ProcessLogLines);
+        Assert.Equal("Лог очищен.", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public async Task PickRuntimeArchiveCommandStoresSelectedZipPath()
     {
         var picker = new FixedFilePicker(@"D:\Downloads\llama-runtime.zip");

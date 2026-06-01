@@ -1389,6 +1389,13 @@ public sealed partial class HomeViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void ClearProcessLog()
+    {
+        ProcessLogLines.Clear();
+        SetStatus("Лог очищен.");
+    }
+
+    [RelayCommand]
     private async Task StopLaunchAsync()
     {
         if (_activeProcessIds.Count == 0)
