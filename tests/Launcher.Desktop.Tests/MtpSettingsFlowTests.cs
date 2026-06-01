@@ -40,6 +40,47 @@ public sealed class MtpSettingsFlowTests
         Assert.Contains("--spec-draft-n-max 2", viewModel.LaunchCommandPreview);
     }
 
+    [Fact]
+    public async Task BuildLaunchCommandUsesUserSelectedKvCacheTypes()
+    {
+        using var temp = new TempDirectory();
+        var viewModel = CreateViewModel();
+        viewModel.FolderPicker = new FixedFolderPicker(temp.Path);
+        viewModel.SelectedRuntime = RuntimeKind.LlamaCppTurboQuant;
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        viewModel.SelectedKvCacheK = "q8_0";
+        viewModel.SelectedKvCacheV = "turbo4";
+
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        viewModel.BuildLaunchCommandCommand.Execute(null);
+
+        Assert.Contains("--cache-type-k q8_0", viewModel.LaunchCommandPreview);
+        Assert.Contains("--cache-type-v turbo4", viewModel.LaunchCommandPreview);
+    }
+
+    [Fact]
+    public void SelectingPlainLlamaRuntimeResetsTurboQuantKvDefault()
+    {
+        var viewModel = CreateViewModel();
+
+        viewModel.SelectedRuntime = RuntimeKind.LlamaCpp;
+
+        Assert.Equal("q8_0", viewModel.SelectedKvCacheK);
+        Assert.Equal("q8_0", viewModel.SelectedKvCacheV);
+    }
+
+    private static HomeViewModel CreateViewModel() => new(
+        new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
+        new RuntimeDashboardService(
+            new EmptyGpuProbe(),
+            new EmptyPortInspector(),
+            new FakeRuntimeCatalog([Runtime(supportsMtp: true, supportsTurboQuant: true)])),
+        new RuntimeStartCoordinator(
+            new EmptyPortInspector(),
+            new EmptyPortReleaser(),
+            new EmptyProcessStarter()),
+        new EmptyDownloadService());
+
     private static LlamaRuntimeInfo Runtime(bool supportsMtp, bool supportsTurboQuant) => new(
         @"D:\AI\runtimes\llama-server.exe",
         new LlamaServerCapabilities(

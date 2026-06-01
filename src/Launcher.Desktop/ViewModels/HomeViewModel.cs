@@ -60,6 +60,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         "runtime-downloads");
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
     private int _mtpDraftTokens = 4;
+    private string _selectedKvCacheK = "q8_0";
+    private string _selectedKvCacheV = "turbo4";
     private int _port = 8080;
     private int _contextTokens = 65536;
     private DecodingPresetRowViewModel _selectedDecodingPreset;
@@ -261,6 +263,28 @@ public sealed partial class HomeViewModel : ViewModelBase
             RefreshLaunchReview();
             _lastLaunchPlan = null;
         }
+    }
+
+    public IReadOnlyList<string> KvCacheOptions { get; } =
+    [
+        "f16",
+        "q8_0",
+        "q4_0",
+        "q5_0",
+        "turbo3",
+        "turbo4"
+    ];
+
+    public string SelectedKvCacheK
+    {
+        get => _selectedKvCacheK;
+        set => SetKvCache(ref _selectedKvCacheK, value, nameof(SelectedKvCacheK));
+    }
+
+    public string SelectedKvCacheV
+    {
+        get => _selectedKvCacheV;
+        set => SetKvCache(ref _selectedKvCacheV, value, nameof(SelectedKvCacheV));
     }
 
     public string DownloadProgressText { get; private set; } = "Загрузок нет.";
@@ -561,6 +585,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 
             _selectedRuntime = value;
             OnPropertyChanged();
+            ApplyRuntimeKvDefaults(value);
             var mode = _wizardState.Scenario.Mode;
             SetScenario(new LaunchScenario(mode, mode == LaunchMode.Agent ? _selectedAgent : AgentKind.None, _selectedRuntime));
             _lastLaunchPlan = null;
@@ -1429,16 +1454,49 @@ public sealed partial class HomeViewModel : ViewModelBase
     private DecodingPreset BuildSelectedDecodingPreset()
     {
         var preset = DecodingPresetCatalog.Get(SelectedDecodingPreset.Id);
-        if (!preset.EnableMtp)
-        {
-            return preset;
-        }
-
         var arguments = new Dictionary<string, string>(preset.Arguments, StringComparer.OrdinalIgnoreCase)
         {
-            ["--spec-draft-n-max"] = MtpDraftTokens.ToString(CultureInfo.InvariantCulture)
+            ["--cache-type-k"] = SelectedKvCacheK,
+            ["--cache-type-v"] = SelectedKvCacheV
         };
+
+        if (preset.EnableMtp)
+        {
+            arguments["--spec-draft-n-max"] = MtpDraftTokens.ToString(CultureInfo.InvariantCulture);
+        }
+
         return preset with { Arguments = arguments };
+    }
+
+    private void SetKvCache(ref string field, string value, string propertyName)
+    {
+        var normalized = string.IsNullOrWhiteSpace(value) ? "q8_0" : value.Trim();
+        if (field == normalized)
+        {
+            return;
+        }
+
+        field = normalized;
+        OnPropertyChanged(propertyName);
+        RefreshLaunchReview();
+        _lastLaunchPlan = null;
+    }
+
+    private void ApplyRuntimeKvDefaults(RuntimeKind runtime)
+    {
+        var nextK = "q8_0";
+        var nextV = runtime == RuntimeKind.LlamaCppTurboQuant ? "turbo4" : "q8_0";
+        var changed = _selectedKvCacheK != nextK || _selectedKvCacheV != nextV;
+        _selectedKvCacheK = nextK;
+        _selectedKvCacheV = nextV;
+        if (!changed)
+        {
+            return;
+        }
+
+        OnPropertyChanged(nameof(SelectedKvCacheK));
+        OnPropertyChanged(nameof(SelectedKvCacheV));
+        RefreshLaunchReview();
     }
 
     private static string StepLabel(WizardStep step) => step switch
@@ -1513,7 +1571,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         var estimate = MemoryEstimator.Estimate(
             new ModelMemorySpec(model.SizeGb, ParametersFromSizeLabel(model), NativeContextTokens: null),
             profile.ContextTokens,
-            KvCacheFor(profile.Runtime));
+            KvCacheFor());
         var budgetText = _lastGpuTotalGb is > 0 && _lastGpuUsedGb is { } usedGpuGb
             ? GpuBudgetText(estimate.TotalGb, Math.Max(0.0, _lastGpuTotalGb.Value - usedGpuGb))
             : "GPU ещё не проверен";
@@ -1531,9 +1589,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         return string.Create(CultureInfo.InvariantCulture, $"GPU свободно {freeGpuGb:0.0} ГБ; {fitText}");
     }
 
-    private static KvCacheProfile KvCacheFor(RuntimeKind runtime) => runtime == RuntimeKind.LlamaCppTurboQuant
-        ? new KvCacheProfile("q8_0", "turbo4")
-        : KvCacheProfile.Symmetric("q8_0");
+    private KvCacheProfile KvCacheFor() => new(SelectedKvCacheK, SelectedKvCacheV);
 
     private static double ParametersFromSizeLabel(LocalModelFile model)
     {
