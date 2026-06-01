@@ -451,6 +451,10 @@
           <TextBlock Text="{Binding RuntimeUpdateStatus}"
                      Foreground="#20677A"
                      FontSize="12"/>
+          <TextBlock Text="{Binding RuntimeVersionSourceText}"
+                     Foreground="#765A36"
+                     FontSize="12"
+                     TextTrimming="CharacterEllipsis"/>
           <ListBox ItemsSource="{Binding RuntimeReleasePackages}"
                    SelectedItem="{Binding SelectedRuntimeReleasePackage}"
                    MaxHeight="160">
