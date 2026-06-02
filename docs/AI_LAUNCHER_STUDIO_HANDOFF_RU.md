@@ -33,6 +33,14 @@
   - `Gemma`;
   - `Llama`;
   - `Mistral`.
+- Добавлены Hugging Face capability-фильтры:
+  - `все возможности`;
+  - `GGUF`;
+  - `визуальные`;
+  - `инструменты`;
+  - `MTP`;
+  - `совместимые runtime`;
+  - `TurboQuant`.
 - Hugging Face model metadata теперь сохраняет размер GGUF-файлов, если API отдаёт `size`, `sizeBytes` или `lfs.size`:
   - размер переносится в варианты скачивания;
   - split-shards суммируются в общий размер;
@@ -47,6 +55,12 @@
   - отмена;
   - пропуск уже скачанных файлов;
   - защита от path traversal.
+- Добавлена очередь HF-скачиваний:
+  - добавление и удаление выбранного GGUF-варианта;
+  - дедупликация по repo/file list;
+  - последовательное скачивание;
+  - статусы `ожидает скачивания`, `скачивается`, `завершено`, `ошибка`;
+  - ошибка одного элемента не останавливает всю очередь.
 - Добавлены реальные пресеты быстрого запуска:
   - применяются к агенту/runtime/project/context/port;
   - сохраняются в JSON settings;
@@ -362,6 +376,8 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
 - `eca06c8 feat(models): filter hugging face results by quant`
 - `e5feb32 feat(models): filter hugging face results by family`
 - `82fb753 feat(studio): harden metadata launch and packaging`
+- `059ee51 feat(studio): queue downloads and prepare releases`
+- `79dc053 feat(studio): process hf download queues`
 
 ## Рекомендованный следующий срез для второго агента
 
@@ -379,7 +395,7 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
    - явно отображать установленную/сохранённую версию runtime;
    - подписи/подсказки к CPU/CUDA/Vulkan/ROCm профилям.
 4. Запустить полный `dotnet build` + `dotnet test`, затем проверить CI в GitHub Actions.
-
-# TODO UI
-
-- Добавить XAML-контрол для `MtpDraftMinTokens` рядом с текущим `MtpDraftTokens`, когда визуальная ветка будет готова принимать изменения в `HomeView.axaml`.
+5. Довести визуальную QA-проверку:
+   - снять screenshot текущего окна после каждого крупного XAML-среза;
+   - проверить нижние блоки на высоте около `720px`;
+   - если блоки не видны без scroll, убедиться, что scroll работает ожидаемо и это не выглядит как обрезанный UI.

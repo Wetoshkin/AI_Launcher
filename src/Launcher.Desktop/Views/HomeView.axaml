@@ -637,11 +637,13 @@
 
       <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
         <StackPanel Spacing="10">
-          <Grid ColumnDefinitions="*,150,120,130,130,Auto" ColumnSpacing="10">
-            <TextBox Grid.Column="0"
+          <WrapPanel>
+            <TextBox Width="300"
+                     Margin="0,0,10,10"
                      PlaceholderText="Поиск Hugging Face GGUF"
                      Text="{Binding HfSearchText}"/>
-            <ComboBox Grid.Column="1"
+            <ComboBox Width="150"
+                      Margin="0,0,10,10"
                       ItemsSource="{Binding HfSortOptions}"
                       SelectedItem="{Binding SelectedHfSortOption}">
               <ComboBox.ItemTemplate>
@@ -650,22 +652,36 @@
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <ComboBox Grid.Column="2"
+            <ComboBox Width="165"
+                      Margin="0,0,10,10"
+                      ItemsSource="{Binding HfCapabilityFilterOptions}"
+                      SelectedItem="{Binding SelectedHfCapabilityFilterOption}"
+                      ToolTip.Tip="Фильтр возможностей: все возможности, GGUF, визуальные, инструменты, MTP, совместимые runtime, TurboQuant.">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:HuggingFaceCapabilityFilterOptionViewModel">
+                  <TextBlock Text="{Binding Label}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <ComboBox Width="120"
+                      Margin="0,0,10,10"
                       ItemsSource="{Binding HfFamilyFilterOptions}"
                       SelectedItem="{Binding HfFamilyFilter}"
                       ToolTip.Tip="Фильтр семейства по repo id, tags и именам GGUF-файлов."/>
-            <ComboBox Grid.Column="3"
+            <ComboBox Width="130"
+                      Margin="0,0,10,10"
                       ItemsSource="{Binding HfQuantFilterOptions}"
                       SelectedItem="{Binding HfQuantFilter}"
                       ToolTip.Tip="Фильтр по имени GGUF-файла в репозитории: Q4_K_M, Q5_K_M, Q6_K, Q8_0."/>
-            <ComboBox Grid.Column="4"
+            <ComboBox Width="130"
+                      Margin="0,0,10,10"
                       ItemsSource="{Binding HfSizeFilterOptions}"
                       SelectedItem="{Binding HfSizeFilter}"
                       ToolTip.Tip="Фильтр по суммарному размеру выбранного GGUF-варианта; неизвестный размер скрыт в диапазонах."/>
-            <Button Grid.Column="5"
+            <Button Margin="0,0,0,10"
                     Content="Найти"
                     Command="{Binding SearchHuggingFaceCommand}"/>
-          </Grid>
+          </WrapPanel>
           <ListBox ItemsSource="{Binding RemoteModels}"
                    SelectedItem="{Binding SelectedRemoteModel}"
                    MaxHeight="300">

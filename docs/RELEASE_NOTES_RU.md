@@ -38,6 +38,23 @@ AI-Launcher-Studio-v1.0.0-release-prep
 
 ## Что вошло в последние крупные срезы
 
+- `79dc053 feat(studio): process hf download queues`
+  - Очередь Hugging Face теперь умеет последовательно скачивать выбранные GGUF-варианты.
+  - Элементы очереди показывают русские статусы: ожидает, скачивается, завершено, ошибка.
+  - Ошибка одного файла не останавливает всю очередь.
+  - Добавлены backend capability-фильтры HF: GGUF, визуальные, инструменты, MTP, runtime compatibility, TurboQuant.
+  - Добавлены visual QA docs/script и smoke-тест Package workflow.
+
+- текущий рабочий срез после `79dc053`
+  - Capability-фильтры выведены в GUI рядом с HF сортировкой.
+  - HF toolbar стал переносимым, чтобы не давить layout на узких окнах.
+  - Labels фильтра возможностей русифицированы.
+
+- `059ee51 feat(studio): queue downloads and prepare releases`
+  - Добавлены add/remove для очереди HF.
+  - Package workflow получил versioned artifact names, release-prep guide и SHA256 verification.
+  - Debug-сборка Desktop больше не зависит от необязательного diagnostics package.
+
 - `82fb753 feat(studio): harden metadata launch and packaging`
   - HF GGUF metadata хранит размеры файлов и split-групп.
   - Agent command builders требуют `local/<gguf>` для локального OpenAI-compatible endpoint.

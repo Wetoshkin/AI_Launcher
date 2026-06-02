@@ -55,6 +55,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private string _hfFamilyFilter = "любая";
     private string _hfQuantFilter = "любой";
     private string _hfSizeFilter = "любой размер";
+    private HuggingFaceCapabilityFilterOptionViewModel? _selectedHfCapabilityFilterOption;
     private string _runtimeArchivePath = "";
     private string _runtimeRootPath = @"D:\AI\runtimes";
     private string _runtimeCacheRootPath = Path.Combine(
@@ -145,6 +146,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         Presets = new ObservableCollection<PresetRowViewModel>(DefaultPresets());
         _selectedPreset = Presets.FirstOrDefault();
         _selectedDecodingPreset = DecodingPresets[0];
+        _selectedHfCapabilityFilterOption = HfCapabilityFilterOptions[0];
         ModelsFolderPath = Directory.Exists(_defaultModelsDirectory)
             ? _defaultModelsDirectory
             : "не указана";
@@ -685,12 +687,38 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
     }
 
+    public HuggingFaceCapabilityFilterOptionViewModel? SelectedHfCapabilityFilterOption
+    {
+        get => _selectedHfCapabilityFilterOption;
+        set
+        {
+            if (_selectedHfCapabilityFilterOption == value)
+            {
+                return;
+            }
+
+            _selectedHfCapabilityFilterOption = value;
+            OnPropertyChanged();
+        }
+    }
+
     public IReadOnlyList<HuggingFaceSortOptionViewModel> HfSortOptions { get; } =
     [
         new(HuggingFaceSort.Downloads),
         new(HuggingFaceSort.Likes),
         new(HuggingFaceSort.LastModified),
         new(HuggingFaceSort.Trending)
+    ];
+
+    public IReadOnlyList<HuggingFaceCapabilityFilterOptionViewModel> HfCapabilityFilterOptions { get; } =
+    [
+        new(null, "все возможности"),
+        new(HuggingFaceCapabilityFilter.Gguf, "GGUF"),
+        new(HuggingFaceCapabilityFilter.Vision, "визуальные"),
+        new(HuggingFaceCapabilityFilter.Tools, "инструменты"),
+        new(HuggingFaceCapabilityFilter.Mtp, "MTP"),
+        new(HuggingFaceCapabilityFilter.RuntimeCompatible, "совместимые runtime"),
+        new(HuggingFaceCapabilityFilter.TurboQuantCompatible, "TurboQuant")
     ];
 
     public IReadOnlyList<string> HfQuantFilterOptions { get; } =
@@ -1291,7 +1319,8 @@ public sealed partial class HomeViewModel : ViewModelBase
             var models = await _huggingFaceClient.SearchAsync(
                 new HuggingFaceModelSearchRequest(HfSearchText, HfSort, Limit: 50, GgufOnly: true),
                 default);
-            var filtered = models
+            var capabilityFiltered = ApplyHfCapabilityFilter(models);
+            var filtered = capabilityFiltered
                 .Where(MatchesHfFamilyFilter)
                 .Where(MatchesHfQuantFilter)
                 .Where(MatchesHfSizeFilter)
@@ -1313,6 +1342,16 @@ public sealed partial class HomeViewModel : ViewModelBase
         {
             SetStatus($"Hugging Face недоступен: {ex.Message}");
         }
+    }
+
+    private IReadOnlyList<HuggingFaceModelSummary> ApplyHfCapabilityFilter(IEnumerable<HuggingFaceModelSummary> models)
+    {
+        if (SelectedHfCapabilityFilterOption?.Filter is not { } filter)
+        {
+            return models.ToArray();
+        }
+
+        return HuggingFaceCapabilityFilters.Apply(models, [filter]);
     }
 
     private bool MatchesHfQuantFilter(HuggingFaceModelSummary model)
