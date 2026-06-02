@@ -51,6 +51,43 @@ public sealed class HomeViewModelDownloadTests
     }
 
     [Fact]
+    public async Task SearchHuggingFaceCommandFiltersRemoteModelsBySelectedFamily()
+    {
+        var handler = new JsonHttpHandler("""
+        [
+          {
+            "id": "unsloth/Qwen3-Coder-GGUF",
+            "downloads": 100,
+            "likes": 10,
+            "tags": ["gguf", "qwen"],
+            "siblings": [{"rfilename": "Qwen3-Coder-Q4_K_M.gguf"}]
+          },
+          {
+            "id": "unsloth/DeepSeek-Coder-GGUF",
+            "downloads": 90,
+            "likes": 9,
+            "tags": ["gguf", "deepseek"],
+            "siblings": [{"rfilename": "DeepSeek-Coder-Q4_K_M.gguf"}]
+          }
+        ]
+        """);
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(handler) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            new FakeDownloadService())
+        {
+            HfSearchText = "coder",
+            HfFamilyFilter = "Qwen"
+        };
+
+        await viewModel.SearchHuggingFaceCommand.ExecuteAsync(null);
+
+        var row = Assert.Single(viewModel.RemoteModels);
+        Assert.Equal("unsloth/Qwen3-Coder-GGUF", row.Id);
+    }
+
+    [Fact]
     public async Task DownloadSelectedRemoteModelCommandPassesSelectedOptionToDownloadService()
     {
         using var temp = new TempDirectory();
