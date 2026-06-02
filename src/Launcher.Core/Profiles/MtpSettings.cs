@@ -4,4 +4,5 @@ public sealed record MtpSettings(
     bool Enabled,
     string? DraftModelPath,
     int? DraftTokens,
-    string? SpeculativeType);
+    string? SpeculativeType,
+    int? DraftMinTokens = null);

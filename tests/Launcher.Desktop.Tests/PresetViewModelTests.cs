@@ -493,6 +493,26 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public void HuggingFaceSortOptionsExposeRussianLabelsAndKeepSortValues()
+    {
+        var viewModel = CreateViewModel();
+
+        var labels = viewModel.HfSortOptions
+            .Select(option => option!.GetType().GetProperty("Label")?.GetValue(option)?.ToString())
+            .ToArray();
+        var sorts = viewModel.HfSortOptions
+            .Select(option => option!.GetType().GetProperty("Sort")?.GetValue(option))
+            .ToArray();
+
+        Assert.Equal(["по загрузкам", "по лайкам", "по дате обновления", "тренды"], labels);
+        Assert.Equal(
+            [HuggingFaceSort.Downloads, HuggingFaceSort.Likes, HuggingFaceSort.LastModified, HuggingFaceSort.Trending],
+            sorts);
+        Assert.DoesNotContain(labels, label => string.Equals(label, HuggingFaceSort.Downloads.ToString(), StringComparison.Ordinal));
+        Assert.DoesNotContain(labels, label => string.Equals(label, HuggingFaceSort.LastModified.ToString(), StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task ReleasePortCommandStopsSafeLlamaServerOwner()
     {
         var owner = new PortOwnerInfo(8080, 4242, "llama-server", @"D:\AI\runtimes\llama-server.exe", false, null);

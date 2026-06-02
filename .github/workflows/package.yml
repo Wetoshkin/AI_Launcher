@@ -90,6 +90,32 @@ jobs:
             throw "SHA256 file was not created: $hashPath"
           }
 
+      - name: Verify portable package SHA256
+        shell: pwsh
+        run: |
+          $zipPath = ".\publish\AI-Launcher-Studio-win-x64.zip"
+          $hashPath = "$zipPath.sha256"
+
+          if (-not (Test-Path $zipPath)) {
+            throw "Portable zip not found: $zipPath"
+          }
+          if (-not (Test-Path $hashPath)) {
+            throw "SHA256 file not found: $hashPath"
+          }
+
+          $hashLine = (Get-Content -Path $hashPath -TotalCount 1)
+          if (-not $hashLine) {
+            throw "SHA256 file is empty: $hashPath"
+          }
+
+          $expectedHash = ($hashLine -split "\s+")[0]
+          $actualHash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($expectedHash.ToLowerInvariant() -ne $actualHash) {
+            throw "SHA256 mismatch for $zipPath. Expected $expectedHash, got $actualHash."
+          }
+
+          Write-Host "Verified SHA256: $actualHash"
+
       - name: Upload portable package
         uses: actions/upload-artifact@v4
         with:
@@ -97,5 +123,13 @@ jobs:
           path: |
             .\publish\AI-Launcher-Studio-win-x64.zip
             .\publish\AI-Launcher-Studio-win-x64.zip.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Launcher-Studio-release-notes
+          path: .\docs\RELEASE_NOTES_RU.md
           if-no-files-found: error
           retention-days: 14

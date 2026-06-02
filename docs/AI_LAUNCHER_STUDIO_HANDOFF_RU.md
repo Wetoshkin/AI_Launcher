@@ -379,3 +379,7 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
    - явно отображать установленную/сохранённую версию runtime;
    - подписи/подсказки к CPU/CUDA/Vulkan/ROCm профилям.
 4. Запустить полный `dotnet build` + `dotnet test`, затем проверить CI в GitHub Actions.
+
+# TODO UI
+
+- Добавить XAML-контрол для `MtpDraftMinTokens` рядом с текущим `MtpDraftTokens`, когда визуальная ветка будет готова принимать изменения в `HomeView.axaml`.

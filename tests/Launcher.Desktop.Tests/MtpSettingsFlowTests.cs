@@ -41,6 +41,23 @@ public sealed class MtpSettingsFlowTests
     }
 
     [Fact]
+    public async Task BuildLaunchCommandUsesUserSelectedMtpDraftMinTokenLimit()
+    {
+        using var temp = new TempDirectory();
+        var viewModel = CreateViewModel();
+        viewModel.FolderPicker = new FixedFolderPicker(temp.Path);
+        viewModel.SelectedRuntime = RuntimeKind.LlamaCppMtp;
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        viewModel.SelectedDecodingPreset = viewModel.DecodingPresets.Single(preset => preset.Id == "mtp-fast");
+        viewModel.MtpDraftMinTokens = 2;
+
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        viewModel.BuildLaunchCommandCommand.Execute(null);
+
+        Assert.Contains("--spec-draft-n-min 2", viewModel.LaunchCommandPreview);
+    }
+
+    [Fact]
     public async Task BuildLaunchCommandUsesUserSelectedKvCacheTypes()
     {
         using var temp = new TempDirectory();

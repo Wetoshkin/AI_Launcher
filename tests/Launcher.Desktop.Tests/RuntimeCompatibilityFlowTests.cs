@@ -1,5 +1,6 @@
 using Launcher.Core.LaunchPlans;
 using Launcher.Core.Scenarios;
+using Launcher.Agents.Discovery;
 using Launcher.Desktop.Services;
 using Launcher.Desktop.ViewModels;
 using Launcher.Models.HuggingFace;
@@ -146,6 +147,50 @@ public sealed class RuntimeCompatibilityFlowTests
     }
 
     [Fact]
+    public async Task StartLaunchBlocksMissingRuntimeBeforeProcessStart()
+    {
+        using var temp = new TempDirectory();
+        var starter = new CountingProcessStarter();
+        var viewModel = CreateViewModel(
+            [],
+            starter,
+            temp.Path);
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        Assert.Empty(starter.Requests);
+        Assert.Equal("Запуск остановлен: Runtime llama-server не проверен.", viewModel.StatusMessage);
+        Assert.Equal("процесс: не запущен", viewModel.ActiveProcessStatus);
+    }
+
+    [Fact]
+    public async Task StartLaunchBlocksMissingAgentCliBeforeProcessStart()
+    {
+        using var temp = new TempDirectory();
+        var starter = new CountingProcessStarter();
+        var viewModel = CreateViewModel(
+            Runtime(supportsMtp: false, supportsTurboQuant: true),
+            starter,
+            temp.Path,
+            agentCliCatalogService: new AgentCliCatalogService(new MissingExecutableResolver()));
+        viewModel.SelectAgentModeCommand.Execute(null);
+        viewModel.FolderPicker = new FixedFolderPicker(temp.Path);
+        await viewModel.ChooseProjectsFolderCommand.ExecuteAsync(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        await viewModel.CheckAgentsCommand.ExecuteAsync(null);
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        Assert.Empty(starter.Requests);
+        Assert.Equal("Запуск остановлен: агент Kilo не найден в PATH (kilo).", viewModel.StatusMessage);
+        Assert.Equal("процесс: не запущен", viewModel.ActiveProcessStatus);
+    }
+
+    [Fact]
     public async Task AgentLaunchStartsServerBeforeAgentCli()
     {
         using var temp = new TempDirectory();
@@ -264,20 +309,41 @@ public sealed class RuntimeCompatibilityFlowTests
         IProcessStopper? stopper = null,
         IEndpointHealthClient? healthClient = null,
         IPortInspector? startPortInspector = null,
-        IPortReleaser? startPortReleaser = null)
+        IPortReleaser? startPortReleaser = null,
+        AgentCliCatalogService? agentCliCatalogService = null) =>
+        CreateViewModel(
+            [runtime],
+            starter,
+            modelsDirectory,
+            stopper,
+            healthClient,
+            startPortInspector,
+            startPortReleaser,
+            agentCliCatalogService);
+
+    private static HomeViewModel CreateViewModel(
+        IReadOnlyList<LlamaRuntimeInfo> runtimes,
+        IProcessStarter? starter = null,
+        string? modelsDirectory = null,
+        IProcessStopper? stopper = null,
+        IEndpointHealthClient? healthClient = null,
+        IPortInspector? startPortInspector = null,
+        IPortReleaser? startPortReleaser = null,
+        AgentCliCatalogService? agentCliCatalogService = null)
     {
         var viewModel = new HomeViewModel(
             new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
             new RuntimeDashboardService(
                 new EmptyGpuProbe(),
                 new EmptyPortInspector(),
-                new FakeRuntimeCatalog([runtime])),
+                new FakeRuntimeCatalog(runtimes)),
             new RuntimeStartCoordinator(
                 startPortInspector ?? new EmptyPortInspector(),
                 startPortReleaser ?? new EmptyPortReleaser(),
                 starter ?? new CountingProcessStarter(),
                 healthClient),
             new EmptyDownloadService(),
+            agentCliCatalogService: agentCliCatalogService,
             processStopper: stopper);
         if (modelsDirectory is not null)
         {
@@ -393,6 +459,15 @@ public sealed class RuntimeCompatibilityFlowTests
     {
         public Task<ProcessStartResult> StartAsync(ProcessStartRequest request, CancellationToken cancellationToken) =>
             throw new InvalidOperationException(message);
+    }
+
+    private sealed class MissingExecutableResolver : IExecutableResolver
+    {
+        public Task<string?> FindExecutableAsync(string executableName, CancellationToken cancellationToken) =>
+            Task.FromResult<string?>(null);
+
+        public Task<string?> GetVersionAsync(string executableName, CancellationToken cancellationToken) =>
+            Task.FromResult<string?>(null);
     }
 
     private sealed class FixedEndpointHealthClient(EndpointHealthResult result) : IEndpointHealthClient
