@@ -32,7 +32,30 @@ public sealed class LauncherSettingsFileStoreTests
                     ContextTokens: 65536,
                     Port: 8081,
                     AntiLoopPresetId: "mtp-fast")
-            ]);
+                {
+                    KvCache = new KvCacheSettings(
+                        TypeK: "q8_0",
+                        TypeV: "q6_k",
+                        FlashAttention: true,
+                        OffloadKqv: false),
+                    Mtp = new MtpSettings(
+                        Enabled: true,
+                        DraftModelPath: @"D:\AI\Models\hermes-draft.gguf",
+                        DraftTokens: 4,
+                        SpeculativeType: "mtp")
+                }
+            ])
+        {
+            HuggingFaceFilters = new HuggingFaceFilterSettings(
+                SearchQuery: "hermes coder",
+                Author: "NousResearch",
+                Quantization: "Q4_K_M",
+                Architecture: "llama",
+                Task: "text-generation",
+                Sort: "downloads",
+                ShowGated: false,
+                ShowIncompatible: true)
+        };
 
         await store.SaveAsync(settings, CancellationToken.None);
         var restored = await store.LoadAsync(CancellationToken.None);
@@ -47,6 +70,7 @@ public sealed class LauncherSettingsFileStoreTests
         Assert.Equal(settings.Language, restored.Language);
         Assert.Equal(settings.HelpMode, restored.HelpMode);
         Assert.Equal(settings.Profiles, restored.Profiles);
+        Assert.Equal(settings.HuggingFaceFilters, restored.HuggingFaceFilters);
     }
 
     [Fact]

@@ -21,4 +21,8 @@ public sealed record RuntimeReleasePackage(
     string AssetName,
     Uri DownloadUrl,
     long SizeBytes,
-    bool Prerelease);
+    bool Prerelease,
+    RuntimeReleaseAssetSource Source = RuntimeReleaseAssetSource.Stable)
+{
+    public string SourceLabel => RuntimeReleaseAssetSources.ToLabel(Source);
+}

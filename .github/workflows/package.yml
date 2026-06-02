@@ -1,0 +1,80 @@
+name: Package
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  windows-portable:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore .\llama-server-launcher-avalonia.sln
+
+      - name: Build
+        run: dotnet build .\llama-server-launcher-avalonia.sln --no-restore
+
+      - name: Test
+        run: dotnet test .\llama-server-launcher-avalonia.sln --no-build
+
+      - name: Publish Windows portable app
+        shell: pwsh
+        run: |
+          $outDir = ".\publish\AI-Launcher-Studio-win-x64"
+          dotnet publish .\src\Launcher.Desktop\Launcher.Desktop.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=false `
+            -o $outDir
+
+          $exe = Join-Path $outDir "Launcher.Desktop.exe"
+          if (-not (Test-Path $exe)) {
+            throw "Published executable not found: $exe"
+          }
+
+      - name: Create portable zip
+        shell: pwsh
+        run: |
+          $outDir = ".\publish\AI-Launcher-Studio-win-x64"
+          $zipPath = ".\publish\AI-Launcher-Studio-win-x64.zip"
+          if (Test-Path $zipPath) {
+            Remove-Item -LiteralPath $zipPath -Force
+          }
+
+          $forbidden = Get-ChildItem -Path $outDir -Recurse -File |
+            Where-Object {
+              $_.Extension -ieq ".gguf" -or
+              $_.Name.EndsWith(".download", [StringComparison]::OrdinalIgnoreCase)
+            }
+          if ($forbidden) {
+            $names = ($forbidden | Select-Object -ExpandProperty FullName) -join "`n"
+            throw "Portable package contains forbidden local artifacts:`n$names"
+          }
+
+          Compress-Archive -Path (Join-Path $outDir "*") -DestinationPath $zipPath -Force
+          if (-not (Test-Path $zipPath)) {
+            throw "Portable zip was not created: $zipPath"
+          }
+
+      - name: Upload portable zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Launcher-Studio-win-x64
+          path: .\publish\AI-Launcher-Studio-win-x64.zip
+          if-no-files-found: error
+          retention-days: 14

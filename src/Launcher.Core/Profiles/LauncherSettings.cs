@@ -11,4 +11,6 @@ public sealed record LauncherSettings(
     IReadOnlyList<LaunchProfile> Profiles)
 {
     public string? LastRuntimeVersionSource { get; init; }
+
+    public HuggingFaceFilterSettings? HuggingFaceFilters { get; init; }
 }

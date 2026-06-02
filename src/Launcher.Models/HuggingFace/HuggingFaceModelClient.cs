@@ -39,6 +39,12 @@ public sealed class HuggingFaceModelClient(HttpClient httpClient)
                 IsRuntimeCompatible: IsGgufCompatible(model),
                 SiblingFiles: model.Siblings?.Select(sibling => sibling.Rfilename ?? "")
                     .Where(file => !string.IsNullOrWhiteSpace(file))
+                    .ToArray() ?? [],
+                SiblingFileMetadata: model.Siblings?
+                    .Where(sibling => !string.IsNullOrWhiteSpace(sibling.Rfilename))
+                    .Select(sibling => new HuggingFaceSiblingFile(
+                        sibling.Rfilename!,
+                        NormalizeSize(sibling.SizeBytes ?? sibling.Size ?? sibling.Lfs?.Size)))
                     .ToArray() ?? []))
             .Where(model => !string.IsNullOrWhiteSpace(model.Id))
             .ToArray();
@@ -63,6 +69,9 @@ public sealed class HuggingFaceModelClient(HttpClient httpClient)
             || sibling.Rfilename?.Contains("Q5_K_M", StringComparison.OrdinalIgnoreCase) == true
             || sibling.Rfilename?.Contains("Q6_K", StringComparison.OrdinalIgnoreCase) == true) == true;
 
+    private static long? NormalizeSize(long? sizeBytes) =>
+        sizeBytes is > 0 ? sizeBytes : null;
+
     private sealed record ApiModel(
         [property: JsonPropertyName("id")] string? Id,
         [property: JsonPropertyName("downloads")] long Downloads,
@@ -71,5 +80,11 @@ public sealed class HuggingFaceModelClient(HttpClient httpClient)
         [property: JsonPropertyName("siblings")] IReadOnlyList<ApiSibling>? Siblings);
 
     private sealed record ApiSibling(
-        [property: JsonPropertyName("rfilename")] string? Rfilename);
+        [property: JsonPropertyName("rfilename")] string? Rfilename,
+        [property: JsonPropertyName("size")] long? Size,
+        [property: JsonPropertyName("sizeBytes")] long? SizeBytes,
+        [property: JsonPropertyName("lfs")] ApiLfs? Lfs);
+
+    private sealed record ApiLfs(
+        [property: JsonPropertyName("size")] long? Size);
 }

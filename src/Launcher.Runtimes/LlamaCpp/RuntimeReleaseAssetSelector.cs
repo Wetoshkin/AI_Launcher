@@ -7,6 +7,7 @@ public static class RuntimeReleaseAssetSelector
         IReadOnlyList<string> requiredNameFragments,
         bool includePrerelease = false)
     {
+        var source = includePrerelease ? RuntimeReleaseAssetSource.Latest : RuntimeReleaseAssetSource.Stable;
         return releases
             .Where(release => !release.Draft)
             .Where(release => includePrerelease || !release.Prerelease)
@@ -21,7 +22,8 @@ public static class RuntimeReleaseAssetSelector
                     asset.Name,
                     asset.DownloadUrl,
                     asset.SizeBytes,
-                    release.Prerelease)))
+                    release.Prerelease,
+                    source)))
             .ToArray();
     }
 

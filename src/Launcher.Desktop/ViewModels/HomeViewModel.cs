@@ -1462,7 +1462,34 @@ public sealed partial class HomeViewModel : ViewModelBase
             _activeProcessIds.Add(result.ProcessId.Value);
         }
 
+        UpdatePortStatusFromStartResult(port, result);
         return result;
+    }
+
+    private void UpdatePortStatusFromStartResult(int port, RuntimeStartResult result)
+    {
+        if (result.Started)
+        {
+            return;
+        }
+
+        var busyPrefix = $"Порт {port} занят процессом ";
+        var busyMessage = result.Messages.FirstOrDefault(message =>
+            message.StartsWith(busyPrefix, StringComparison.Ordinal));
+        if (busyMessage is null)
+        {
+            return;
+        }
+
+        var processName = busyMessage[busyPrefix.Length..];
+        var stopMarker = ". Запуск остановлен.";
+        if (processName.EndsWith(stopMarker, StringComparison.Ordinal))
+        {
+            processName = processName[..^stopMarker.Length];
+        }
+
+        PortStatus = $"порт {port}: занят {processName}";
+        OnPropertyChanged(nameof(PortStatus));
     }
 
     private void RefreshActiveProcessStatus()

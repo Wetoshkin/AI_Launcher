@@ -8,8 +8,9 @@ public static partial class HuggingFaceGgufFileSelector
     {
         var groups = new Dictionary<string, FileGroup>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var fileName in model.SiblingFiles ?? [])
+        foreach (var siblingFile in GetSiblingFiles(model))
         {
+            var fileName = siblingFile.FileName;
             if (!IsModelGguf(fileName))
             {
                 continue;
@@ -30,7 +31,8 @@ public static partial class HuggingFaceGgufFileSelector
             group.Files.Add(new HuggingFaceGgufFile(
                 fileName,
                 BuildResolveUrl(model.Id, fileName),
-                isFirstShard));
+                isFirstShard,
+                siblingFile.SizeBytes));
         }
 
         return groups.Values
@@ -47,6 +49,18 @@ public static partial class HuggingFaceGgufFileSelector
     private static bool IsModelGguf(string fileName) =>
         fileName.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase)
         && !Path.GetFileName(fileName).Contains("mmproj", StringComparison.OrdinalIgnoreCase);
+
+    private static IEnumerable<HuggingFaceSiblingFile> GetSiblingFiles(HuggingFaceModelSummary model)
+    {
+        if (model.SiblingFileMetadata is { Count: > 0 })
+        {
+            return model.SiblingFileMetadata;
+        }
+
+        return (model.SiblingFiles ?? [])
+            .Where(file => !string.IsNullOrWhiteSpace(file))
+            .Select(file => new HuggingFaceSiblingFile(file));
+    }
 
     private static string BuildResolveUrl(string repoId, string fileName)
     {
