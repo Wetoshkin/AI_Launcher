@@ -49,6 +49,31 @@ package-ai-launcher-studio.bat
 
 GitHub Actions workflow `Package` также можно запускать вручную или tag'ом `v*`. Для tag-сборок он готовит версионированные artifacts вида `AI-Launcher-Studio-v1.0.0-win-x64`, `AI-Launcher-Studio-v1.0.0-release-notes` и `AI-Launcher-Studio-v1.0.0-release-prep`. Workflow не публикует GitHub Release автоматически: скачайте artifacts из успешного run, проверьте `.sha256` и создайте Release вручную для того же tag.
 
+## Установка portable zip
+
+Коротко для пользователя готовой сборки:
+
+1. Скачайте `AI-Launcher-Studio-win-x64.zip` и соседний `AI-Launcher-Studio-win-x64.zip.sha256` из artifact/Release.
+2. Проверьте checksum:
+
+```powershell
+Get-FileHash .\AI-Launcher-Studio-win-x64.zip -Algorithm SHA256
+Get-Content .\AI-Launcher-Studio-win-x64.zip.sha256
+```
+
+3. Распакуйте архив в `D:\AI\AI-Launcher-Studio` или другую папку без прав администратора.
+4. Запустите `Launcher.Desktop.exe`.
+
+Автоматическая распаковка с проверкой `.sha256`, если файл лежит рядом с zip:
+
+```powershell
+.\scripts\Install-PortablePackage.ps1 `
+  -ZipPath .\AI-Launcher-Studio-win-x64.zip `
+  -Destination D:\AI\AI-Launcher-Studio
+```
+
+Подробная инструкция: `docs\INSTALL_PORTABLE_RU.md`.
+
 Проверить portable-сборку можно запуском:
 
 ```powershell

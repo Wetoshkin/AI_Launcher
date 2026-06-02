@@ -235,6 +235,43 @@ public sealed class RuntimeCompatibilityFlowTests
     }
 
     [Fact]
+    public async Task AgentLaunchFlowBuildsPreviewStartsFakeEndpointThenAgentAndReportsReadyHealth()
+    {
+        using var models = new TempDirectory();
+        using var project = new EmptyTempDirectory();
+        var starter = new CountingProcessStarter(processIds: [3100, 3200], outputLine: "fake process started");
+        var viewModel = CreateViewModel(
+            Runtime(supportsMtp: false, supportsTurboQuant: true),
+            starter,
+            models.Path,
+            healthClient: new FixedEndpointHealthClient(new EndpointHealthResult(true, 1, "endpoint готов")));
+        viewModel.SelectAgentModeCommand.Execute(null);
+        viewModel.FolderPicker = new FixedFolderPicker(project.Path);
+        await viewModel.ChooseProjectsFolderCommand.ExecuteAsync(null);
+        viewModel.FolderPicker = new FixedFolderPicker(models.Path);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+
+        viewModel.BuildLaunchCommandCommand.Execute(null);
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        var modelPath = Path.Combine(models.Path, "Qwen3-Coder-Q4_K_M.gguf");
+        Assert.Contains("SERVER:", viewModel.LaunchCommandPreview);
+        Assert.Contains("AGENT:", viewModel.LaunchCommandPreview);
+        Assert.Contains(modelPath, viewModel.LaunchCommandPreview);
+        Assert.Equal(2, starter.Requests.Count);
+        Assert.Equal(@"D:\AI\runtimes\llama-server.exe", starter.Requests[0].Executable);
+        Assert.Contains(modelPath, starter.Requests[0].Arguments);
+        Assert.Null(starter.Requests[0].WorkingDirectory);
+        Assert.Equal("kilo", starter.Requests[1].Executable);
+        Assert.Equal(project.Path, starter.Requests[1].WorkingDirectory);
+        Assert.Equal("процесс: запущен, PID 3100, 3200", viewModel.ActiveProcessStatus);
+        Assert.Contains("endpoint готов", viewModel.StatusMessage);
+        Assert.Contains("fake process started", viewModel.ProcessLogLines);
+        Assert.True(File.Exists(Path.Combine(project.Path, "kilo.jsonc")));
+    }
+
+    [Fact]
     public async Task StartLaunchReportsProcessStartFailureWithoutThrowing()
     {
         using var temp = new TempDirectory();
