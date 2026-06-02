@@ -4,7 +4,7 @@ AI Launcher Studio можно запускать как portable-приложе�
 
 ## Скачать архив
 
-1. Откройте успешный GitHub Actions run workflow `Package` или страницу GitHub Release, если архив уже опубликован вручную.
+1. Откройте успешный GitHub Actions run workflow `Package` или страницу GitHub Release, если архив уже опубликован вручную. Пока ветка не влита в default branch репозитория, `Package` может не отображаться в GitHub Actions UI; в этом случае используйте локальный `package-ai-launcher-studio.bat`.
 2. Скачайте portable artifact/zip для Windows x64:
 
 ```text

@@ -24,7 +24,7 @@ publish\AI-Launcher-Studio-win-x64.zip.sha256
 
 ## Подготовка GitHub Release
 
-Package workflow запускается вручную или на tag `v*` и только подготавливает артефакты. Он не создает и не публикует GitHub Release автоматически.
+Package workflow запускается вручную или на tag `v*` и только подготавливает артефакты. Он не создает и не публикует GitHub Release автоматически. В GitHub Actions UI workflow появится после того, как `.github/workflows/package.yml` будет доступен в default branch репозитория.
 
 Для tag-сборки артефакты получают имя версии/ref, например:
 
