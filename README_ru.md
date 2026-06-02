@@ -12,7 +12,7 @@
 
 Новая GUI-оболочка находится в `src/Launcher.Desktop`.
 
-На Windows можно запустить приложение двойным кликом по:
+На Windows можно запустить текущий GUI из исходников двойным кликом по:
 
 ```bat
 start-ai-launcher-studio.bat
@@ -22,6 +22,13 @@ start-ai-launcher-studio.bat
 
 ```powershell
 dotnet run --project src\Launcher.Desktop\Launcher.Desktop.csproj --no-restore
+```
+
+Перед передачей сборки рекомендуется выполнить:
+
+```powershell
+dotnet build .\llama-server-launcher-avalonia.sln --no-restore
+dotnet test .\llama-server-launcher-avalonia.sln --no-build
 ```
 
 Чтобы собрать обычную Windows-папку с `Launcher.Desktop.exe`, запустите:
@@ -39,6 +46,21 @@ package-ai-launcher-studio.bat
 ```
 
 Архив появится в `publish\AI-Launcher-Studio-win-x64.zip`.
+
+Проверить portable-сборку можно запуском:
+
+```powershell
+.\publish\AI-Launcher-Studio-win-x64\Launcher.Desktop.exe
+```
+
+Быстрый GUI smoke-check:
+
+- открыть первый экран и убедиться, что виден рабочий dashboard AI Launcher Studio;
+- пройти вкладки `Runtime`, `Агенты`, `Модели`;
+- проверить выбор runtime/model/project paths;
+- проверить Hugging Face search и quant/family filters;
+- проверить launch preview для server-only и agent-сценария;
+- при наличии runtime и маленького GGUF запустить endpoint и дождаться готовности `/v1/models`.
 
 ## Возможности
 

@@ -88,6 +88,49 @@ public sealed class HomeViewModelDownloadTests
     }
 
     [Fact]
+    public async Task SearchHuggingFaceCommandExposesDownloadOptionSizes()
+    {
+        var handler = new JsonHttpHandler("""
+        [
+          {
+            "id": "unsloth/Qwen3-Coder-GGUF",
+            "downloads": 100,
+            "likes": 10,
+            "tags": ["gguf"],
+            "siblings": [
+              {"rfilename": "Qwen3-Coder-Q4_K_M.gguf", "size": 4294967296},
+              {"rfilename": "Qwen3-Coder-Q5_K_M.gguf"}
+            ]
+          }
+        ]
+        """);
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(handler) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            new FakeDownloadService())
+        {
+            HfSearchText = "qwen coder"
+        };
+
+        await viewModel.SearchHuggingFaceCommand.ExecuteAsync(null);
+
+        Assert.Collection(viewModel.RemoteDownloadOptions,
+            option =>
+            {
+                Assert.Equal("Qwen3-Coder-Q4_K_M.gguf", option.Label);
+                Assert.Equal(4_294_967_296, option.TotalSizeBytes);
+                Assert.Equal("4 GB", option.SizeText);
+            },
+            option =>
+            {
+                Assert.Equal("Qwen3-Coder-Q5_K_M.gguf", option.Label);
+                Assert.Null(option.TotalSizeBytes);
+                Assert.Equal("", option.SizeText);
+            });
+    }
+
+    [Fact]
     public async Task DownloadSelectedRemoteModelCommandPassesSelectedOptionToDownloadService()
     {
         using var temp = new TempDirectory();

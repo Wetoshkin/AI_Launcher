@@ -103,6 +103,49 @@ public sealed class RuntimeCompatibilityFlowTests
     }
 
     [Fact]
+    public async Task EndpointLaunchStartsFakeServerAndReportsReadyHealth()
+    {
+        using var temp = new TempDirectory();
+        var starter = new CountingProcessStarter(processId: 4242, outputLine: "llama server listening");
+        var viewModel = CreateViewModel(
+            Runtime(supportsMtp: false, supportsTurboQuant: true),
+            starter,
+            temp.Path,
+            healthClient: new FixedEndpointHealthClient(new EndpointHealthResult(true, 2, "endpoint готов")));
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        Assert.Single(starter.Requests);
+        Assert.Equal(@"D:\AI\runtimes\llama-server.exe", starter.Requests[0].Executable);
+        Assert.Equal("процесс: запущен, PID 4242", viewModel.ActiveProcessStatus);
+        Assert.Contains("endpoint готов", viewModel.StatusMessage);
+        Assert.Contains("llama server listening", viewModel.ProcessLogLines);
+    }
+
+    [Fact]
+    public async Task StartLaunchBlocksMissingLocalModelBeforeProcessStart()
+    {
+        using var temp = new EmptyTempDirectory();
+        var starter = new CountingProcessStarter();
+        var viewModel = CreateViewModel(
+            Runtime(supportsMtp: false, supportsTurboQuant: true),
+            starter,
+            temp.Path);
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        Assert.Empty(starter.Requests);
+        Assert.Equal("Выберите модель перед запуском.", viewModel.StatusMessage);
+        Assert.Equal("процесс: не запущен", viewModel.ActiveProcessStatus);
+    }
+
+    [Fact]
     public async Task AgentLaunchStartsServerBeforeAgentCli()
     {
         using var temp = new TempDirectory();
@@ -371,6 +414,24 @@ public sealed class RuntimeCompatibilityFlowTests
             Directory.CreateDirectory(Path);
             using var file = File.Create(System.IO.Path.Combine(Path, "Qwen3-Coder-Q4_K_M.gguf"));
             file.SetLength(129L * 1024L * 1024L);
+        }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+            {
+                Directory.Delete(Path, recursive: true);
+            }
+        }
+    }
+
+    private sealed class EmptyTempDirectory : IDisposable
+    {
+        public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "runtime-compat-empty-" + Guid.NewGuid().ToString("N"));
+
+        public EmptyTempDirectory()
+        {
+            Directory.CreateDirectory(Path);
         }
 
         public void Dispose()

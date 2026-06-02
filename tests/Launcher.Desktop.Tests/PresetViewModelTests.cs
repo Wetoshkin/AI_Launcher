@@ -237,6 +237,18 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public void ClearProcessLogCommandKeepsLastLaunchLogSnapshot()
+    {
+        var viewModel = CreateViewModel();
+        viewModel.ProcessLogLines.Add("server started");
+        viewModel.ProcessLogLines.Add("agent started");
+
+        viewModel.ClearProcessLogCommand.Execute(null);
+
+        Assert.Equal(["server started", "agent started"], viewModel.LastLaunchLogLines);
+    }
+
+    [Fact]
     public async Task PickRuntimeArchiveCommandStoresSelectedZipPath()
     {
         var picker = new FixedFilePicker(@"D:\Downloads\llama-runtime.zip");
@@ -306,6 +318,45 @@ public sealed class PresetViewModelTests
     }
 
     [Fact]
+    public async Task SearchRuntimeReleasesCommandFiltersPackagesBySelectedSource()
+    {
+        var stable = RuntimePackage(
+            "b5400",
+            "llama-b5400-bin-win-cuda-x64.zip",
+            128_000_000,
+            RuntimeReleaseAssetSource.Stable);
+        var latest = RuntimePackage(
+            "b5410",
+            "llama-b5410-bin-win-cuda-x64.zip",
+            129_000_000,
+            RuntimeReleaseAssetSource.Latest);
+        var viewModel = CreateViewModel(runtimeReleaseCatalog: new FakeRuntimeReleaseCatalog([stable, latest]));
+        viewModel.SelectedRuntimeReleaseSource = RuntimeReleaseAssetSource.Latest;
+
+        await viewModel.SearchRuntimeReleasesCommand.ExecuteAsync(null);
+
+        var row = Assert.Single(viewModel.RuntimeReleasePackages);
+        Assert.Equal(latest, row.Package);
+        Assert.Equal("последний релиз", row.SourceLabel);
+        Assert.Same(row, viewModel.SelectedRuntimeReleasePackage);
+    }
+
+    [Fact]
+    public void RuntimeReleasePackageRowShowsRussianSourceLabel()
+    {
+        var package = RuntimePackage(
+            "b5410",
+            "llama-b5410-bin-win-cuda-x64.zip",
+            129_000_000,
+            RuntimeReleaseAssetSource.Latest);
+
+        var row = new RuntimeReleasePackageRowViewModel(package);
+
+        Assert.Equal("последний релиз", row.SourceLabel);
+        Assert.DoesNotContain("последний релиз", row.Summary);
+    }
+
+    [Fact]
     public async Task CheckRuntimeUpdateCommandReportsAvailableUpdate()
     {
         var package = RuntimePackage("b5400", "llama-b5400-bin-win-cuda-x64.zip", 128_000_000);
@@ -317,6 +368,28 @@ public sealed class PresetViewModelTests
 
         Assert.Equal("доступно обновление: b5300 -> b5400", viewModel.RuntimeUpdateStatus);
         Assert.Equal("Проверка обновления runtime: доступно обновление: b5300 -> b5400", viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task CheckRuntimeUpdateCommandUsesSelectedSource()
+    {
+        var stable = RuntimePackage(
+            "b5400",
+            "llama-b5400-bin-win-cuda-x64.zip",
+            128_000_000,
+            RuntimeReleaseAssetSource.Stable);
+        var latest = RuntimePackage(
+            "b5410",
+            "llama-b5410-bin-win-cuda-x64.zip",
+            129_000_000,
+            RuntimeReleaseAssetSource.Latest);
+        var viewModel = CreateViewModel(runtimeReleaseCatalog: new FakeRuntimeReleaseCatalog([stable, latest]));
+        viewModel.RuntimeArchivePath = @"D:\AI\cache\b5300\llama-b5300-bin-win-cuda-x64.zip";
+        viewModel.SelectedRuntimeReleaseSource = RuntimeReleaseAssetSource.Latest;
+
+        await viewModel.CheckRuntimeUpdateCommand.ExecuteAsync(null);
+
+        Assert.Equal("доступно обновление: b5300 -> b5410", viewModel.RuntimeUpdateStatus);
     }
 
     [Fact]
@@ -521,14 +594,19 @@ public sealed class PresetViewModelTests
         portInspector: portInspector,
         portReleaser: portReleaser);
 
-    private static RuntimeReleasePackage RuntimePackage(string tag, string assetName, long sizeBytes) => new(
+    private static RuntimeReleasePackage RuntimePackage(
+        string tag,
+        string assetName,
+        long sizeBytes,
+        RuntimeReleaseAssetSource source = RuntimeReleaseAssetSource.Stable) => new(
         tag,
         $"Release {tag}",
         PublishedAt: new DateTimeOffset(2026, 5, 28, 0, 0, 0, TimeSpan.Zero),
         assetName,
         new Uri("https://github.com/runtime.zip"),
         sizeBytes,
-        Prerelease: false);
+        Prerelease: false,
+        source);
 
     private static LlamaRuntimeInfo Runtime(string executablePath) => new(
         executablePath,

@@ -11,6 +11,8 @@ public sealed class RuntimeReleasePackageRowViewModel(RuntimeReleasePackage pack
 
     public string Summary => $"{SizeText(package.SizeBytes)} · {DateText(package.PublishedAt)}";
 
+    public string SourceLabel => package.SourceLabel;
+
     public string Url => package.DownloadUrl.ToString();
 
     private static string SizeText(long sizeBytes) =>
