@@ -406,9 +406,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public ObservableCollection<RemoteDownloadQueueItemViewModel> RemoteDownloadQueue { get; } = [];
 
-    public string DownloadQueueStatusText => RemoteDownloadQueue.Count == 0
-        ? "Очередь HF пуста."
-        : $"В очереди HF: {RemoteDownloadQueue.Count} {PendingDownloadCountText(RemoteDownloadQueue.Count)}.";
+    public string DownloadQueueStatusText => BuildDownloadQueueStatusText();
 
     public RemoteGgufDownloadOptionRowViewModel? SelectedRemoteDownloadOption
     {
@@ -1397,6 +1395,18 @@ public sealed partial class HomeViewModel : ViewModelBase
             return;
         }
 
+        var existing = RemoteDownloadQueue.FirstOrDefault(item => IsSameRemoteDownload(
+            item.RepoId,
+            item.Option,
+            SelectedRemoteDownloadOption.RepoId,
+            SelectedRemoteDownloadOption.Option));
+        if (existing is not null)
+        {
+            SelectedRemoteDownloadQueueItem = existing;
+            SetStatus($"Этот GGUF уже есть в очереди HF: {existing.Label}.");
+            return;
+        }
+
         var item = new RemoteDownloadQueueItemViewModel(
             SelectedRemoteDownloadOption.RepoId,
             SelectedRemoteDownloadOption.Option);
@@ -1443,13 +1453,10 @@ public sealed partial class HomeViewModel : ViewModelBase
         _downloadCancellation = new CancellationTokenSource();
         try
         {
-            var result = await _modelDownloadService.DownloadAsync(
-                new HuggingFaceModelDownloadRequest(
-                    SelectedRemoteDownloadOption.RepoId,
-                    SelectedRemoteDownloadOption.Option,
-                    ModelsFolderPath),
-                _downloadCancellation.Token,
-                UpdateDownloadProgress);
+            var result = await DownloadRemoteOptionAsync(
+                SelectedRemoteDownloadOption.RepoId,
+                SelectedRemoteDownloadOption.Option,
+                _downloadCancellation.Token);
 
             RefreshLocalModels();
             SetStatus($"Скачивание завершено: {result.DownloadedFiles.Count} скачано, {result.SkippedFiles.Count} уже были на диске.");
@@ -1471,6 +1478,70 @@ public sealed partial class HomeViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task DownloadRemoteQueueAsync()
+    {
+        if (RemoteDownloadQueue.Count == 0)
+        {
+            SetStatus("Очередь HF пуста.");
+            return;
+        }
+
+        if (ModelsFolderPath == "не указана" || string.IsNullOrWhiteSpace(ModelsFolderPath))
+        {
+            SetStatus("Сначала укажите папку моделей.");
+            return;
+        }
+
+        var completed = 0;
+        var errors = 0;
+        IsDownloading = true;
+        _downloadCancellation?.Dispose();
+        _downloadCancellation = new CancellationTokenSource();
+
+        try
+        {
+            foreach (var item in RemoteDownloadQueue.ToArray())
+            {
+                item.MarkDownloading();
+                OnPropertyChanged(nameof(DownloadQueueStatusText));
+                SelectedRemoteDownloadQueueItem = item;
+                SetStatus($"Очередь HF: скачиваю {item.Label}...");
+
+                try
+                {
+                    await DownloadRemoteOptionAsync(item.RepoId, item.Option, _downloadCancellation.Token);
+                    item.MarkCompleted();
+                    OnPropertyChanged(nameof(DownloadQueueStatusText));
+                    completed++;
+                }
+                catch (OperationCanceledException)
+                {
+                    item.MarkPending();
+                    OnPropertyChanged(nameof(DownloadQueueStatusText));
+                    SetStatus("Скачивание отменено.");
+                    return;
+                }
+                catch (Exception ex) when (ex is HttpRequestException or IOException or InvalidOperationException)
+                {
+                    item.MarkError();
+                    OnPropertyChanged(nameof(DownloadQueueStatusText));
+                    errors++;
+                    SetStatus($"Очередь HF: ошибка для {item.Label}: {ex.Message}");
+                }
+            }
+
+            RefreshLocalModels();
+            SetStatus($"Очередь HF завершена: {completed} скачано, {errors} {ErrorCountText(errors)}.");
+        }
+        finally
+        {
+            IsDownloading = false;
+            _downloadCancellation?.Dispose();
+            _downloadCancellation = null;
+        }
+    }
+
+    [RelayCommand]
     private void CancelDownload()
     {
         if (!IsDownloading)
@@ -1481,6 +1552,15 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         _downloadCancellation?.Cancel();
     }
+
+    private Task<HuggingFaceModelDownloadResult> DownloadRemoteOptionAsync(
+        string repoId,
+        HuggingFaceGgufDownloadOption option,
+        CancellationToken cancellationToken) =>
+        _modelDownloadService.DownloadAsync(
+            new HuggingFaceModelDownloadRequest(repoId, option, ModelsFolderPath),
+            cancellationToken,
+            UpdateDownloadProgress);
 
     private void SetStatus(string message)
     {
@@ -2004,9 +2084,43 @@ public sealed partial class HomeViewModel : ViewModelBase
         return string.Create(CultureInfo.InvariantCulture, $"GPU свободно {freeGpuGb:0.0} ГБ; {fitText}");
     }
 
+    private string BuildDownloadQueueStatusText()
+    {
+        if (RemoteDownloadQueue.Count == 0)
+        {
+            return "Очередь HF пуста.";
+        }
+
+        var pending = RemoteDownloadQueue.Count(item => item.Status == RemoteDownloadQueueItemStatus.Pending);
+        var completed = RemoteDownloadQueue.Count(item => item.Status == RemoteDownloadQueueItemStatus.Completed);
+        var errors = RemoteDownloadQueue.Count(item => item.Status == RemoteDownloadQueueItemStatus.Error);
+        var downloading = RemoteDownloadQueue.Count(item => item.Status == RemoteDownloadQueueItemStatus.Downloading);
+
+        if (completed == 0 && errors == 0 && downloading == 0)
+        {
+            return $"В очереди HF: {pending} {PendingDownloadCountText(pending)}.";
+        }
+
+        return $"Очередь HF: скачивается {downloading}, завершено {completed}, ошибок {errors}, ожидают {pending}.";
+    }
+
     private static string PendingDownloadCountText(int count) => count % 10 == 1 && count % 100 != 11
         ? "ожидает скачивания"
         : "ожидают скачивания";
+
+    private static string ErrorCountText(int count) => count % 10 == 1 && count % 100 != 11
+        ? "ошибка"
+        : "ошибок";
+
+    private static bool IsSameRemoteDownload(
+        string leftRepoId,
+        HuggingFaceGgufDownloadOption leftOption,
+        string rightRepoId,
+        HuggingFaceGgufDownloadOption rightOption) =>
+        string.Equals(leftRepoId, rightRepoId, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(leftOption.Label, rightOption.Label, StringComparison.OrdinalIgnoreCase)
+        && leftOption.Files.Select(file => file.FileName)
+            .SequenceEqual(rightOption.Files.Select(file => file.FileName), StringComparer.OrdinalIgnoreCase);
 
     private KvCacheProfile KvCacheFor() => new(SelectedKvCacheK, SelectedKvCacheV);
 

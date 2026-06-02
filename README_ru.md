@@ -57,6 +57,7 @@ GitHub Actions workflow `Package` также можно запускать вр�
 
 Быстрый GUI smoke-check:
 
+- для визуальной проверки дизайна можно использовать `docs\GUI_VISUAL_QA_RU.md` и `scripts\Invoke-VisualQa.ps1`;
 - открыть первый экран и убедиться, что виден рабочий dashboard AI Launcher Studio;
 - пройти вкладки `Runtime`, `Агенты`, `Модели`;
 - проверить выбор runtime/model/project paths;

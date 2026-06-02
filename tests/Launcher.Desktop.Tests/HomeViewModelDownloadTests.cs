@@ -243,6 +243,33 @@ public sealed class HomeViewModelDownloadTests
     }
 
     [Fact]
+    public void AddSelectedRemoteDownloadToQueueCommandSkipsDuplicateOption()
+    {
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            new FakeDownloadService());
+        var remoteModel = new RemoteModelRowViewModel(new HuggingFaceModelSummary(
+            "unsloth/Qwen3-Coder-GGUF",
+            Downloads: 100,
+            Likes: 10,
+            Tags: ["gguf"],
+            IsCompatibleWithCurrentGpu: false,
+            HasPreferredQuant: true,
+            IsRuntimeCompatible: true,
+            SiblingFiles: ["Qwen3-Coder-Q4_K_M.gguf"]));
+
+        viewModel.SelectedRemoteModel = remoteModel;
+        viewModel.SelectedRemoteDownloadOption = viewModel.RemoteDownloadOptions.Single();
+        viewModel.AddSelectedRemoteDownloadToQueueCommand.Execute(null);
+        viewModel.AddSelectedRemoteDownloadToQueueCommand.Execute(null);
+
+        Assert.Single(viewModel.RemoteDownloadQueue);
+        Assert.Equal("Этот GGUF уже есть в очереди HF: Qwen3-Coder-Q4_K_M.gguf.", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public void RemoveSelectedRemoteDownloadFromQueueCommandRemovesPendingOption()
     {
         var viewModel = new HomeViewModel(
@@ -270,6 +297,62 @@ public sealed class HomeViewModelDownloadTests
         Assert.Empty(viewModel.RemoteDownloadQueue);
         Assert.Equal("Очередь HF пуста.", viewModel.DownloadQueueStatusText);
         Assert.Equal("Удалено из очереди HF: Qwen3-Coder-Q4_K_M.gguf.", viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task DownloadRemoteQueueCommandDownloadsItemsSequentially()
+    {
+        using var temp = new TempDirectory();
+        var downloadService = new FakeDownloadService();
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            downloadService)
+        {
+            FolderPicker = new FixedFolderPicker(temp.Path)
+        };
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        AddRemoteOptionToQueue(viewModel, "unsloth/Qwen3-Coder-GGUF", "Qwen3-Coder-Q4_K_M.gguf");
+        AddRemoteOptionToQueue(viewModel, "unsloth/DeepSeek-Coder-GGUF", "DeepSeek-Coder-Q5_K_M.gguf");
+
+        await viewModel.DownloadRemoteQueueCommand.ExecuteAsync(null);
+
+        Assert.Collection(downloadService.Requests,
+            request => Assert.Equal("unsloth/Qwen3-Coder-GGUF", request.RepoId),
+            request => Assert.Equal("unsloth/DeepSeek-Coder-GGUF", request.RepoId));
+        Assert.All(viewModel.RemoteDownloadQueue, item => Assert.Equal("завершено", item.StatusText));
+        Assert.Equal("Очередь HF завершена: 2 скачано, 0 ошибок.", viewModel.StatusMessage);
+        Assert.Equal("Очередь HF: скачивается 0, завершено 2, ошибок 0, ожидают 0.", viewModel.DownloadQueueStatusText);
+    }
+
+    [Fact]
+    public async Task DownloadRemoteQueueCommandContinuesAfterItemError()
+    {
+        using var temp = new TempDirectory();
+        var downloadService = new FakeDownloadService
+        {
+            FailedRepoIds = { "unsloth/Qwen3-Coder-GGUF" }
+        };
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            downloadService)
+        {
+            FolderPicker = new FixedFolderPicker(temp.Path)
+        };
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        AddRemoteOptionToQueue(viewModel, "unsloth/Qwen3-Coder-GGUF", "Qwen3-Coder-Q4_K_M.gguf");
+        AddRemoteOptionToQueue(viewModel, "unsloth/DeepSeek-Coder-GGUF", "DeepSeek-Coder-Q5_K_M.gguf");
+
+        await viewModel.DownloadRemoteQueueCommand.ExecuteAsync(null);
+
+        Assert.Collection(viewModel.RemoteDownloadQueue,
+            item => Assert.Equal("ошибка", item.StatusText),
+            item => Assert.Equal("завершено", item.StatusText));
+        Assert.Equal("Очередь HF завершена: 1 скачано, 1 ошибка.", viewModel.StatusMessage);
+        Assert.Equal("Очередь HF: скачивается 0, завершено 1, ошибок 1, ожидают 0.", viewModel.DownloadQueueStatusText);
     }
 
     [Fact]
@@ -355,7 +438,11 @@ public sealed class HomeViewModelDownloadTests
     {
         public HuggingFaceModelDownloadRequest? LastRequest { get; private set; }
 
+        public List<HuggingFaceModelDownloadRequest> Requests { get; } = [];
+
         public HuggingFaceDownloadProgress? ProgressToEmit { get; set; }
+
+        public HashSet<string> FailedRepoIds { get; } = [];
 
         public Task<HuggingFaceModelDownloadResult> DownloadAsync(
             HuggingFaceModelDownloadRequest request,
@@ -363,6 +450,12 @@ public sealed class HomeViewModelDownloadTests
             Action<HuggingFaceDownloadProgress>? progress = null)
         {
             LastRequest = request;
+            Requests.Add(request);
+            if (FailedRepoIds.Contains(request.RepoId))
+            {
+                throw new InvalidOperationException("download failed");
+            }
+
             if (ProgressToEmit is not null)
             {
                 progress?.Invoke(ProgressToEmit);
@@ -370,6 +463,23 @@ public sealed class HomeViewModelDownloadTests
 
             return Task.FromResult(new HuggingFaceModelDownloadResult(["downloaded.gguf"], []));
         }
+    }
+
+    private static void AddRemoteOptionToQueue(HomeViewModel viewModel, string repoId, string fileName)
+    {
+        var remoteModel = new RemoteModelRowViewModel(new HuggingFaceModelSummary(
+            repoId,
+            Downloads: 100,
+            Likes: 10,
+            Tags: ["gguf"],
+            IsCompatibleWithCurrentGpu: false,
+            HasPreferredQuant: true,
+            IsRuntimeCompatible: true,
+            SiblingFiles: [fileName]));
+
+        viewModel.SelectedRemoteModel = remoteModel;
+        viewModel.SelectedRemoteDownloadOption = viewModel.RemoteDownloadOptions.Single();
+        viewModel.AddSelectedRemoteDownloadToQueueCommand.Execute(null);
     }
 
     private sealed class BlockingDownloadService : IHuggingFaceModelDownloadService
