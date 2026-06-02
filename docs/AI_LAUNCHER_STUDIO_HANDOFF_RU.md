@@ -147,7 +147,8 @@
   - ручной запуск через `workflow_dispatch`;
   - запуск по тегам `v*`;
   - build/test/publish;
-  - portable zip artifact;
+  - portable zip artifact вместе с `.zip.sha256`;
+  - SHA256 выводится в лог package workflow и локального package bat;
   - проверка, что в zip не попали GGUF и временные `.download` файлы.
 
 ## Что ещё надо сделать
@@ -166,13 +167,119 @@
   - missing CLI/runtime/model.
 - Добавить packaging/release:
   - installer;
-  - подпись/хэши артефактов.
+  - подпись артефактов.
 - Добавить браузерную/визуальную проверку GUI скриншотами после крупных UI-изменений.
 - Улучшить Hugging Face UX:
   - отдельные фильтры size/MTP/vision/tools;
   - вывести уже собранные `FormattedSize`/`TotalSizeBytes` в GUI;
   - очередь загрузок.
 - Не коммитить `runtimes/`, модели, скачанные GGUF, временные `.download`.
+
+## Что запустить прямо сейчас
+
+Минимальная проверка свежего handoff и portable-сборки:
+
+```powershell
+dotnet build .\llama-server-launcher-avalonia.sln --no-restore
+dotnet test .\llama-server-launcher-avalonia.sln --no-build
+.\package-ai-launcher-studio.bat
+```
+
+Если нужно только открыть текущий GUI из исходников:
+
+```powershell
+.\start-ai-launcher-studio.bat
+```
+
+или:
+
+```powershell
+dotnet run --project src\Launcher.Desktop\Launcher.Desktop.csproj --no-restore
+```
+
+Для проверки опубликованной portable-сборки после упаковки:
+
+```powershell
+.\publish\AI-Launcher-Studio-win-x64\Launcher.Desktop.exe
+```
+
+Готовый zip-архив лежит здесь:
+
+```text
+publish\AI-Launcher-Studio-win-x64.zip
+```
+
+На базе `e5b1617` архив уже был собран локально: `publish\AI-Launcher-Studio-win-x64.zip`.
+
+## Как собрать portable zip
+
+1. Убедиться, что рабочее дерево не содержит чужих незавершённых изменений в файлах, которые нужны для упаковки.
+2. Запустить:
+
+```powershell
+.\package-ai-launcher-studio.bat
+```
+
+3. Проверить, что появились:
+   - папка `publish\AI-Launcher-Studio-win-x64`;
+   - архив `publish\AI-Launcher-Studio-win-x64.zip`.
+4. Открыть опубликованный exe:
+
+```powershell
+.\publish\AI-Launcher-Studio-win-x64\Launcher.Desktop.exe
+```
+
+5. Проверить, что в zip не попали модели, runtime binaries из `runtimes\`, временные `.download` файлы и локальные конфиги пользователя.
+
+## Как проверять GUI
+
+Быстрый smoke-check без реального запуска модели:
+
+- Открыть GUI из исходников или из portable-папки.
+- Проверить, что первый экран сразу показывает рабочий dashboard AI Launcher Studio, а не landing page.
+- Перейти по вкладкам `Runtime`, `Агенты`, `Модели`.
+- В `Runtime` проверить выбор папок runtime root/cache и кнопку поиска runtime.
+- В `Агенты` проверить отображение CLI discovery для `opencode`, `kilo`, `claw`, `aider`, `pi`.
+- В `Модели` проверить локальный каталог GGUF и Hugging Face search; для HF проверить quant/family filters.
+- В launch preview проверить, что agent-сценарий показывает две стадии: `SERVER` и `AGENT`.
+- Ввести занятый порт и убедиться, что GUI показывает русское предупреждение о занятом порте, не пытаясь освобождать неизвестный процесс автоматически.
+- Проверить кнопку `Остановить` и очистку live log, если был запущен stub/runtime.
+
+Расширенный GUI smoke-check с реальным runtime:
+
+- Выбрать или скачать совместимый `llama-server.exe`.
+- Выбрать небольшой локальный GGUF.
+- Запустить server-only endpoint и дождаться успешного `GET /v1/models`.
+- Запустить agent-сценарий с установленным CLI и проверить, что проектный config получает model id вида `local/<имя GGUF>`.
+- После остановки убедиться, что порт освобождён, а лог не содержит необъяснённых исключений.
+
+## Независимые задачи следующей волны
+
+Эти задачи можно раздать разным агентам, если заранее развести файлы владения:
+
+- Runtime UX: source/channel selector, подписи профилей `CPU`/`CUDA`/`Vulkan`/`ROCm`, отображение установленной и сохранённой версии runtime.
+- Launch UX: отдельные controls для остальных speculative decoding параметров и улучшение launch review.
+- Models UX: фильтры size/MTP/vision/tools, вывод `FormattedSize`/`TotalSizeBytes`, очередь загрузок HF GGUF.
+- Tests: end-to-end smoke tests со stub `llama-server`, agent + local endpoint, occupied port, missing CLI/runtime/model.
+- Packaging/release: installer, checksums, подпись артефактов, release notes.
+- Architecture: разбиение `HomeViewModel` на отдельные VM/экраны и перенос вкладок в отдельные XAML views.
+- Visual QA: сценарии браузерной/скриншотной проверки GUI после крупных UI-изменений.
+
+## Файлы, которые нельзя трогать одновременно
+
+При параллельной работе не давайте двум агентам одновременно править одни и те же зоны:
+
+- `src\Launcher.Desktop\ViewModels\HomeViewModel.cs`: центральная точка GUI-состояния, runtime/model/agent launch логика.
+- `src\Launcher.Desktop\Views\HomeView.axaml`: основной layout и вкладки.
+- `src\Launcher.Core\*`: launch plan, settings, compatibility review, presets.
+- `src\Launcher.Runtimes\*`: runtime discovery/download/install, process/port/endpoint logic.
+- `src\Launcher.Models\*`: локальный каталог, Hugging Face search/download, file grouping.
+- `src\Launcher.Agents\*`: command builders, CLI discovery, project config writers.
+- `tests\Launcher.*.Tests\*`: тесты рядом с соответствующей доменной зоной.
+- `publish-ai-launcher-studio.bat`, `package-ai-launcher-studio.bat`, `.github\workflows\*.yml`: packaging/CI ownership.
+- `README.md`, `README_ru.md`, `docs\AI_LAUNCHER_STUDIO_HANDOFF_RU.md`: документация и handoff; менять синхронно только одним агентом.
+
+Если два среза всё же затрагивают одну зону, сначала договориться о порядке: один агент заканчивает и оставляет diff, второй перечитывает свежий файл и продолжает поверх него.
 
 ## Методика разработки
 

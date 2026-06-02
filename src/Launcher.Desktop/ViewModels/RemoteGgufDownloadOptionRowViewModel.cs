@@ -19,6 +19,10 @@ public sealed class RemoteGgufDownloadOptionRowViewModel(string repoId, HuggingF
         _ => $"{option.TotalFiles} файлов"
     };
 
+    public long? TotalSizeBytes => option.TotalSizeBytes;
+
+    public string SizeText => option.FormattedSize;
+
     public string ModeText => option.IsSplit ? "split" : "single";
 
     public string PrimaryUrl => option.PrimaryFile.DownloadUrl;

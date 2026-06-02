@@ -400,6 +400,8 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public ObservableCollection<string> ProcessLogLines { get; } = [];
 
+    public IReadOnlyList<string> LastLaunchLogLines { get; private set; } = [];
+
     public ObservableCollection<AgentCliStatusRowViewModel> AgentCliStatuses { get; } = [];
 
     public ObservableCollection<RuntimeReleasePackageRowViewModel> RuntimeReleasePackages { get; } = [];
@@ -408,6 +410,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     private RuntimeReleasePackageRowViewModel? _selectedRuntimeReleasePackage;
     private RuntimeReleaseProfile _selectedRuntimeReleaseProfile = RuntimeReleaseProfile.Cuda;
+    private RuntimeReleaseAssetSource _selectedRuntimeReleaseSource = RuntimeReleaseAssetSource.Stable;
 
     public IReadOnlyList<RuntimeReleaseProfile> RuntimeReleaseProfileOptions { get; } =
     [
@@ -416,6 +419,44 @@ public sealed partial class HomeViewModel : ViewModelBase
         RuntimeReleaseProfile.Vulkan,
         RuntimeReleaseProfile.Rocm
     ];
+
+    public IReadOnlyList<RuntimeReleaseSourceOptionViewModel> RuntimeReleaseSourceOptions { get; } =
+    [
+        new(RuntimeReleaseAssetSource.Stable),
+        new(RuntimeReleaseAssetSource.Latest),
+        new(RuntimeReleaseAssetSource.Manual),
+        new(RuntimeReleaseAssetSource.Detected)
+    ];
+
+    public RuntimeReleaseSourceOptionViewModel? SelectedRuntimeReleaseSourceOption
+    {
+        get => RuntimeReleaseSourceOptions.FirstOrDefault(option => option.Source == _selectedRuntimeReleaseSource);
+        set
+        {
+            if (value is null)
+            {
+                return;
+            }
+
+            SelectedRuntimeReleaseSource = value.Source;
+        }
+    }
+
+    public RuntimeReleaseAssetSource SelectedRuntimeReleaseSource
+    {
+        get => _selectedRuntimeReleaseSource;
+        set
+        {
+            if (_selectedRuntimeReleaseSource == value)
+            {
+                return;
+            }
+
+            _selectedRuntimeReleaseSource = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedRuntimeReleaseSourceOption));
+        }
+    }
 
     public RuntimeReleaseProfile SelectedRuntimeReleaseProfile
     {
@@ -832,7 +873,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         {
             var packages = await _runtimeReleaseCatalog.ListPackagesAsync(SelectedRuntimeReleaseProfile, default);
             RuntimeReleasePackages.Clear();
-            foreach (var package in packages.Take(12))
+            foreach (var package in packages.Where(package => package.Source == SelectedRuntimeReleaseSource).Take(12))
             {
                 RuntimeReleasePackages.Add(new RuntimeReleasePackageRowViewModel(package));
             }
@@ -853,7 +894,10 @@ public sealed partial class HomeViewModel : ViewModelBase
         try
         {
             var packages = await _runtimeReleaseCatalog.ListPackagesAsync(SelectedRuntimeReleaseProfile, default);
-            var result = RuntimeUpdateService.Check(RuntimeVersionSource(), packages);
+            var selectedSourcePackages = packages
+                .Where(package => package.Source == SelectedRuntimeReleaseSource)
+                .ToArray();
+            var result = RuntimeUpdateService.Check(RuntimeVersionSource(), selectedSourcePackages);
             RuntimeUpdateStatus = result.Message;
             OnPropertyChanged(nameof(RuntimeUpdateStatus));
             SetStatus($"Проверка обновления runtime: {result.Message}");
@@ -1519,8 +1563,20 @@ public sealed partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private void ClearProcessLog()
     {
+        PreserveCurrentLaunchLog();
         ProcessLogLines.Clear();
         SetStatus("Лог очищен.");
+    }
+
+    private void PreserveCurrentLaunchLog()
+    {
+        if (ProcessLogLines.Count == 0)
+        {
+            return;
+        }
+
+        LastLaunchLogLines = ProcessLogLines.ToArray();
+        OnPropertyChanged(nameof(LastLaunchLogLines));
     }
 
     [RelayCommand]
@@ -1777,4 +1833,11 @@ public sealed partial class HomeViewModel : ViewModelBase
             8081,
             "mtp-fast"));
     }
+}
+
+public sealed class RuntimeReleaseSourceOptionViewModel(RuntimeReleaseAssetSource source)
+{
+    public RuntimeReleaseAssetSource Source => source;
+
+    public string Label => RuntimeReleaseAssetSources.ToLabel(source);
 }

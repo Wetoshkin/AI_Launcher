@@ -471,6 +471,15 @@
             <ComboBox ItemsSource="{Binding RuntimeReleaseProfileOptions}"
                       SelectedItem="{Binding SelectedRuntimeReleaseProfile}"
                       MinWidth="110"/>
+            <ComboBox ItemsSource="{Binding RuntimeReleaseSourceOptions}"
+                      SelectedItem="{Binding SelectedRuntimeReleaseSourceOption}"
+                      MinWidth="170">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:RuntimeReleaseSourceOptionViewModel">
+                  <TextBlock Text="{Binding Label}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
             <Button Content="Найти runtime"
                     Command="{Binding SearchRuntimeReleasesCommand}"/>
             <Button Content="Проверить обновление"
@@ -510,12 +519,24 @@
                    MaxHeight="160">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:RuntimeReleasePackageRowViewModel">
-                <Grid ColumnDefinitions="*,130" ColumnSpacing="8" Margin="0,4">
+                <Grid ColumnDefinitions="*,150,130" ColumnSpacing="8" Margin="0,4">
                   <StackPanel Grid.Column="0">
                     <TextBlock Text="{Binding Title}" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
                     <TextBlock Text="{Binding Url}" Foreground="#8A7660" FontSize="11" TextTrimming="CharacterEllipsis"/>
                   </StackPanel>
-                  <TextBlock Grid.Column="1"
+                  <Border Grid.Column="1"
+                          Background="#FFF0D9"
+                          BorderBrush="#F1D2A8"
+                          BorderThickness="1"
+                          CornerRadius="8"
+                          Padding="8,4"
+                          VerticalAlignment="Center">
+                    <TextBlock Text="{Binding SourceLabel}"
+                               Foreground="#8C4508"
+                               FontSize="11"
+                               TextTrimming="CharacterEllipsis"/>
+                  </Border>
+                  <TextBlock Grid.Column="2"
                              Text="{Binding Summary}"
                              Foreground="#A95508"
                              VerticalAlignment="Center"
@@ -648,6 +669,7 @@
                               <TextBlock Text="{Binding Quant}" Foreground="#C15F00" FontWeight="Bold"/>
                               <TextBlock Text="{Binding Label}" MaxWidth="260" TextTrimming="CharacterEllipsis"/>
                               <TextBlock Text="{Binding FileCountText}" Foreground="#7B6C5B"/>
+                              <TextBlock Text="{Binding SizeText}" Foreground="#7B6C5B"/>
                               <TextBlock Text="{Binding ModeText}" Foreground="#247187"/>
                             </StackPanel>
                           </Border>
@@ -666,11 +688,12 @@
                      MaxHeight="120">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:RemoteGgufDownloadOptionRowViewModel">
-                  <Grid ColumnDefinitions="90,*,85,70" ColumnSpacing="8" Margin="0,4">
+                  <Grid ColumnDefinitions="90,*,85,80,70" ColumnSpacing="8" Margin="0,4">
                     <TextBlock Grid.Column="0" Text="{Binding Quant}" Foreground="#C15F00" FontWeight="Bold"/>
                     <TextBlock Grid.Column="1" Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>
                     <TextBlock Grid.Column="2" Text="{Binding FileCountText}" Foreground="#7B6C5B" HorizontalAlignment="Right"/>
-                    <TextBlock Grid.Column="3" Text="{Binding ModeText}" Foreground="#247187" HorizontalAlignment="Right"/>
+                    <TextBlock Grid.Column="3" Text="{Binding SizeText}" Foreground="#7B6C5B" HorizontalAlignment="Right"/>
+                    <TextBlock Grid.Column="4" Text="{Binding ModeText}" Foreground="#247187" HorizontalAlignment="Right"/>
                   </Grid>
                 </DataTemplate>
               </ListBox.ItemTemplate>
