@@ -44,6 +44,24 @@ public sealed class MtpSettingsFlowTests
     }
 
     [Fact]
+    public void HomeViewShowsHuggingFaceCapabilityFilterControls()
+    {
+        var xaml = File.ReadAllText(FindRepositoryFile("src", "Launcher.Desktop", "Views", "HomeView.axaml"));
+
+        Assert.Contains("ItemsSource=\"{Binding HfCapabilityFilterOptions}\"", xaml);
+        Assert.Contains("SelectedItem=\"{Binding SelectedHfCapabilityFilterOption}\"", xaml);
+        Assert.Contains("x:DataType=\"vm:HuggingFaceCapabilityFilterOptionViewModel\"", xaml);
+        Assert.Contains("Text=\"{Binding Label}\"", xaml);
+        Assert.Contains("все возможности", xaml);
+        Assert.Contains("GGUF", xaml);
+        Assert.Contains("визуальные", xaml);
+        Assert.Contains("инструменты", xaml);
+        Assert.Contains("MTP", xaml);
+        Assert.Contains("совместимые runtime", xaml);
+        Assert.Contains("TurboQuant", xaml);
+    }
+
+    [Fact]
     public async Task BuildLaunchCommandUsesUserSelectedMtpDraftTokenLimit()
     {
         using var temp = new TempDirectory();
