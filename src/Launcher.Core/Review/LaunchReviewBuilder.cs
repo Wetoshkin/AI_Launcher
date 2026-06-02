@@ -25,6 +25,16 @@ public static class LaunchReviewBuilder
             lines.Insert(2, $"Проект: {profile.ProjectPath}");
         }
 
+        if (profile.Mtp is { Enabled: true } mtp)
+        {
+            var specType = string.IsNullOrWhiteSpace(mtp.SpeculativeType)
+                ? "draft-mtp"
+                : mtp.SpeculativeType;
+            var draftMin = mtp.DraftMinTokens?.ToString(CultureInfo.InvariantCulture) ?? "не задан";
+            var draftMax = mtp.DraftTokens?.ToString(CultureInfo.InvariantCulture) ?? "не задан";
+            lines.Add($"Speculative decoding: {specType}, draft min/max: {draftMin}/{draftMax}");
+        }
+
         return new LaunchReview(lines);
     }
 

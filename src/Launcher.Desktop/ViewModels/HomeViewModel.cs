@@ -62,6 +62,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         "AI Launcher Studio",
         "runtime-downloads");
     private HuggingFaceSort _hfSort = HuggingFaceSort.Downloads;
+    private int _mtpDraftMinTokens = 1;
     private int _mtpDraftTokens = 4;
     private string _selectedKvCacheK = "q8_0";
     private string _selectedKvCacheV = "turbo4";
@@ -263,6 +264,30 @@ public sealed partial class HomeViewModel : ViewModelBase
             }
 
             _mtpDraftTokens = normalized;
+            if (_mtpDraftMinTokens > normalized)
+            {
+                _mtpDraftMinTokens = normalized;
+                OnPropertyChanged(nameof(MtpDraftMinTokens));
+            }
+
+            OnPropertyChanged();
+            RefreshLaunchReview();
+            _lastLaunchPlan = null;
+        }
+    }
+
+    public int MtpDraftMinTokens
+    {
+        get => _mtpDraftMinTokens;
+        set
+        {
+            var normalized = Math.Clamp(value, 0, MtpDraftTokens);
+            if (_mtpDraftMinTokens == normalized)
+            {
+                return;
+            }
+
+            _mtpDraftMinTokens = normalized;
             OnPropertyChanged();
             RefreshLaunchReview();
             _lastLaunchPlan = null;
@@ -576,6 +601,21 @@ public sealed partial class HomeViewModel : ViewModelBase
 
             _hfSort = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedHfSortOption));
+        }
+    }
+
+    public HuggingFaceSortOptionViewModel? SelectedHfSortOption
+    {
+        get => HfSortOptions.FirstOrDefault(option => option.Sort == _hfSort);
+        set
+        {
+            if (value is null)
+            {
+                return;
+            }
+
+            HfSort = value.Sort;
         }
     }
 
@@ -625,12 +665,12 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
     }
 
-    public IReadOnlyList<HuggingFaceSort> HfSortOptions { get; } =
+    public IReadOnlyList<HuggingFaceSortOptionViewModel> HfSortOptions { get; } =
     [
-        HuggingFaceSort.Downloads,
-        HuggingFaceSort.Likes,
-        HuggingFaceSort.LastModified,
-        HuggingFaceSort.Trending
+        new(HuggingFaceSort.Downloads),
+        new(HuggingFaceSort.Likes),
+        new(HuggingFaceSort.LastModified),
+        new(HuggingFaceSort.Trending)
     ];
 
     public IReadOnlyList<string> HfQuantFilterOptions { get; } =
@@ -1529,6 +1569,13 @@ public sealed partial class HomeViewModel : ViewModelBase
             return;
         }
 
+        var missingAgentCli = MissingSelectedAgentCliMessage(profile);
+        if (missingAgentCli is not null)
+        {
+            SetStatus($"Запуск остановлен: {missingAgentCli}");
+            return;
+        }
+
         if (_lastLaunchPlan is null)
         {
             BuildLaunchCommand();
@@ -1626,6 +1673,19 @@ public sealed partial class HomeViewModel : ViewModelBase
         OnPropertyChanged(nameof(PortStatus));
     }
 
+    private string? MissingSelectedAgentCliMessage(LaunchProfile profile)
+    {
+        if (profile.Mode != LaunchMode.Agent)
+        {
+            return null;
+        }
+
+        var status = AgentCliStatuses.FirstOrDefault(row => row.Name == profile.Agent.ToString());
+        return status is { IsInstalled: false }
+            ? $"агент {profile.Agent} не найден в PATH ({status.Executable})."
+            : null;
+    }
+
     private void RefreshActiveProcessStatus()
     {
         ActiveProcessStatus = _activeProcessIds.Count == 0
@@ -1691,7 +1751,10 @@ public sealed partial class HomeViewModel : ViewModelBase
         SetStatus(string.Join(" ", messages));
     }
 
-    private LaunchProfile BuildDraftProfile() => new(
+    private LaunchProfile BuildDraftProfile()
+    {
+        var selectedPreset = DecodingPresetCatalog.Get(SelectedDecodingPreset.Id);
+        return new LaunchProfile(
             Id: "draft",
             Name: "Черновик запуска",
             Mode: _wizardState.Scenario.Mode,
@@ -1701,7 +1764,18 @@ public sealed partial class HomeViewModel : ViewModelBase
             ModelPath: SelectedLocalModel?.Path ?? "модель не выбрана",
             ContextTokens: ContextTokens,
             Port: Port,
-            AntiLoopPresetId: SelectedDecodingPreset.Id);
+            AntiLoopPresetId: SelectedDecodingPreset.Id)
+        {
+            Mtp = selectedPreset.EnableMtp
+                ? new MtpSettings(
+                    Enabled: true,
+                    DraftModelPath: null,
+                    DraftTokens: MtpDraftTokens,
+                    SpeculativeType: selectedPreset.SpecType,
+                    DraftMinTokens: MtpDraftMinTokens)
+                : null
+        };
+    }
 
     private LaunchPlan BuildServerPlan(LaunchProfile profile)
     {
@@ -1743,6 +1817,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         if (preset.EnableMtp)
         {
+            arguments["--spec-draft-n-min"] = MtpDraftMinTokens.ToString(CultureInfo.InvariantCulture);
             arguments["--spec-draft-n-max"] = MtpDraftTokens.ToString(CultureInfo.InvariantCulture);
         }
 
@@ -1930,6 +2005,21 @@ public sealed class RuntimeReleaseSourceOptionViewModel(RuntimeReleaseAssetSourc
     public RuntimeReleaseAssetSource Source => source;
 
     public string Label => RuntimeReleaseAssetSources.ToLabel(source);
+}
+
+public sealed class HuggingFaceSortOptionViewModel(HuggingFaceSort sort)
+{
+    public HuggingFaceSort Sort => sort;
+
+    public string Label => sort switch
+    {
+        HuggingFaceSort.Downloads => "по загрузкам",
+        HuggingFaceSort.Likes => "по лайкам",
+        HuggingFaceSort.LastModified => "по дате обновления",
+        HuggingFaceSort.Trending => "тренды",
+        HuggingFaceSort.CreatedAt => "по дате создания",
+        _ => sort.ToString()
+    };
 }
 
 public sealed class RuntimeReleaseProfileOptionViewModel(RuntimeReleaseProfile profile)

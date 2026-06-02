@@ -191,20 +191,17 @@
                          HorizontalAlignment="Center"
                          VerticalAlignment="Center"/>
             </Border>
-            <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto">
+            <Grid Grid.Column="1" RowDefinitions="Auto,*">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <Border Background="#E86F16" CornerRadius="8" Padding="9,4">
-                  <TextBlock Text="РЕЖИМ" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                <Border Background="#FFE7C6" BorderBrush="#F1B15B" BorderThickness="1" CornerRadius="8" Padding="9,4">
+                  <TextBlock Text="Агент" Foreground="#C15F00" FontWeight="Bold" FontSize="12"/>
                 </Border>
-                <TextBlock Text="проект и агент" Foreground="#8C4508" FontWeight="Bold" VerticalAlignment="Center"/>
+                <TextBlock Text="проект + CLI" Foreground="#8C4508" FontWeight="Bold" VerticalAlignment="Center"/>
               </StackPanel>
               <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="6">
                 <TextBlock Text="Запустить агента" FontSize="24" FontWeight="Bold" Foreground="#201710"/>
-                <TextBlock Text="Открывает выбранный агент в папке проекта." Foreground="#6F5A45" TextWrapping="Wrap"/>
+                <TextBlock Text="Выбор агента, проекта и локального runtime для запуска." Foreground="#6F5A45" TextWrapping="Wrap"/>
               </StackPanel>
-              <Border Grid.Row="2" Background="#FFF0D9" CornerRadius="8" Padding="10,6" HorizontalAlignment="Left">
-                <TextBlock Text="Выбрать режим агента" Foreground="#C15F00" FontWeight="Bold"/>
-              </Border>
             </Grid>
           </Grid>
         </Button>
@@ -230,20 +227,17 @@
                          HorizontalAlignment="Center"
                          VerticalAlignment="Center"/>
             </Border>
-            <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto">
+            <Grid Grid.Column="1" RowDefinitions="Auto,*">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <Border Background="#247187" CornerRadius="8" Padding="9,4">
-                  <TextBlock Text="РЕЖИМ" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                <Border Background="#DDF5EC" BorderBrush="#82C9B7" BorderThickness="1" CornerRadius="8" Padding="9,4">
+                  <TextBlock Text="Сервер" Foreground="#247187" FontWeight="Bold" FontSize="12"/>
                 </Border>
-                <TextBlock Text="сервер без агента" Foreground="#20677A" FontWeight="Bold" VerticalAlignment="Center"/>
+                <TextBlock Text="endpoint для клиента" Foreground="#20677A" FontWeight="Bold" VerticalAlignment="Center"/>
               </StackPanel>
               <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="6">
                 <TextBlock Text="Поднять сервер" FontSize="24" FontWeight="Bold" Foreground="#201710"/>
-                <TextBlock Text="Запускает llama-server для внешнего клиента." Foreground="#526B6E" TextWrapping="Wrap"/>
+                <TextBlock Text="Настройка llama-server без запуска агентного CLI." Foreground="#526B6E" TextWrapping="Wrap"/>
               </StackPanel>
-              <Border Grid.Row="2" Background="#E5F8F0" CornerRadius="8" Padding="10,6" HorizontalAlignment="Left">
-                <TextBlock Text="Выбрать серверный режим" Foreground="#247187" FontWeight="Bold"/>
-              </Border>
             </Grid>
           </Grid>
         </Button>
@@ -259,7 +253,11 @@
                       Data="M3,6 L8,6 L10,8 L21,8 L21,18 L3,18 Z M3,8 L21,8"/>
             <StackPanel Grid.Column="1">
               <TextBlock Text="Папка моделей" FontWeight="Bold" Foreground="#2C241B"/>
-              <TextBlock Text="{Binding ModelsFolderPath}" Foreground="#7B6C5B" FontSize="12"/>
+              <TextBlock Text="{Binding ModelsFolderPath}"
+                         Foreground="#7B6C5B"
+                         FontSize="12"
+                         TextTrimming="CharacterEllipsis"
+                         TextWrapping="NoWrap"/>
               <TextBlock Text="{Binding ModelCountText}" Foreground="#A95508" FontSize="12"/>
             </StackPanel>
           </Grid>
@@ -273,7 +271,11 @@
                       Data="M3,6 L8,6 L10,8 L21,8 L21,18 L3,18 Z M3,8 L21,8"/>
             <StackPanel Grid.Column="1">
               <TextBlock Text="Папка проектов" FontWeight="Bold" Foreground="#2C241B"/>
-              <TextBlock Text="{Binding ProjectsFolderPath}" Foreground="#A95508" FontSize="12"/>
+              <TextBlock Text="{Binding ProjectsFolderPath}"
+                         Foreground="#A95508"
+                         FontSize="12"
+                         TextTrimming="CharacterEllipsis"
+                         TextWrapping="NoWrap"/>
             </StackPanel>
           </Grid>
         </Button>
@@ -378,20 +380,20 @@
                      Foreground="#765A36"
                      TextWrapping="Wrap"/>
           <TextBlock Text="Команда" FontWeight="Bold" FontSize="12" Foreground="#6F5A45"/>
-          <Border Background="#2F2923" CornerRadius="8" Padding="10">
+          <Border Background="#FFF4E5" BorderBrush="#E6CBA6" BorderThickness="1" CornerRadius="8" Padding="10">
             <TextBlock Text="{Binding LaunchCommandPreview}"
-                       Foreground="#F8E8C8"
+                       Foreground="#3A2A1E"
                        FontFamily="Consolas"
                        TextWrapping="Wrap"/>
           </Border>
           <TextBlock Text="Лог процесса" FontWeight="Bold" FontSize="12" Foreground="#6F5A45"/>
-          <Border Background="#171A1F" CornerRadius="8" Padding="10" MinHeight="96">
+          <Border Background="#FAF1E4" BorderBrush="#D8C1A4" BorderThickness="1" CornerRadius="8" Padding="10" MinHeight="96">
             <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="150">
               <ItemsControl ItemsSource="{Binding ProcessLogLines}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
                     <TextBlock Text="{Binding}"
-                               Foreground="#D9E8D6"
+                               Foreground="#3E3329"
                                FontFamily="Consolas"
                                FontSize="12"
                                TextWrapping="Wrap"/>
@@ -631,7 +633,13 @@
                      Text="{Binding HfSearchText}"/>
             <ComboBox Grid.Column="1"
                       ItemsSource="{Binding HfSortOptions}"
-                      SelectedItem="{Binding HfSort}"/>
+                      SelectedItem="{Binding SelectedHfSortOption}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:HuggingFaceSortOptionViewModel">
+                  <TextBlock Text="{Binding Label}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
             <ComboBox Grid.Column="2"
                       ItemsSource="{Binding HfFamilyFilterOptions}"
                       SelectedItem="{Binding HfFamilyFilter}"
