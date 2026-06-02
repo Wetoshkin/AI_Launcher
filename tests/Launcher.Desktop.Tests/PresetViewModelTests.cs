@@ -463,7 +463,33 @@ public sealed class PresetViewModelTests
 
         viewModel.SelectedRuntimeReleaseProfile = RuntimeReleaseProfile.Cuda;
 
-        Assert.Equal("CUDA: NVIDIA GPU, обычно самый быстрый вариант для RTX.", viewModel.RuntimeReleaseProfileHint);
+        Assert.Equal("CUDA: для видеокарт NVIDIA, обычно самый быстрый вариант для RTX.", viewModel.RuntimeReleaseProfileHint);
+    }
+
+    [Fact]
+    public void RuntimeReleaseProfileOptionsExposeRussianLabelsAndTooltips()
+    {
+        var viewModel = CreateViewModel();
+
+        var labels = viewModel.RuntimeReleaseProfileOptions
+            .Select(option => option!.GetType().GetProperty("Label")?.GetValue(option)?.ToString())
+            .ToArray();
+        var tooltips = viewModel.RuntimeReleaseProfileOptions
+            .Select(option => option!.GetType().GetProperty("Tooltip")?.GetValue(option)?.ToString())
+            .ToArray();
+
+        Assert.Equal(["Процессор", "NVIDIA CUDA", "Vulkan для видеокарт", "AMD ROCm"], labels);
+        Assert.Equal(
+            [
+                "Самый совместимый вариант без ускорения видеокартой.",
+                "Для видеокарт NVIDIA, обычно лучший выбор для RTX.",
+                "Универсальный вариант для видеокарт NVIDIA, AMD и Intel.",
+                "Для совместимых видеокарт AMD Radeon и Instinct."
+            ],
+            tooltips);
+        Assert.DoesNotContain(labels, label => string.Equals(label, RuntimeReleaseProfile.Cpu.ToString(), StringComparison.Ordinal));
+        Assert.DoesNotContain(labels, label => string.Equals(label, RuntimeReleaseProfile.Cuda.ToString(), StringComparison.Ordinal));
+        Assert.DoesNotContain(labels, label => string.Equals(label, RuntimeReleaseProfile.Rocm.ToString(), StringComparison.Ordinal));
     }
 
     [Fact]

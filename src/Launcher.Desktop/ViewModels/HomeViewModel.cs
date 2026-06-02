@@ -54,6 +54,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private string _hfSearchText = "qwen coder gguf";
     private string _hfFamilyFilter = "любая";
     private string _hfQuantFilter = "любой";
+    private string _hfSizeFilter = "любой размер";
     private string _runtimeArchivePath = "";
     private string _runtimeRootPath = @"D:\AI\runtimes";
     private string _runtimeCacheRootPath = Path.Combine(
@@ -412,12 +413,12 @@ public sealed partial class HomeViewModel : ViewModelBase
     private RuntimeReleaseProfile _selectedRuntimeReleaseProfile = RuntimeReleaseProfile.Cuda;
     private RuntimeReleaseAssetSource _selectedRuntimeReleaseSource = RuntimeReleaseAssetSource.Stable;
 
-    public IReadOnlyList<RuntimeReleaseProfile> RuntimeReleaseProfileOptions { get; } =
+    public IReadOnlyList<RuntimeReleaseProfileOptionViewModel> RuntimeReleaseProfileOptions { get; } =
     [
-        RuntimeReleaseProfile.Cpu,
-        RuntimeReleaseProfile.Cuda,
-        RuntimeReleaseProfile.Vulkan,
-        RuntimeReleaseProfile.Rocm
+        new(RuntimeReleaseProfile.Cpu),
+        new(RuntimeReleaseProfile.Cuda),
+        new(RuntimeReleaseProfile.Vulkan),
+        new(RuntimeReleaseProfile.Rocm)
     ];
 
     public IReadOnlyList<RuntimeReleaseSourceOptionViewModel> RuntimeReleaseSourceOptions { get; } =
@@ -458,6 +459,20 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
     }
 
+    public RuntimeReleaseProfileOptionViewModel? SelectedRuntimeReleaseProfileOption
+    {
+        get => RuntimeReleaseProfileOptions.FirstOrDefault(option => option.Profile == _selectedRuntimeReleaseProfile);
+        set
+        {
+            if (value is null)
+            {
+                return;
+            }
+
+            SelectedRuntimeReleaseProfile = value.Profile;
+        }
+    }
+
     public RuntimeReleaseProfile SelectedRuntimeReleaseProfile
     {
         get => _selectedRuntimeReleaseProfile;
@@ -470,16 +485,17 @@ public sealed partial class HomeViewModel : ViewModelBase
 
             _selectedRuntimeReleaseProfile = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedRuntimeReleaseProfileOption));
             OnPropertyChanged(nameof(RuntimeReleaseProfileHint));
         }
     }
 
     public string RuntimeReleaseProfileHint => SelectedRuntimeReleaseProfile switch
     {
-        RuntimeReleaseProfile.Cuda => "CUDA: NVIDIA GPU, обычно самый быстрый вариант для RTX.",
-        RuntimeReleaseProfile.Vulkan => "Vulkan: универсальный GPU runtime, часто подходит для NVIDIA/AMD/Intel.",
-        RuntimeReleaseProfile.Rocm => "ROCm: AMD GPU runtime для совместимых Radeon/Instinct.",
-        _ => "CPU: запуск без GPU-ускорения, самый совместимый вариант."
+        RuntimeReleaseProfile.Cuda => "CUDA: для видеокарт NVIDIA, обычно самый быстрый вариант для RTX.",
+        RuntimeReleaseProfile.Vulkan => "Vulkan: универсальный вариант для видеокарт NVIDIA, AMD и Intel.",
+        RuntimeReleaseProfile.Rocm => "ROCm: для совместимых видеокарт AMD Radeon и Instinct.",
+        _ => "Процессор: запуск без ускорения видеокартой, самый совместимый вариант."
     };
 
     public RuntimeReleasePackageRowViewModel? SelectedRuntimeReleasePackage
@@ -593,6 +609,22 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
     }
 
+    public string HfSizeFilter
+    {
+        get => _hfSizeFilter;
+        set
+        {
+            if (_hfSizeFilter == value)
+            {
+                return;
+            }
+
+            _hfSizeFilter = value;
+            OnPropertyChanged();
+            RefreshRemoteDownloadOptions();
+        }
+    }
+
     public IReadOnlyList<HuggingFaceSort> HfSortOptions { get; } =
     [
         HuggingFaceSort.Downloads,
@@ -608,6 +640,16 @@ public sealed partial class HomeViewModel : ViewModelBase
         "Q5_K_M",
         "Q6_K",
         "Q8_0"
+    ];
+
+    public IReadOnlyList<string> HfSizeFilterOptions { get; } =
+    [
+        "любой размер",
+        "до 8 ГБ",
+        "8-16 ГБ",
+        "16-32 ГБ",
+        "32+ ГБ",
+        "неизвестный"
     ];
 
     public IReadOnlyList<string> HfFamilyFilterOptions { get; } =
@@ -1192,6 +1234,7 @@ public sealed partial class HomeViewModel : ViewModelBase
             var filtered = models
                 .Where(MatchesHfFamilyFilter)
                 .Where(MatchesHfQuantFilter)
+                .Where(MatchesHfSizeFilter)
                 .Take(10)
                 .ToArray();
 
@@ -1222,6 +1265,53 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         return model.SiblingFiles?.Any(file => file.Contains(HfQuantFilter, StringComparison.OrdinalIgnoreCase)) == true;
     }
+
+    private bool MatchesHfSizeFilter(HuggingFaceModelSummary model)
+    {
+        if (IsAnyHfSizeFilter())
+        {
+            return true;
+        }
+
+        return FilterHfDownloadOptions(HuggingFaceGgufFileSelector.SelectDownloadOptions(model)).Count > 0;
+    }
+
+    private bool MatchesHfSizeFilter(RemoteGgufDownloadOptionRowViewModel option)
+    {
+        if (IsAnyHfSizeFilter())
+        {
+            return true;
+        }
+
+        return MatchesHfSizeFilter(option.Option);
+    }
+
+    private bool MatchesHfSizeFilter(HuggingFaceGgufDownloadOption option)
+    {
+        if (IsAnyHfSizeFilter())
+        {
+            return true;
+        }
+
+        return FilterHfDownloadOptions([option]).Count == 1;
+    }
+
+    private bool IsAnyHfSizeFilter() =>
+        string.IsNullOrWhiteSpace(HfSizeFilter)
+        || HfSizeFilter.Equals("любой размер", StringComparison.OrdinalIgnoreCase);
+
+    private IReadOnlyList<HuggingFaceGgufDownloadOption> FilterHfDownloadOptions(IEnumerable<HuggingFaceGgufDownloadOption> options) =>
+        HuggingFaceGgufDownloadSizeFilter.Apply(options, SelectedHfSizeRange());
+
+    private HuggingFaceGgufDownloadSizeRange SelectedHfSizeRange() => HfSizeFilter switch
+    {
+        "до 8 ГБ" => HuggingFaceGgufDownloadSizeRange.UpTo8Gb,
+        "8-16 ГБ" => HuggingFaceGgufDownloadSizeRange.Between8And16Gb,
+        "16-32 ГБ" => HuggingFaceGgufDownloadSizeRange.Between16And32Gb,
+        "32+ ГБ" => HuggingFaceGgufDownloadSizeRange.Over32Gb,
+        "неизвестный" => HuggingFaceGgufDownloadSizeRange.Unknown,
+        _ => HuggingFaceGgufDownloadSizeRange.Any
+    };
 
     private bool MatchesHfFamilyFilter(HuggingFaceModelSummary model)
     {
@@ -1734,7 +1824,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private void RefreshRemoteDownloadOptions()
     {
         RemoteDownloadOptions.Clear();
-        foreach (var option in SelectedRemoteModel?.DownloadOptions ?? [])
+        foreach (var option in (SelectedRemoteModel?.DownloadOptions ?? []).Where(MatchesHfSizeFilter))
         {
             RemoteDownloadOptions.Add(option);
         }
@@ -1840,4 +1930,25 @@ public sealed class RuntimeReleaseSourceOptionViewModel(RuntimeReleaseAssetSourc
     public RuntimeReleaseAssetSource Source => source;
 
     public string Label => RuntimeReleaseAssetSources.ToLabel(source);
+}
+
+public sealed class RuntimeReleaseProfileOptionViewModel(RuntimeReleaseProfile profile)
+{
+    public RuntimeReleaseProfile Profile => profile;
+
+    public string Label => profile switch
+    {
+        RuntimeReleaseProfile.Cuda => "NVIDIA CUDA",
+        RuntimeReleaseProfile.Vulkan => "Vulkan для видеокарт",
+        RuntimeReleaseProfile.Rocm => "AMD ROCm",
+        _ => "Процессор"
+    };
+
+    public string Tooltip => profile switch
+    {
+        RuntimeReleaseProfile.Cuda => "Для видеокарт NVIDIA, обычно лучший выбор для RTX.",
+        RuntimeReleaseProfile.Vulkan => "Универсальный вариант для видеокарт NVIDIA, AMD и Intel.",
+        RuntimeReleaseProfile.Rocm => "Для совместимых видеокарт AMD Radeon и Instinct.",
+        _ => "Самый совместимый вариант без ускорения видеокартой."
+    };
 }

@@ -114,23 +114,24 @@
 
     <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="22,20,22,26" Spacing="14">
-      <DockPanel LastChildFill="False">
-        <StackPanel DockPanel.Dock="Left" Spacing="4">
+      <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
+        <StackPanel Grid.Row="0" Spacing="4">
           <TextBlock Text="{Binding Title}" FontSize="32" FontWeight="Bold" Foreground="#201710"/>
           <TextBlock Text="{Binding Subtitle}" FontSize="13" Foreground="#76614C"/>
         </StackPanel>
-        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
-          <Border Background="#FFF9F0" BorderBrush="#E6CBA6" BorderThickness="1" CornerRadius="12" Padding="12,8" MinWidth="132">
-            <TextBlock Text="{Binding GpuStatus}" Foreground="#4B3B2A"/>
+        <WrapPanel Grid.Row="1">
+          <Border Background="#FFF9F0" BorderBrush="#E6CBA6" BorderThickness="1" CornerRadius="12" Padding="12,8" MinWidth="132" Margin="0,0,8,8">
+            <TextBlock Text="{Binding GpuStatus}" Foreground="#4B3B2A" TextTrimming="CharacterEllipsis"/>
           </Border>
           <Button Content="{Binding PortStatus}"
                   Command="{Binding CheckPortCommand}"
-                  Classes="ghost"/>
-          <Border Background="#ECF9F8" BorderBrush="#A8DAD6" BorderThickness="1" CornerRadius="12" Padding="12,8" MinWidth="190">
-            <TextBlock Text="{Binding RuntimeStatus}" Foreground="#20677A"/>
+                  Classes="ghost"
+                  Margin="0,0,8,8"/>
+          <Border Background="#ECF9F8" BorderBrush="#A8DAD6" BorderThickness="1" CornerRadius="12" Padding="12,8" MinWidth="190" Margin="0,0,8,8">
+            <TextBlock Text="{Binding RuntimeStatus}" Foreground="#20677A" TextTrimming="CharacterEllipsis"/>
           </Border>
-        </StackPanel>
-      </DockPanel>
+        </WrapPanel>
+      </Grid>
 
       <Grid ColumnDefinitions="*,170,Auto,Auto" ColumnSpacing="10">
         <ItemsControl Grid.Column="0" ItemsSource="{Binding WizardSteps}">
@@ -467,13 +468,22 @@
               </Grid>
             </StackPanel>
           </Grid>
-          <StackPanel Orientation="Horizontal" Spacing="8">
+          <WrapPanel>
             <ComboBox ItemsSource="{Binding RuntimeReleaseProfileOptions}"
-                      SelectedItem="{Binding SelectedRuntimeReleaseProfile}"
-                      MinWidth="110"/>
+                      SelectedItem="{Binding SelectedRuntimeReleaseProfileOption}"
+                      MinWidth="150"
+                      Margin="0,0,8,8">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:RuntimeReleaseProfileOptionViewModel">
+                  <TextBlock Text="{Binding Label}"
+                             ToolTip.Tip="{Binding Tooltip}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
             <ComboBox ItemsSource="{Binding RuntimeReleaseSourceOptions}"
                       SelectedItem="{Binding SelectedRuntimeReleaseSourceOption}"
-                      MinWidth="170">
+                      MinWidth="170"
+                      Margin="0,0,8,8">
               <ComboBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:RuntimeReleaseSourceOptionViewModel">
                   <TextBlock Text="{Binding Label}"/>
@@ -481,21 +491,28 @@
               </ComboBox.ItemTemplate>
             </ComboBox>
             <Button Content="Найти runtime"
-                    Command="{Binding SearchRuntimeReleasesCommand}"/>
+                    Command="{Binding SearchRuntimeReleasesCommand}"
+                    Margin="0,0,8,8"/>
             <Button Content="Проверить обновление"
-                    Command="{Binding CheckRuntimeUpdateCommand}"/>
+                    Command="{Binding CheckRuntimeUpdateCommand}"
+                    Margin="0,0,8,8"/>
             <Button Content="Скачать выбранный"
-                    Command="{Binding DownloadSelectedRuntimeReleaseCommand}"/>
+                    Command="{Binding DownloadSelectedRuntimeReleaseCommand}"
+                    Margin="0,0,8,8"/>
             <Button Content="Скачать и установить"
-                    Command="{Binding DownloadAndInstallSelectedRuntimeReleaseCommand}"/>
+                    Command="{Binding DownloadAndInstallSelectedRuntimeReleaseCommand}"
+                    Margin="0,0,8,8"/>
             <Button Content="Отменить скачивание"
-                    Command="{Binding CancelRuntimeDownloadCommand}"/>
+                    Command="{Binding CancelRuntimeDownloadCommand}"
+                    Margin="0,0,8,8"/>
             <Button Content="Установить runtime"
                     Command="{Binding InstallRuntimePackageCommand}"
-                    Classes="primary"/>
+                    Classes="primary"
+                    Margin="0,0,8,8"/>
             <Button Content="Проверить runtime"
-                    Command="{Binding CheckPortCommand}"/>
-          </StackPanel>
+                    Command="{Binding CheckPortCommand}"
+                    Margin="0,0,8,8"/>
+          </WrapPanel>
           <TextBlock Text="{Binding RuntimeReleaseProfileHint}"
                      Foreground="#765A36"
                      FontSize="12"
@@ -608,7 +625,7 @@
 
       <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
         <StackPanel Spacing="10">
-          <Grid ColumnDefinitions="*,150,120,130,Auto" ColumnSpacing="10">
+          <Grid ColumnDefinitions="*,150,120,130,130,Auto" ColumnSpacing="10">
             <TextBox Grid.Column="0"
                      PlaceholderText="Поиск Hugging Face GGUF"
                      Text="{Binding HfSearchText}"/>
@@ -623,7 +640,11 @@
                       ItemsSource="{Binding HfQuantFilterOptions}"
                       SelectedItem="{Binding HfQuantFilter}"
                       ToolTip.Tip="Фильтр по имени GGUF-файла в репозитории: Q4_K_M, Q5_K_M, Q6_K, Q8_0."/>
-            <Button Grid.Column="4"
+            <ComboBox Grid.Column="4"
+                      ItemsSource="{Binding HfSizeFilterOptions}"
+                      SelectedItem="{Binding HfSizeFilter}"
+                      ToolTip.Tip="Фильтр по суммарному размеру выбранного GGUF-варианта; неизвестный размер скрыт в диапазонах."/>
+            <Button Grid.Column="5"
                     Content="Найти"
                     Command="{Binding SearchHuggingFaceCommand}"/>
           </Grid>

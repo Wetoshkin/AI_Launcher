@@ -28,6 +28,8 @@ public sealed class AgentProjectConfigWriter
         AgentLaunchRequest request,
         CancellationToken cancellationToken)
     {
+        LocalOpenAiCommandRequestValidator.Validate(request);
+
         var path = Path.Combine(request.ProjectPath, "kilo.jsonc");
         var root = new JsonObject
         {
@@ -48,6 +50,8 @@ public sealed class AgentProjectConfigWriter
         AgentLaunchRequest request,
         CancellationToken cancellationToken)
     {
+        LocalOpenAiCommandRequestValidator.Validate(request);
+
         var path = Path.Combine(request.ProjectPath, "opencode.json");
         var root = new JsonObject
         {
