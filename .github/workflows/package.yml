@@ -17,6 +17,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Prepare package metadata
+        id: meta
+        shell: pwsh
+        run: |
+          $refName = $env:GITHUB_REF_NAME
+          if ([string]::IsNullOrWhiteSpace($refName)) {
+            $refName = "manual"
+          }
+
+          $safeRefName = $refName -replace '[^A-Za-z0-9_.-]', '-'
+          $packageVersion = $safeRefName
+          if (-not $packageVersion.StartsWith("v", [StringComparison]::OrdinalIgnoreCase)) {
+            $packageVersion = "manual-$packageVersion"
+          }
+
+          "PACKAGE_REF_NAME=$safeRefName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "PACKAGE_VERSION=$packageVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "PACKAGE_BASENAME=AI-Launcher-Studio-$packageVersion-win-x64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "package_ref_name=$safeRefName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "package_version=$packageVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "package_basename=AI-Launcher-Studio-$packageVersion-win-x64" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+          @"
+          ## Package metadata
+
+          - Source ref: ``$refName``
+          - Package version: ``$packageVersion``
+          - Release asset basename: ``AI-Launcher-Studio-$packageVersion-win-x64``
+          - This workflow only prepares artifacts. Create and publish the GitHub Release manually.
+          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -51,7 +82,7 @@ jobs:
         shell: pwsh
         run: |
           $outDir = ".\publish\AI-Launcher-Studio-win-x64"
-          $zipPath = ".\publish\AI-Launcher-Studio-win-x64.zip"
+          $zipPath = ".\publish\$env:PACKAGE_BASENAME.zip"
           if (Test-Path $zipPath) {
             Remove-Item -LiteralPath $zipPath -Force
           }
@@ -93,7 +124,7 @@ jobs:
       - name: Verify portable package SHA256
         shell: pwsh
         run: |
-          $zipPath = ".\publish\AI-Launcher-Studio-win-x64.zip"
+          $zipPath = ".\publish\$env:PACKAGE_BASENAME.zip"
           $hashPath = "$zipPath.sha256"
 
           if (-not (Test-Path $zipPath)) {
@@ -116,20 +147,58 @@ jobs:
 
           Write-Host "Verified SHA256: $actualHash"
 
+      - name: Create manual release prep guide
+        shell: pwsh
+        run: |
+          $guidePath = ".\publish\GITHUB_RELEASE_PREP_RU.md"
+          $zipName = "$env:PACKAGE_BASENAME.zip"
+          $hashName = "$zipName.sha256"
+
+          @"
+          # Ручная подготовка GitHub Release
+
+          Workflow подготовил артефакты для ref ``$env:GITHUB_REF_NAME`` / version ``$env:PACKAGE_VERSION``.
+
+          ## Assets для релиза
+
+          - ``$zipName``
+          - ``$hashName``
+          - ``RELEASE_NOTES_RU.md`` как текст описания релиза
+
+          ## Чеклист публикации
+
+          1. Откройте успешный run workflow ``Package`` для tag ``v*``.
+          2. Скачайте artifact ``AI-Launcher-Studio-$env:PACKAGE_VERSION-win-x64``.
+          3. Проверьте checksum из ``$hashName``.
+          4. Создайте GitHub Release вручную для того же tag.
+          5. Прикрепите ``$zipName`` и ``$hashName``.
+          6. Вставьте содержимое ``RELEASE_NOTES_RU.md`` в описание релиза.
+
+          Workflow не создает и не публикует GitHub Release автоматически.
+          "@ | Set-Content -Path $guidePath -Encoding utf8
+
       - name: Upload portable package
         uses: actions/upload-artifact@v4
         with:
-          name: AI-Launcher-Studio-win-x64
+          name: AI-Launcher-Studio-${{ steps.meta.outputs.package_version }}-win-x64
           path: |
-            .\publish\AI-Launcher-Studio-win-x64.zip
-            .\publish\AI-Launcher-Studio-win-x64.zip.sha256
+            .\publish\${{ steps.meta.outputs.package_basename }}.zip
+            .\publish\${{ steps.meta.outputs.package_basename }}.zip.sha256
           if-no-files-found: error
           retention-days: 14
 
       - name: Upload release notes
         uses: actions/upload-artifact@v4
         with:
-          name: AI-Launcher-Studio-release-notes
+          name: AI-Launcher-Studio-${{ steps.meta.outputs.package_version }}-release-notes
           path: .\docs\RELEASE_NOTES_RU.md
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload manual release prep guide
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Launcher-Studio-${{ steps.meta.outputs.package_version }}-release-prep
+          path: .\publish\GITHUB_RELEASE_PREP_RU.md
           if-no-files-found: error
           retention-days: 14

@@ -73,6 +73,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private PresetRowViewModel? _selectedPreset;
     private RemoteModelRowViewModel? _selectedRemoteModel;
     private RemoteGgufDownloadOptionRowViewModel? _selectedRemoteDownloadOption;
+    private RemoteDownloadQueueItemViewModel? _selectedRemoteDownloadQueueItem;
     private bool _isDownloading;
     private bool _isRuntimeDownloading;
     private CancellationTokenSource? _downloadCancellation;
@@ -403,6 +404,12 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public ObservableCollection<RemoteGgufDownloadOptionRowViewModel> RemoteDownloadOptions { get; } = [];
 
+    public ObservableCollection<RemoteDownloadQueueItemViewModel> RemoteDownloadQueue { get; } = [];
+
+    public string DownloadQueueStatusText => RemoteDownloadQueue.Count == 0
+        ? "Очередь HF пуста."
+        : $"В очереди HF: {RemoteDownloadQueue.Count} {PendingDownloadCountText(RemoteDownloadQueue.Count)}.";
+
     public RemoteGgufDownloadOptionRowViewModel? SelectedRemoteDownloadOption
     {
         get => _selectedRemoteDownloadOption;
@@ -414,6 +421,21 @@ public sealed partial class HomeViewModel : ViewModelBase
             }
 
             _selectedRemoteDownloadOption = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public RemoteDownloadQueueItemViewModel? SelectedRemoteDownloadQueueItem
+    {
+        get => _selectedRemoteDownloadQueueItem;
+        set
+        {
+            if (_selectedRemoteDownloadQueueItem == value)
+            {
+                return;
+            }
+
+            _selectedRemoteDownloadQueueItem = value;
             OnPropertyChanged();
         }
     }
@@ -1367,6 +1389,40 @@ public sealed partial class HomeViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void AddSelectedRemoteDownloadToQueue()
+    {
+        if (SelectedRemoteDownloadOption is null)
+        {
+            SetStatus("Выберите конкретный GGUF-файл для очереди.");
+            return;
+        }
+
+        var item = new RemoteDownloadQueueItemViewModel(
+            SelectedRemoteDownloadOption.RepoId,
+            SelectedRemoteDownloadOption.Option);
+        RemoteDownloadQueue.Add(item);
+        SelectedRemoteDownloadQueueItem = item;
+        OnPropertyChanged(nameof(DownloadQueueStatusText));
+        SetStatus($"Добавлено в очередь HF: {item.Label}.");
+    }
+
+    [RelayCommand]
+    private void RemoveSelectedRemoteDownloadFromQueue()
+    {
+        if (SelectedRemoteDownloadQueueItem is null)
+        {
+            SetStatus("Выберите элемент очереди HF для удаления.");
+            return;
+        }
+
+        var removed = SelectedRemoteDownloadQueueItem;
+        RemoteDownloadQueue.Remove(removed);
+        SelectedRemoteDownloadQueueItem = RemoteDownloadQueue.FirstOrDefault();
+        OnPropertyChanged(nameof(DownloadQueueStatusText));
+        SetStatus($"Удалено из очереди HF: {removed.Label}.");
+    }
+
+    [RelayCommand]
     private async Task DownloadSelectedRemoteModelAsync()
     {
         if (SelectedRemoteDownloadOption is null)
@@ -1948,6 +2004,10 @@ public sealed partial class HomeViewModel : ViewModelBase
         return string.Create(CultureInfo.InvariantCulture, $"GPU свободно {freeGpuGb:0.0} ГБ; {fitText}");
     }
 
+    private static string PendingDownloadCountText(int count) => count % 10 == 1 && count % 100 != 11
+        ? "ожидает скачивания"
+        : "ожидают скачивания";
+
     private KvCacheProfile KvCacheFor() => new(SelectedKvCacheK, SelectedKvCacheV);
 
     private static double ParametersFromSizeLabel(LocalModelFile model)
@@ -2005,21 +2065,6 @@ public sealed class RuntimeReleaseSourceOptionViewModel(RuntimeReleaseAssetSourc
     public RuntimeReleaseAssetSource Source => source;
 
     public string Label => RuntimeReleaseAssetSources.ToLabel(source);
-}
-
-public sealed class HuggingFaceSortOptionViewModel(HuggingFaceSort sort)
-{
-    public HuggingFaceSort Sort => sort;
-
-    public string Label => sort switch
-    {
-        HuggingFaceSort.Downloads => "по загрузкам",
-        HuggingFaceSort.Likes => "по лайкам",
-        HuggingFaceSort.LastModified => "по дате обновления",
-        HuggingFaceSort.Trending => "тренды",
-        HuggingFaceSort.CreatedAt => "по дате создания",
-        _ => sort.ToString()
-    };
 }
 
 public sealed class RuntimeReleaseProfileOptionViewModel(RuntimeReleaseProfile profile)
