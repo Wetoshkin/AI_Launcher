@@ -52,6 +52,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private LaunchWizardState _wizardState;
     private string _modelSearchText = "";
     private string _hfSearchText = "qwen coder gguf";
+    private string _hfFamilyFilter = "любая";
     private string _hfQuantFilter = "любой";
     private string _runtimeArchivePath = "";
     private string _runtimeRootPath = @"D:\AI\runtimes";
@@ -536,6 +537,21 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
     }
 
+    public string HfFamilyFilter
+    {
+        get => _hfFamilyFilter;
+        set
+        {
+            if (_hfFamilyFilter == value)
+            {
+                return;
+            }
+
+            _hfFamilyFilter = value;
+            OnPropertyChanged();
+        }
+    }
+
     public IReadOnlyList<HuggingFaceSort> HfSortOptions { get; } =
     [
         HuggingFaceSort.Downloads,
@@ -551,6 +567,16 @@ public sealed partial class HomeViewModel : ViewModelBase
         "Q5_K_M",
         "Q6_K",
         "Q8_0"
+    ];
+
+    public IReadOnlyList<string> HfFamilyFilterOptions { get; } =
+    [
+        "любая",
+        "Qwen",
+        "DeepSeek",
+        "Gemma",
+        "Llama",
+        "Mistral"
     ];
 
     public ObservableCollection<PresetRowViewModel> Presets { get; }
@@ -1120,6 +1146,7 @@ public sealed partial class HomeViewModel : ViewModelBase
                 new HuggingFaceModelSearchRequest(HfSearchText, HfSort, Limit: 50, GgufOnly: true),
                 default);
             var filtered = models
+                .Where(MatchesHfFamilyFilter)
                 .Where(MatchesHfQuantFilter)
                 .Take(10)
                 .ToArray();
@@ -1150,6 +1177,19 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         return model.SiblingFiles?.Any(file => file.Contains(HfQuantFilter, StringComparison.OrdinalIgnoreCase)) == true;
+    }
+
+    private bool MatchesHfFamilyFilter(HuggingFaceModelSummary model)
+    {
+        if (string.IsNullOrWhiteSpace(HfFamilyFilter)
+            || HfFamilyFilter.Equals("любая", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return model.Id.Contains(HfFamilyFilter, StringComparison.OrdinalIgnoreCase)
+            || model.Tags.Any(tag => tag.Contains(HfFamilyFilter, StringComparison.OrdinalIgnoreCase))
+            || (model.SiblingFiles?.Any(file => file.Contains(HfFamilyFilter, StringComparison.OrdinalIgnoreCase)) == true);
     }
 
     [RelayCommand]
