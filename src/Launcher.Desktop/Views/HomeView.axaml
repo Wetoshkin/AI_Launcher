@@ -8,10 +8,16 @@
       <Setter Property="Foreground" Value="#2C241B"/>
     </Style>
     <Style Selector="Button">
-      <Setter Property="Padding" Value="12,8"/>
+      <Setter Property="Padding" Value="14,9"/>
       <Setter Property="Background" Value="#FFF9F0"/>
       <Setter Property="BorderBrush" Value="#E6CBA6"/>
       <Setter Property="Foreground" Value="#33291F"/>
+    </Style>
+    <Style Selector="Button.mode-card">
+      <Setter Property="MinHeight" Value="156"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="VerticalContentAlignment" Value="Stretch"/>
     </Style>
     <Style Selector="Button.primary">
       <Setter Property="Background" Value="#E86F16"/>
@@ -60,7 +66,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid ColumnDefinitions="280,*" Background="#F7EFE3">
+  <Grid ColumnDefinitions="292,*" Background="#F7EFE3">
     <Border Grid.Column="0"
             Background="#FFF7EA"
             BorderBrush="#E7C89D"
@@ -107,7 +113,7 @@
     </Border>
 
     <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="24,22,24,28" Spacing="16">
+    <StackPanel Margin="22,20,22,26" Spacing="14">
       <DockPanel LastChildFill="False">
         <StackPanel DockPanel.Dock="Left" Spacing="4">
           <TextBlock Text="{Binding Title}" FontSize="32" FontWeight="Bold" Foreground="#201710"/>
@@ -161,47 +167,83 @@
         <Button Grid.Column="3" Content="Далее" Command="{Binding NextStepCommand}" Classes="primary"/>
       </Grid>
 
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
         <Button Grid.Column="0"
-                MinHeight="190"
                 Background="#FFF9F0"
                 BorderBrush="#E86F16"
                 BorderThickness="2"
                 Command="{Binding SelectAgentModeCommand}"
-                HorizontalContentAlignment="Stretch">
-          <Grid Margin="18" RowDefinitions="Auto,*,Auto">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <Border Background="#E86F16" CornerRadius="10" Padding="10,5">
-                <TextBlock Text="РЕЖИМ" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                Classes="mode-card">
+          <Grid Margin="16" ColumnDefinitions="72,*" ColumnSpacing="14">
+            <Border Grid.Column="0"
+                    Background="#FFE7C6"
+                    BorderBrush="#F1B15B"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Width="72"
+                    Height="72"
+                    VerticalAlignment="Center">
+              <TextBlock Text="01"
+                         Foreground="#C15F00"
+                         FontSize="24"
+                         FontWeight="Bold"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"/>
+            </Border>
+            <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Background="#E86F16" CornerRadius="8" Padding="9,4">
+                  <TextBlock Text="РЕЖИМ" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                </Border>
+                <TextBlock Text="проект и агент" Foreground="#8C4508" FontWeight="Bold" VerticalAlignment="Center"/>
+              </StackPanel>
+              <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="6">
+                <TextBlock Text="Запустить агента" FontSize="24" FontWeight="Bold" Foreground="#201710"/>
+                <TextBlock Text="Открывает выбранный агент в папке проекта." Foreground="#6F5A45" TextWrapping="Wrap"/>
+              </StackPanel>
+              <Border Grid.Row="2" Background="#FFF0D9" CornerRadius="8" Padding="10,6" HorizontalAlignment="Left">
+                <TextBlock Text="Выбрать режим агента" Foreground="#C15F00" FontWeight="Bold"/>
               </Border>
-              <TextBlock Text="проект + агент" Foreground="#8C4508" FontWeight="Bold" VerticalAlignment="Center"/>
-            </StackPanel>
-            <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="8">
-              <TextBlock Text="Запустить агента" FontSize="30" FontWeight="Bold" Foreground="#201710"/>
-              <TextBlock Text="OpenCode, Kilo, Claw или Aider внутри выбранной папки проекта." Foreground="#6F5A45" TextWrapping="Wrap"/>
-            </StackPanel>
-            <TextBlock Grid.Row="2" Text="Нажмите, чтобы выбрать этот режим" Foreground="#C15F00" FontWeight="Bold"/>
+            </Grid>
           </Grid>
         </Button>
         <Button Grid.Column="1"
-                MinHeight="190"
-                Background="#F6FEFC"
-                BorderBrush="#38A3A5"
+                Background="#F7FFFB"
+                BorderBrush="#49A58E"
                 BorderThickness="2"
                 Command="{Binding SelectEndpointModeCommand}"
-                HorizontalContentAlignment="Stretch">
-          <Grid Margin="18" RowDefinitions="Auto,*,Auto">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <Border Background="#247187" CornerRadius="10" Padding="10,5">
-                <TextBlock Text="РЕЖИМ" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                Classes="mode-card">
+          <Grid Margin="16" ColumnDefinitions="72,*" ColumnSpacing="14">
+            <Border Grid.Column="0"
+                    Background="#DDF5EC"
+                    BorderBrush="#82C9B7"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Width="72"
+                    Height="72"
+                    VerticalAlignment="Center">
+              <TextBlock Text="02"
+                         Foreground="#247187"
+                         FontSize="24"
+                         FontWeight="Bold"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"/>
+            </Border>
+            <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Background="#247187" CornerRadius="8" Padding="9,4">
+                  <TextBlock Text="РЕЖИМ" Foreground="White" FontWeight="Bold" FontSize="12"/>
+                </Border>
+                <TextBlock Text="сервер без агента" Foreground="#20677A" FontWeight="Bold" VerticalAlignment="Center"/>
+              </StackPanel>
+              <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="6">
+                <TextBlock Text="Поднять сервер" FontSize="24" FontWeight="Bold" Foreground="#201710"/>
+                <TextBlock Text="Запускает llama-server для внешнего клиента." Foreground="#526B6E" TextWrapping="Wrap"/>
+              </StackPanel>
+              <Border Grid.Row="2" Background="#E5F8F0" CornerRadius="8" Padding="10,6" HorizontalAlignment="Left">
+                <TextBlock Text="Выбрать серверный режим" Foreground="#247187" FontWeight="Bold"/>
               </Border>
-              <TextBlock Text="только endpoint" Foreground="#20677A" FontWeight="Bold" VerticalAlignment="Center"/>
-            </StackPanel>
-            <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="8">
-              <TextBlock Text="Поднять сервер" FontSize="30" FontWeight="Bold" Foreground="#201710"/>
-              <TextBlock Text="llama-server endpoint для Hermes, OpenClaw или внешнего клиента." Foreground="#526B6E" TextWrapping="Wrap"/>
-            </StackPanel>
-            <TextBlock Grid.Row="2" Text="Нажмите, чтобы выбрать этот режим" Foreground="#247187" FontWeight="Bold"/>
+            </Grid>
           </Grid>
         </Button>
       </Grid>
@@ -267,13 +309,36 @@
         </StackPanel>
       </Grid>
 
-      <Border Background="#FFF8EC" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="12" Padding="12">
-        <TextBlock Text="{Binding StatusMessage}" Foreground="#765A36"/>
+      <Border Background="#FFF8EC" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="8" Padding="0">
+        <Grid ColumnDefinitions="5,*">
+          <Border Grid.Column="0" Background="#E86F16" CornerRadius="8,0,0,8"/>
+          <TextBlock Grid.Column="1" Text="{Binding StatusMessage}" Foreground="#765A36" Padding="12,10"/>
+        </Grid>
       </Border>
 
-      <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="14" Padding="14">
-        <StackPanel Spacing="8">
-          <TextBlock Text="Проверка запуска" FontWeight="Bold" FontSize="15"/>
+      <Border Background="White" BorderBrush="#EADCC9" BorderThickness="1" CornerRadius="8" Padding="14">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <StackPanel Grid.Column="0" Spacing="2">
+              <TextBlock Text="Проверка запуска" FontWeight="Bold" FontSize="16"/>
+              <TextBlock Text="{Binding ActiveProcessStatus}"
+                         Foreground="#20677A"
+                         FontWeight="Bold"
+                         FontSize="12"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+              <Button Content="Собрать команду"
+                      Command="{Binding BuildLaunchCommandCommand}"/>
+              <Button Content="Запустить"
+                      Command="{Binding StartLaunchCommand}"
+                      Classes="primary"/>
+              <Button Content="Остановить"
+                      Command="{Binding StopLaunchCommand}"
+                      Classes="ghost"/>
+              <Button Content="Очистить лог"
+                      Command="{Binding ClearProcessLogCommand}"/>
+            </StackPanel>
+          </Grid>
           <Grid ColumnDefinitions="*,130,130,150" ColumnSpacing="10">
             <ComboBox Grid.Column="0"
                       ItemsSource="{Binding DecodingPresets}"
@@ -311,29 +376,14 @@
           <TextBlock Text="{Binding SelectedDecodingPreset.Description}"
                      Foreground="#765A36"
                      TextWrapping="Wrap"/>
-          <Button Content="Собрать команду"
-                  Command="{Binding BuildLaunchCommandCommand}"
-                  HorizontalAlignment="Left"/>
-          <Button Content="Запустить"
-                  Command="{Binding StartLaunchCommand}"
-                  Classes="primary"
-                  HorizontalAlignment="Left"/>
-          <Button Content="Остановить"
-                  Command="{Binding StopLaunchCommand}"
-                  Classes="ghost"
-                  HorizontalAlignment="Left"/>
-          <Button Content="Очистить лог"
-                  Command="{Binding ClearProcessLogCommand}"
-                  HorizontalAlignment="Left"/>
-          <TextBlock Text="{Binding ActiveProcessStatus}"
-                     Foreground="#20677A"
-                     FontWeight="Bold"/>
-          <Border Background="#1F2328" CornerRadius="8" Padding="10">
+          <TextBlock Text="Команда" FontWeight="Bold" FontSize="12" Foreground="#6F5A45"/>
+          <Border Background="#2F2923" CornerRadius="8" Padding="10">
             <TextBlock Text="{Binding LaunchCommandPreview}"
                        Foreground="#F8E8C8"
                        FontFamily="Consolas"
                        TextWrapping="Wrap"/>
           </Border>
+          <TextBlock Text="Лог процесса" FontWeight="Bold" FontSize="12" Foreground="#6F5A45"/>
           <Border Background="#171A1F" CornerRadius="8" Padding="10" MinHeight="96">
             <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="150">
               <ItemsControl ItemsSource="{Binding ProcessLogLines}">

@@ -6,6 +6,8 @@ public sealed class KiloCommandBuilder : IAgentCommandBuilder
 {
     public LaunchPlan Build(AgentLaunchRequest request)
     {
+        LocalOpenAiCommandRequestValidator.Validate(request);
+
         return new LaunchPlan(
             "kilo",
             new[] { "-m", request.ProviderModel, request.ProjectPath },

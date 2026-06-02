@@ -6,6 +6,8 @@ public sealed class AiderCommandBuilder : IAgentCommandBuilder
 {
     public LaunchPlan Build(AgentLaunchRequest request)
     {
+        LocalOpenAiCommandRequestValidator.Validate(request);
+
         return new LaunchPlan(
             "aider",
             new[] { "--model", $"openai/{request.ProviderModel}", request.ProjectPath },

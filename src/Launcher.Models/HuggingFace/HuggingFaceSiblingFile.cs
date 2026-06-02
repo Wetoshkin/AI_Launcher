@@ -1,9 +1,7 @@
 namespace Launcher.Models.HuggingFace;
 
-public sealed record HuggingFaceGgufFile(
+public sealed record HuggingFaceSiblingFile(
     string FileName,
-    string DownloadUrl,
-    bool IsFirstSplitShard,
     long? SizeBytes = null)
 {
     public string FormattedSize => HuggingFaceFileSizeFormatter.Format(SizeBytes);

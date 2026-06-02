@@ -9,4 +9,10 @@ public sealed record HuggingFaceGgufDownloadOption(
     public int TotalFiles => Files.Count;
 
     public HuggingFaceGgufFile PrimaryFile => Files.First();
+
+    public long? TotalSizeBytes => Files.All(file => file.SizeBytes.HasValue)
+        ? Files.Sum(file => file.SizeBytes!.Value)
+        : null;
+
+    public string FormattedSize => HuggingFaceFileSizeFormatter.Format(TotalSizeBytes);
 }

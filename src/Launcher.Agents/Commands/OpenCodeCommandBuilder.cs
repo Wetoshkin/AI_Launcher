@@ -6,6 +6,8 @@ public sealed class OpenCodeCommandBuilder : IAgentCommandBuilder
 {
     public LaunchPlan Build(AgentLaunchRequest request)
     {
+        LocalOpenAiCommandRequestValidator.Validate(request);
+
         return new LaunchPlan(
             "opencode",
             new[] { "--model", request.ProviderModel, request.ProjectPath },

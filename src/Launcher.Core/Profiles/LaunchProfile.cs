@@ -2,7 +2,7 @@ using Launcher.Core.Scenarios;
 
 namespace Launcher.Core.Profiles;
 
-public sealed record LaunchProfile(
+public sealed partial record LaunchProfile(
     string Id,
     string Name,
     LaunchMode Mode,
@@ -13,3 +13,10 @@ public sealed record LaunchProfile(
     int ContextTokens,
     int Port,
     string AntiLoopPresetId);
+
+public sealed partial record LaunchProfile
+{
+    public KvCacheSettings? KvCache { get; init; }
+
+    public MtpSettings? Mtp { get; init; }
+}

@@ -33,6 +33,10 @@
   - `Gemma`;
   - `Llama`;
   - `Mistral`.
+- Hugging Face model metadata теперь сохраняет размер GGUF-файлов, если API отдаёт `size`, `sizeBytes` или `lfs.size`:
+  - размер переносится в варианты скачивания;
+  - split-shards суммируются в общий размер;
+  - если размера нет, UI/backend не падают и показывают пустую строку.
 - Добавлен выбор конкретных `.gguf` файлов внутри HF repo:
   - фильтруются `mmproj` и не-GGUF файлы;
   - split-shards группируются в один вариант скачивания;
@@ -55,6 +59,7 @@
   - OpenCode/Kilo/Claw/Aider command builders;
   - process starter;
   - port guard/release для безопасного освобождения `llama-server`.
+- Agent command builders для локального OpenAI-compatible endpoint теперь отклоняют model id без `local/`, чтобы preview/start не уходил в чужой provider model.
 - Добавлена готовность endpoint после старта:
   - polling `GET /v1/models`;
   - запуск не считается успешным только по PID.
@@ -83,6 +88,12 @@
   - runtime root/cache сохраняются и загружаются из settings.
   - update-check работает не только от выбранного zip-архива, но и от обнаруженного `llama-server.exe`, если путь содержит build tag вроде `b5300`;
   - источник версии runtime сохраняется в settings как `lastRuntimeVersionSource` и переживает перезапуск.
+- Runtime release packages имеют source/channel metadata:
+  - `stable`;
+  - `latest`;
+  - `manual`;
+  - `detected`;
+  - человекочитаемые подписи возвращаются на русском языке.
 - В launch review добавлена оценка памяти:
   - веса GGUF;
   - KV-cache по выбранному контексту/runtime;
@@ -97,6 +108,14 @@
   - TurboQuant default: `q8_0/turbo4`;
   - обычный llama.cpp default: `q8_0/q8_0`;
   - forecast памяти использует выбранные K/V типы.
+- Settings/profile persistence расширены:
+  - профили сохраняют KV cache параметры;
+  - профили сохраняют MTP/speculative параметры;
+  - settings сохраняют Hugging Face фильтры.
+- Busy port safety усилен:
+  - неизвестный процесс на порту не освобождается автоматически;
+  - старт процесса блокируется;
+  - GUI получает русскую строку статуса вроде `порт 8080: занят postgres`.
 - Нижняя часть GUI разбита на вкладки:
   - `Runtime`;
   - `Агенты`;
@@ -124,12 +143,18 @@
   - restore/build/test решения;
   - publish Windows portable artifact;
   - проверка наличия опубликованного exe.
+- Добавлен GitHub Actions Package workflow:
+  - ручной запуск через `workflow_dispatch`;
+  - запуск по тегам `v*`;
+  - build/test/publish;
+  - portable zip artifact;
+  - проверка, что в zip не попали GGUF и временные `.download` файлы.
 
 ## Что ещё надо сделать
 
 - Доработать runtime downloader/update manager:
   - добавить явный выбор источника/канала runtime;
-  - показывать last installed/runtime version source в GUI явно, а не только в статусной строке.
+  - привязать новые source/channel labels к GUI-контролам.
 - Вынести большой `HomeViewModel` на отдельные VM/экраны: Dashboard, Launch, Models, Runtimes, Agents, Logs, Settings.
 - Довести tabs/navigation до отдельных view model и отдельных XAML views.
 - Добавить остальные speculative decoding параметры как полноценные controls.
@@ -141,12 +166,11 @@
   - missing CLI/runtime/model.
 - Добавить packaging/release:
   - installer;
-  - release workflow/tag publishing;
   - подпись/хэши артефактов.
 - Добавить браузерную/визуальную проверку GUI скриншотами после крупных UI-изменений.
 - Улучшить Hugging Face UX:
   - отдельные фильтры size/MTP/vision/tools;
-  - отображение размера файлов, если API/metadata позволяют;
+  - вывести уже собранные `FormattedSize`/`TotalSizeBytes` в GUI;
   - очередь загрузок.
 - Не коммитить `runtimes/`, модели, скачанные GGUF, временные `.download`.
 

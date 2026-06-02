@@ -183,12 +183,45 @@ public sealed class RuntimeCompatibilityFlowTests
         Assert.Contains("endpoint не ответил", viewModel.StatusMessage);
     }
 
+    [Fact]
+    public async Task StartLaunchReportsBusyUnknownPortWithoutReleasingOrStartingProcess()
+    {
+        using var temp = new TempDirectory();
+        var busyPortInspector = new FixedPortInspector(new PortOwnerInfo(
+            Port: 8080,
+            ProcessId: 4321,
+            ProcessName: "postgres",
+            ExecutablePath: @"C:\PostgreSQL\postgres.exe",
+            EndpointResponds: false,
+            LoadedModelId: null));
+        var releaser = new RecordingPortReleaser();
+        var starter = new CountingProcessStarter();
+        var viewModel = CreateViewModel(
+            Runtime(supportsMtp: false, supportsTurboQuant: true),
+            starter,
+            temp.Path,
+            startPortInspector: busyPortInspector,
+            startPortReleaser: releaser);
+        viewModel.SelectEndpointModeCommand.Execute(null);
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        await viewModel.CheckPortCommand.ExecuteAsync(null);
+
+        await viewModel.StartLaunchCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, releaser.ReleaseCount);
+        Assert.Equal(0, starter.StartCount);
+        Assert.Equal("порт 8080: занят postgres", viewModel.PortStatus);
+        Assert.Equal("Порт 8080 занят процессом postgres. Запуск остановлен.", viewModel.StatusMessage);
+    }
+
     private static HomeViewModel CreateViewModel(
         LlamaRuntimeInfo runtime,
         IProcessStarter? starter = null,
         string? modelsDirectory = null,
         IProcessStopper? stopper = null,
-        IEndpointHealthClient? healthClient = null)
+        IEndpointHealthClient? healthClient = null,
+        IPortInspector? startPortInspector = null,
+        IPortReleaser? startPortReleaser = null)
     {
         var viewModel = new HomeViewModel(
             new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
@@ -197,8 +230,8 @@ public sealed class RuntimeCompatibilityFlowTests
                 new EmptyPortInspector(),
                 new FakeRuntimeCatalog([runtime])),
             new RuntimeStartCoordinator(
-                new EmptyPortInspector(),
-                new EmptyPortReleaser(),
+                startPortInspector ?? new EmptyPortInspector(),
+                startPortReleaser ?? new EmptyPortReleaser(),
                 starter ?? new CountingProcessStarter(),
                 healthClient),
             new EmptyDownloadService(),
@@ -258,10 +291,27 @@ public sealed class RuntimeCompatibilityFlowTests
             Task.FromResult<PortOwnerInfo?>(null);
     }
 
+    private sealed class FixedPortInspector(PortOwnerInfo? owner) : IPortInspector
+    {
+        public Task<PortOwnerInfo?> InspectAsync(int port, CancellationToken cancellationToken) =>
+            Task.FromResult(owner);
+    }
+
     private sealed class EmptyPortReleaser : IPortReleaser
     {
         public Task<PortReleaseResult> ReleaseIfSafeAsync(PortOwnerInfo owner, CancellationToken cancellationToken) =>
             Task.FromResult(new PortReleaseResult(Released: false, "не требуется"));
+    }
+
+    private sealed class RecordingPortReleaser : IPortReleaser
+    {
+        public int ReleaseCount { get; private set; }
+
+        public Task<PortReleaseResult> ReleaseIfSafeAsync(PortOwnerInfo owner, CancellationToken cancellationToken)
+        {
+            ReleaseCount++;
+            return Task.FromResult(new PortReleaseResult(Released: true, "порт освобождён"));
+        }
     }
 
     private sealed class CountingProcessStarter(int processId = 123, string? outputLine = null, IReadOnlyList<int>? processIds = null) : IProcessStarter
