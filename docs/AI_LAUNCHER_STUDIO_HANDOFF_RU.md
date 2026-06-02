@@ -253,6 +253,8 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
 - `de2221a feat(desktop): persist runtime version source`
 - `c0bddcf feat(desktop): show runtime version source`
 - `eca06c8 feat(models): filter hugging face results by quant`
+- `e5feb32 feat(models): filter hugging face results by family`
+- `82fb753 feat(studio): harden metadata launch and packaging`
 
 ## Рекомендованный следующий срез для второго агента
 
