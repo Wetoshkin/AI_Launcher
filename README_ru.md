@@ -47,6 +47,8 @@ package-ai-launcher-studio.bat
 
 Архив появится в `publish\AI-Launcher-Studio-win-x64.zip`.
 
+GitHub Actions workflow `Package` также можно запускать вручную или tag'ом `v*`. Для tag-сборок он готовит версионированные artifacts вида `AI-Launcher-Studio-v1.0.0-win-x64`, `AI-Launcher-Studio-v1.0.0-release-notes` и `AI-Launcher-Studio-v1.0.0-release-prep`. Workflow не публикует GitHub Release автоматически: скачайте artifacts из успешного run, проверьте `.sha256` и создайте Release вручную для того же tag.
+
 Проверить portable-сборку можно запуском:
 
 ```powershell

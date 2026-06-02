@@ -14,6 +14,17 @@ namespace Launcher.Desktop.Tests;
 public sealed class MtpSettingsFlowTests
 {
     [Fact]
+    public void HomeViewShowsMtpDraftMinTokenControl()
+    {
+        var xaml = File.ReadAllText(FindRepositoryFile("src", "Launcher.Desktop", "Views", "HomeView.axaml"));
+
+        Assert.Contains("Text=\"MTP min\"", xaml);
+        Assert.Contains("Value=\"{Binding MtpDraftMinTokens}\"", xaml);
+        Assert.Contains("--spec-draft-n-min", xaml);
+        Assert.Contains("минимум draft-токенов", xaml);
+    }
+
+    [Fact]
     public async Task BuildLaunchCommandUsesUserSelectedMtpDraftTokenLimit()
     {
         using var temp = new TempDirectory();
@@ -97,6 +108,26 @@ public sealed class MtpSettingsFlowTests
             new EmptyPortReleaser(),
             new EmptyProcessStarter()),
         new EmptyDownloadService());
+
+    private static string FindRepositoryFile(params string[] pathParts)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            var candidateParts = new string[pathParts.Length + 1];
+            candidateParts[0] = directory.FullName;
+            Array.Copy(pathParts, 0, candidateParts, 1, pathParts.Length);
+            var candidate = System.IO.Path.Combine(candidateParts);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new FileNotFoundException("Не удалось найти файл репозитория.", System.IO.Path.Combine(pathParts));
+    }
 
     private static LlamaRuntimeInfo Runtime(bool supportsMtp, bool supportsTurboQuant) => new(
         @"D:\AI\runtimes\llama-server.exe",

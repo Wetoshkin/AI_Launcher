@@ -342,7 +342,7 @@
                       Command="{Binding ClearProcessLogCommand}"/>
             </StackPanel>
           </Grid>
-          <Grid ColumnDefinitions="*,130,130,150" ColumnSpacing="10">
+          <Grid ColumnDefinitions="*,130,130,220" ColumnSpacing="10">
             <ComboBox Grid.Column="0"
                       ItemsSource="{Binding DecodingPresets}"
                       SelectedItem="{Binding SelectedDecodingPreset}">
@@ -367,14 +367,24 @@
               <ComboBox ItemsSource="{Binding KvCacheOptions}"
                         SelectedItem="{Binding SelectedKvCacheV}"/>
             </StackPanel>
-            <StackPanel Grid.Column="3" Spacing="4"
-                        ToolTip.Tip="--spec-draft-n-max: сколько draft-токенов MTP предлагает за шаг. Меньше стабильнее, больше агрессивнее.">
-              <TextBlock Text="MTP draft" FontWeight="Bold" FontSize="12"/>
-              <NumericUpDown Minimum="1"
-                             Maximum="16"
-                             Increment="1"
-                             Value="{Binding MtpDraftTokens}"/>
-            </StackPanel>
+            <Grid Grid.Column="3" ColumnDefinitions="*,*" ColumnSpacing="8">
+              <StackPanel Grid.Column="0" Spacing="4"
+                          ToolTip.Tip="--spec-draft-n-max: сколько draft-токенов MTP предлагает за шаг. Меньше стабильнее, больше агрессивнее.">
+                <TextBlock Text="MTP draft" FontWeight="Bold" FontSize="12"/>
+                <NumericUpDown Minimum="1"
+                               Maximum="16"
+                               Increment="1"
+                               Value="{Binding MtpDraftTokens}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="4"
+                          ToolTip.Tip="--spec-draft-n-min: минимум draft-токенов MTP перед проверкой. 0 отключает нижний порог, больше может ускорить стабильный draft.">
+                <TextBlock Text="MTP min" FontWeight="Bold" FontSize="12"/>
+                <NumericUpDown Minimum="0"
+                               Maximum="{Binding MtpDraftTokens}"
+                               Increment="1"
+                               Value="{Binding MtpDraftMinTokens}"/>
+              </StackPanel>
+            </Grid>
           </Grid>
           <TextBlock Text="{Binding SelectedDecodingPreset.Description}"
                      Foreground="#765A36"

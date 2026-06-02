@@ -213,6 +213,66 @@ public sealed class HomeViewModelDownloadTests
     }
 
     [Fact]
+    public void AddSelectedRemoteDownloadToQueueCommandAddsPendingOption()
+    {
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            new FakeDownloadService());
+        var remoteModel = new RemoteModelRowViewModel(new HuggingFaceModelSummary(
+            "unsloth/Qwen3-Coder-GGUF",
+            Downloads: 100,
+            Likes: 10,
+            Tags: ["gguf"],
+            IsCompatibleWithCurrentGpu: false,
+            HasPreferredQuant: true,
+            IsRuntimeCompatible: true,
+            SiblingFiles: ["Qwen3-Coder-Q4_K_M.gguf"]));
+
+        viewModel.SelectedRemoteModel = remoteModel;
+        viewModel.SelectedRemoteDownloadOption = viewModel.RemoteDownloadOptions.Single();
+        viewModel.AddSelectedRemoteDownloadToQueueCommand.Execute(null);
+
+        var queued = Assert.Single(viewModel.RemoteDownloadQueue);
+        Assert.Equal("unsloth/Qwen3-Coder-GGUF", queued.RepoId);
+        Assert.Equal("Qwen3-Coder-Q4_K_M.gguf", queued.Label);
+        Assert.Equal("ожидает скачивания", queued.StatusText);
+        Assert.Equal("В очереди HF: 1 ожидает скачивания.", viewModel.DownloadQueueStatusText);
+        Assert.Equal("Добавлено в очередь HF: Qwen3-Coder-Q4_K_M.gguf.", viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public void RemoveSelectedRemoteDownloadFromQueueCommandRemovesPendingOption()
+    {
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            new FakeDownloadService());
+        var remoteModel = new RemoteModelRowViewModel(new HuggingFaceModelSummary(
+            "unsloth/Qwen3-Coder-GGUF",
+            Downloads: 100,
+            Likes: 10,
+            Tags: ["gguf"],
+            IsCompatibleWithCurrentGpu: false,
+            HasPreferredQuant: true,
+            IsRuntimeCompatible: true,
+            SiblingFiles: ["Qwen3-Coder-Q4_K_M.gguf"]));
+
+        viewModel.SelectedRemoteModel = remoteModel;
+        viewModel.SelectedRemoteDownloadOption = viewModel.RemoteDownloadOptions.Single();
+        viewModel.AddSelectedRemoteDownloadToQueueCommand.Execute(null);
+        viewModel.SelectedRemoteDownloadQueueItem = viewModel.RemoteDownloadQueue.Single();
+
+        viewModel.RemoveSelectedRemoteDownloadFromQueueCommand.Execute(null);
+
+        Assert.Empty(viewModel.RemoteDownloadQueue);
+        Assert.Equal("Очередь HF пуста.", viewModel.DownloadQueueStatusText);
+        Assert.Equal("Удалено из очереди HF: Qwen3-Coder-Q4_K_M.gguf.", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public async Task DownloadSelectedRemoteModelCommandUpdatesProgressState()
     {
         using var temp = new TempDirectory();

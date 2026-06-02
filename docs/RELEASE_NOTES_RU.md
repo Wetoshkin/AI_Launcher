@@ -22,6 +22,20 @@ publish\AI-Launcher-Studio-win-x64.zip
 publish\AI-Launcher-Studio-win-x64.zip.sha256
 ```
 
+## Подготовка GitHub Release
+
+Package workflow запускается вручную или на tag `v*` и только подготавливает артефакты. Он не создает и не публикует GitHub Release автоматически.
+
+Для tag-сборки артефакты получают имя версии/ref, например:
+
+```text
+AI-Launcher-Studio-v1.0.0-win-x64
+AI-Launcher-Studio-v1.0.0-release-notes
+AI-Launcher-Studio-v1.0.0-release-prep
+```
+
+В portable artifact лежат zip и `.sha256`; release notes artifact содержит этот файл, а release prep artifact содержит короткий чеклист ручной публикации.
+
 ## Что вошло в последние крупные срезы
 
 - `82fb753 feat(studio): harden metadata launch and packaging`
