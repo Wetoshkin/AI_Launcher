@@ -720,7 +720,7 @@
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
             <ListBox Grid.Column="0"
                      ItemsSource="{Binding RemoteDownloadOptions}"
                      SelectedItem="{Binding SelectedRemoteDownloadOption}"
@@ -738,11 +738,60 @@
               </ListBox.ItemTemplate>
             </ListBox>
             <Button Grid.Column="1"
+                    Content="В очередь"
+                    Command="{Binding AddSelectedRemoteDownloadToQueueCommand}"
+                    VerticalAlignment="Top"/>
+            <Button Grid.Column="2"
                     Content="Скачать выбранный GGUF"
                     Command="{Binding DownloadSelectedRemoteModelCommand}"
                     VerticalAlignment="Top"
                     Classes="primary"/>
           </Grid>
+          <Border Background="#FFF8EC"
+                  BorderBrush="#F1D2A8"
+                  BorderThickness="1"
+                  CornerRadius="10"
+                  Padding="10">
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="8" ColumnSpacing="10">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="Очередь скачивания"
+                           FontWeight="Bold"/>
+                <TextBlock Text="{Binding DownloadQueueStatusText}"
+                           Foreground="#765A36"
+                           FontSize="12"
+                           TextTrimming="CharacterEllipsis"/>
+              </StackPanel>
+              <StackPanel Grid.Column="1"
+                          Orientation="Horizontal"
+                          Spacing="8"
+                          VerticalAlignment="Top">
+                <Button Content="Скачать очередь"
+                        Command="{Binding DownloadRemoteQueueCommand}"
+                        Classes="primary"/>
+                <Button Content="Удалить из очереди"
+                        Command="{Binding RemoveSelectedRemoteDownloadFromQueueCommand}"/>
+              </StackPanel>
+              <ListBox Grid.Row="1"
+                       Grid.ColumnSpan="2"
+                       ItemsSource="{Binding RemoteDownloadQueue}"
+                       SelectedItem="{Binding SelectedRemoteDownloadQueueItem}"
+                       MaxHeight="110">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:RemoteDownloadQueueItemViewModel">
+                    <Grid ColumnDefinitions="*,140" ColumnSpacing="8" Margin="0,3">
+                      <TextBlock Grid.Column="0"
+                                 Text="{Binding Label}"
+                                 TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding StatusText}"
+                                 Foreground="#A95508"
+                                 HorizontalAlignment="Right"/>
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </Grid>
+          </Border>
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
             <StackPanel Grid.Column="0" Spacing="4">
               <ProgressBar Minimum="0"

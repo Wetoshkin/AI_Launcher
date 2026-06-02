@@ -25,6 +25,25 @@ public sealed class MtpSettingsFlowTests
     }
 
     [Fact]
+    public void HomeViewShowsHuggingFaceDownloadQueueControls()
+    {
+        var xaml = File.ReadAllText(FindRepositoryFile("src", "Launcher.Desktop", "Views", "HomeView.axaml"));
+
+        Assert.Contains("Text=\"Очередь скачивания\"", xaml);
+        Assert.Contains("Text=\"{Binding DownloadQueueStatusText}\"", xaml);
+        Assert.Contains("ItemsSource=\"{Binding RemoteDownloadQueue}\"", xaml);
+        Assert.Contains("SelectedItem=\"{Binding SelectedRemoteDownloadQueueItem}\"", xaml);
+        Assert.Contains("Text=\"{Binding Label}\"", xaml);
+        Assert.Contains("Text=\"{Binding StatusText}\"", xaml);
+        Assert.Contains("Content=\"В очередь\"", xaml);
+        Assert.Contains("Command=\"{Binding AddSelectedRemoteDownloadToQueueCommand}\"", xaml);
+        Assert.Contains("Content=\"Удалить из очереди\"", xaml);
+        Assert.Contains("Command=\"{Binding RemoveSelectedRemoteDownloadFromQueueCommand}\"", xaml);
+        Assert.Contains("Content=\"Скачать очередь\"", xaml);
+        Assert.Contains("Command=\"{Binding DownloadRemoteQueueCommand}\"", xaml);
+    }
+
+    [Fact]
     public async Task BuildLaunchCommandUsesUserSelectedMtpDraftTokenLimit()
     {
         using var temp = new TempDirectory();
