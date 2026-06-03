@@ -54,13 +54,13 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore
-        run: dotnet restore .\llama-server-launcher-avalonia.sln
+        run: dotnet restore .\AI-Launcher-Studio.sln
 
       - name: Build
-        run: dotnet build .\llama-server-launcher-avalonia.sln --no-restore
+        run: dotnet build .\AI-Launcher-Studio.sln --no-restore
 
       - name: Test
-        run: dotnet test .\llama-server-launcher-avalonia.sln --no-build
+        run: dotnet test .\AI-Launcher-Studio.sln --no-build
 
       - name: Publish Windows portable app
         shell: pwsh
