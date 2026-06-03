@@ -461,20 +461,10 @@ public sealed partial class HomeViewModel : ViewModelBase
     private RuntimeReleaseAssetSource _selectedRuntimeReleaseSource = RuntimeReleaseAssetSource.Stable;
 
     public IReadOnlyList<RuntimeReleaseProfileOptionViewModel> RuntimeReleaseProfileOptions { get; } =
-    [
-        new(RuntimeReleaseProfile.Cpu),
-        new(RuntimeReleaseProfile.Cuda),
-        new(RuntimeReleaseProfile.Vulkan),
-        new(RuntimeReleaseProfile.Rocm)
-    ];
+        RuntimeReleaseSelectionController.ProfileOptions;
 
     public IReadOnlyList<RuntimeReleaseSourceOptionViewModel> RuntimeReleaseSourceOptions { get; } =
-    [
-        new(RuntimeReleaseAssetSource.Stable),
-        new(RuntimeReleaseAssetSource.Latest),
-        new(RuntimeReleaseAssetSource.Manual),
-        new(RuntimeReleaseAssetSource.Detected)
-    ];
+        RuntimeReleaseSelectionController.SourceOptions;
 
     public RuntimeReleaseSourceOptionViewModel? SelectedRuntimeReleaseSourceOption
     {
@@ -537,13 +527,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
     }
 
-    public string RuntimeReleaseProfileHint => SelectedRuntimeReleaseProfile switch
-    {
-        RuntimeReleaseProfile.Cuda => "CUDA: для видеокарт NVIDIA, обычно самый быстрый вариант для RTX.",
-        RuntimeReleaseProfile.Vulkan => "Vulkan: универсальный вариант для видеокарт NVIDIA, AMD и Intel.",
-        RuntimeReleaseProfile.Rocm => "ROCm: для совместимых видеокарт AMD Radeon и Instinct.",
-        _ => "Процессор: запуск без ускорения видеокартой, самый совместимый вариант."
-    };
+    public string RuntimeReleaseProfileHint =>
+        RuntimeReleaseSelectionController.ProfileHint(SelectedRuntimeReleaseProfile);
 
     public RuntimeReleasePackageRowViewModel? SelectedRuntimeReleasePackage
     {
@@ -1003,9 +988,9 @@ public sealed partial class HomeViewModel : ViewModelBase
         {
             var packages = await _runtimeReleaseCatalog.ListPackagesAsync(SelectedRuntimeReleaseProfile, default);
             RuntimeReleasePackages.Clear();
-            foreach (var package in packages.Where(package => package.Source == SelectedRuntimeReleaseSource).Take(12))
+            foreach (var package in RuntimeReleaseSelectionController.BuildPackageRows(packages, SelectedRuntimeReleaseSource))
             {
-                RuntimeReleasePackages.Add(new RuntimeReleasePackageRowViewModel(package));
+                RuntimeReleasePackages.Add(package);
             }
 
             SelectedRuntimeReleasePackage = RuntimeReleasePackages.FirstOrDefault();
