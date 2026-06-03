@@ -164,6 +164,14 @@
   - portable zip artifact вместе с `.zip.sha256`;
   - SHA256 выводится в лог package workflow и локального package bat;
   - проверка, что в zip не попали GGUF и временные `.download` файлы.
+- Package workflow умеет публиковать GitHub Release:
+  - tag-сборки `v*` публикуют Release автоматически;
+  - ручной запуск может опубликовать Release через `publish_release=true` и `release_tag`;
+  - существующий Release обновляется через `gh release upload --clobber`.
+- Portable installer helper умеет создавать ярлыки:
+  - `-CreateDesktopShortcut`;
+  - `-CreateStartMenuShortcut`;
+  - `-ShortcutName`.
 
 ## Что ещё надо сделать
 
@@ -180,8 +188,8 @@
   - busy port release;
   - missing CLI/runtime/model.
 - Добавить packaging/release:
-  - installer;
-  - подпись артефактов.
+  - подпись артефактов;
+  - полноценный MSI/MSIX при необходимости.
 - Добавить браузерную/визуальную проверку GUI скриншотами после крупных UI-изменений.
 - Улучшить Hugging Face UX:
   - отдельные фильтры size/MTP/vision/tools;

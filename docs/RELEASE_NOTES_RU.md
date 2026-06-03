@@ -24,7 +24,7 @@ publish\AI-Launcher-Studio-win-x64.zip.sha256
 
 ## Подготовка GitHub Release
 
-Package workflow запускается вручную или на tag `v*` и только подготавливает артефакты. Он не создает и не публикует GitHub Release автоматически. В GitHub Actions UI workflow появится после того, как `.github/workflows/package.yml` будет доступен в default branch репозитория.
+Package workflow запускается вручную или на tag `v*`. Tag-сборки `v*` публикуют GitHub Release автоматически через `GITHUB_TOKEN` с `contents: write`. Ручной запуск по умолчанию только готовит артефакты; чтобы вручную опубликовать Release, включите input `publish_release` и укажите `release_tag`.
 
 Для tag-сборки артефакты получают имя версии/ref, например:
 
@@ -34,7 +34,7 @@ AI-Launcher-Studio-v1.0.0-release-notes
 AI-Launcher-Studio-v1.0.0-release-prep
 ```
 
-В portable artifact лежат zip и `.sha256`; release notes artifact содержит этот файл, а release prep artifact содержит короткий чеклист ручной публикации.
+В portable artifact лежат zip и `.sha256`; release notes artifact содержит этот файл, а release prep artifact содержит короткий чеклист ручной публикации. Если Release уже существует, workflow обновляет zip/checksum через `gh release upload --clobber` и обновляет заголовок/notes.
 
 ## Что вошло в последние крупные срезы
 
@@ -91,4 +91,4 @@ dotnet test .\AI-Launcher-Studio.sln --no-build
 - Довести HF UX: фильтры size/MTP/vision/tools и очередь загрузок.
 - Добавить полноценные controls speculative decoding помимо MTP draft tokens.
 - Сделать визуальную QA-проверку GUI скриншотами на desktop/mobile-like размерах окна.
-- Дособрать release pipeline: installer, подпись артефактов, release notes в GitHub Release.
+- Дособрать release pipeline: подпись артефактов, полноценный MSI/MSIX при необходимости.

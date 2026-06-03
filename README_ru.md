@@ -18,7 +18,7 @@ AI Launcher Studio - Windows GUI для локальных AI-агентов, `l
 - KV-cache, context и MTP/TurboQuant параметры с русскими подсказками.
 - Пресеты быстрого запуска.
 - Светлая оранжевая GUI-тема и русскоязычный интерфейс.
-- Portable Windows build без installer framework.
+- Portable Windows build, zip checksum, GitHub Release workflow и installer helper без прав администратора.
 
 ## Быстрый запуск из исходников
 
@@ -60,6 +60,15 @@ package-ai-launcher-studio.bat
 publish\AI-Launcher-Studio-win-x64\
 publish\AI-Launcher-Studio-win-x64.zip
 publish\AI-Launcher-Studio-win-x64.zip.sha256
+```
+
+Portable-установка с ярлыком в меню Пуск:
+
+```powershell
+.\scripts\Install-PortablePackage.ps1 `
+  -ZipPath .\publish\AI-Launcher-Studio-win-x64.zip `
+  -Destination D:\AI\AI-Launcher-Studio `
+  -CreateStartMenuShortcut
 ```
 
 ## Проверки перед релизом

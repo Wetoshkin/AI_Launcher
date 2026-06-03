@@ -17,7 +17,7 @@ The product lives in `src/Launcher.Desktop` and is built with Avalonia UI and .N
 - Release an occupied port before launch.
 - Configure context, KV cache, MTP, TurboQuant, and anti-loop presets.
 - Use saved launch presets.
-- Build a portable Windows package with zip + SHA256.
+- Build a portable Windows package with zip + SHA256, GitHub Release workflow, and a no-admin installer helper.
 
 ## Run From Source
 
@@ -52,6 +52,15 @@ Output:
 publish\AI-Launcher-Studio-win-x64\
 publish\AI-Launcher-Studio-win-x64.zip
 publish\AI-Launcher-Studio-win-x64.zip.sha256
+```
+
+Portable install with a Start Menu shortcut:
+
+```powershell
+.\scripts\Install-PortablePackage.ps1 `
+  -ZipPath .\publish\AI-Launcher-Studio-win-x64.zip `
+  -Destination D:\AI\AI-Launcher-Studio `
+  -CreateStartMenuShortcut
 ```
 
 ## Smoke Checks

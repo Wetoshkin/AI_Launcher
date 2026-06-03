@@ -1,10 +1,10 @@
 # Установка portable zip
 
-AI Launcher Studio можно запускать как portable-приложение: без installer framework и без прав администратора.
+AI Launcher Studio можно запускать как portable-приложение: без installer framework и без прав администратора. Установочный скрипт распаковывает zip, проверяет `.sha256`, если он лежит рядом, и при необходимости создаёт ярлыки.
 
 ## Скачать архив
 
-1. Откройте успешный GitHub Actions run workflow `Package` или страницу GitHub Release, если архив уже опубликован вручную. Пока ветка не влита в default branch репозитория, `Package` может не отображаться в GitHub Actions UI; в этом случае используйте локальный `package-ai-launcher-studio.bat`.
+1. Откройте страницу GitHub Release или успешный GitHub Actions run workflow `Package`. Tag-сборки `v*` публикуют Release автоматически; ручной запуск workflow может подготовить artifact или опубликовать Release, если включить `publish_release` и указать `release_tag`.
 2. Скачайте portable artifact/zip для Windows x64:
 
 ```text
@@ -71,6 +71,28 @@ D:\AI\AI-Launcher-Studio\Launcher.Desktop.exe
 ```
 
 Если `.sha256` рядом с zip отсутствует, скрипт продолжит установку и явно напишет, что checksum не проверялся.
+
+## Создать ярлыки
+
+Portable-установка может создать ярлык на рабочем столе и в меню Пуск:
+
+```powershell
+.\scripts\Install-PortablePackage.ps1 `
+  -ZipPath .\AI-Launcher-Studio-win-x64.zip `
+  -Destination D:\AI\AI-Launcher-Studio `
+  -CreateDesktopShortcut `
+  -CreateStartMenuShortcut
+```
+
+Имя ярлыка можно поменять:
+
+```powershell
+.\scripts\Install-PortablePackage.ps1 `
+  -ZipPath .\AI-Launcher-Studio-win-x64.zip `
+  -Destination D:\AI\AI-Launcher-Studio `
+  -CreateStartMenuShortcut `
+  -ShortcutName "AI Launcher Studio"
+```
 
 ## Обновление portable-папки
 

@@ -6,7 +6,17 @@ param(
 
     [Parameter(Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
-    [string]$Destination
+    [string]$Destination,
+
+    [switch]$CreateDesktopShortcut,
+
+    [switch]$CreateStartMenuShortcut,
+
+    [ValidateNotNullOrEmpty()]
+    [string]$ShortcutName = 'AI Launcher Studio',
+
+    [ValidateNotNullOrEmpty()]
+    [string]$StartMenuDirectory
 )
 
 $ErrorActionPreference = 'Stop'
@@ -98,6 +108,29 @@ function Expand-SafeZipArchive {
     }
 }
 
+function New-Shortcut {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ShortcutPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$TargetPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$WorkingDirectory
+    )
+
+    $shortcutDirectory = Split-Path -Parent $ShortcutPath
+    New-Item -ItemType Directory -Force -Path $shortcutDirectory | Out-Null
+
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($ShortcutPath)
+    $shortcut.TargetPath = $TargetPath
+    $shortcut.WorkingDirectory = $WorkingDirectory
+    $shortcut.Description = 'AI Launcher Studio'
+    $shortcut.Save()
+}
+
 $resolvedZipPath = Resolve-RequiredPath -Path $ZipPath -Label 'Zip package'
 $zipItem = Get-Item -LiteralPath $resolvedZipPath
 
@@ -137,3 +170,39 @@ if ($null -eq $exe) {
 Write-Host "Installed portable AI Launcher Studio."
 Write-Host "Executable:"
 Write-Host $exe.FullName
+
+$safeShortcutName = [regex]::Replace($ShortcutName, '[\\/:*?"<>|]', '-').Trim()
+if ([string]::IsNullOrWhiteSpace($safeShortcutName)) {
+    $safeShortcutName = 'AI Launcher Studio'
+}
+
+if ($CreateDesktopShortcut) {
+    $desktopPath = [Environment]::GetFolderPath([Environment+SpecialFolder]::DesktopDirectory)
+    if ([string]::IsNullOrWhiteSpace($desktopPath)) {
+        throw 'Desktop directory could not be resolved.'
+    }
+
+    $shortcutPath = Join-Path $desktopPath "$safeShortcutName.lnk"
+    New-Shortcut -ShortcutPath $shortcutPath -TargetPath $exe.FullName -WorkingDirectory $exe.DirectoryName
+    Write-Host "Desktop shortcut:"
+    Write-Host $shortcutPath
+}
+
+if ($CreateStartMenuShortcut) {
+    $programsPath = if ([string]::IsNullOrWhiteSpace($StartMenuDirectory)) {
+        [Environment]::GetFolderPath([Environment+SpecialFolder]::Programs)
+    }
+    else {
+        $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($StartMenuDirectory)
+    }
+
+    if ([string]::IsNullOrWhiteSpace($programsPath)) {
+        throw 'Start Menu programs directory could not be resolved.'
+    }
+
+    $appShortcutDirectory = Join-Path $programsPath 'AI Launcher Studio'
+    $shortcutPath = Join-Path $appShortcutDirectory "$safeShortcutName.lnk"
+    New-Shortcut -ShortcutPath $shortcutPath -TargetPath $exe.FullName -WorkingDirectory $exe.DirectoryName
+    Write-Host "Start Menu shortcut:"
+    Write-Host $shortcutPath
+}

@@ -63,6 +63,24 @@ public sealed class PackageWorkflowTests
     }
 
     [Fact]
+    public void PackageWorkflowCanPublishGitHubReleaseForTagsOrManualInput()
+    {
+        var workflow = ReadPackageWorkflow();
+        var metadataStep = ExtractStep(workflow, "Prepare package metadata");
+        var releaseStep = ExtractStep(workflow, "Publish GitHub Release");
+
+        Assert.Contains("contents: write", workflow, StringComparison.Ordinal);
+        Assert.Contains("publish_release:", workflow, StringComparison.Ordinal);
+        Assert.Contains("release_tag:", workflow, StringComparison.Ordinal);
+        Assert.Contains("SHOULD_PUBLISH_RELEASE", metadataStep, StringComparison.Ordinal);
+        Assert.Contains("release_tag is required", metadataStep, StringComparison.Ordinal);
+        Assert.Contains("if: steps.meta.outputs.should_publish_release == 'true'", releaseStep, StringComparison.Ordinal);
+        Assert.Contains("gh release create", releaseStep, StringComparison.Ordinal);
+        Assert.Contains("gh release upload", releaseStep, StringComparison.Ordinal);
+        Assert.Contains("--clobber", releaseStep, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task InstallPortablePackageRejectsZipEntriesEscapingDestination()
     {
         using var temp = new TempDirectory();
@@ -87,6 +105,40 @@ public sealed class PackageWorkflowTests
         Assert.NotEqual(0, result.ExitCode);
         Assert.Contains("Unsafe zip entry escapes destination", result.CombinedOutput);
         Assert.False(File.Exists(escapedPath));
+    }
+
+    [Fact]
+    public async Task InstallPortablePackageCanCreateStartMenuShortcutInCustomDirectory()
+    {
+        using var temp = new TempDirectory();
+        var zipPath = Path.Combine(temp.Path, "AI-Launcher-Studio-win-x64.zip");
+        var installPath = Path.Combine(temp.Path, "install");
+        var shortcutRoot = Path.Combine(temp.Path, "shortcuts");
+        using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        {
+            var entry = archive.CreateEntry("Launcher.Desktop.exe");
+            await using var stream = entry.Open();
+            await using var writer = new StreamWriter(stream);
+            await writer.WriteAsync("fake exe for installer smoke");
+        }
+
+        var result = await RunPowerShellAsync(
+            RepositoryFile("scripts", "Install-PortablePackage.ps1"),
+            "-ZipPath",
+            zipPath,
+            "-Destination",
+            installPath,
+            "-CreateStartMenuShortcut",
+            "-StartMenuDirectory",
+            shortcutRoot,
+            "-ShortcutName",
+            "AI Launcher Studio Test");
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("Installed portable AI Launcher Studio", result.CombinedOutput);
+        Assert.Contains("Start Menu shortcut", result.CombinedOutput);
+        Assert.True(File.Exists(Path.Combine(installPath, "Launcher.Desktop.exe")));
+        Assert.True(File.Exists(Path.Combine(shortcutRoot, "AI Launcher Studio", "AI Launcher Studio Test.lnk")));
     }
 
     private static string ReadPackageWorkflow()
