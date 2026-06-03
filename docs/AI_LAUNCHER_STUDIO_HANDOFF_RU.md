@@ -146,6 +146,10 @@
   - `package-ai-launcher-studio.bat`;
   - локальный zip: `publish\AI-Launcher-Studio-win-x64.zip`;
   - проверен старт опубликованного `Launcher.Desktop.exe`.
+- Visual QA script поддерживает матрицу размеров окна:
+  - `-WindowSizes 1280x720,1024x720,1440x900`;
+  - создаёт отдельный screenshot на каждый размер;
+  - checklist перечисляет все созданные PNG.
 - Добавлен запуск server перед agent CLI:
   - для agent-сценария поднимается `llama-server`;
   - после готовности endpoint пишется `kilo.jsonc` или `opencode.json`;
@@ -197,7 +201,7 @@
 - Добавить packaging/release:
   - подпись артефактов;
   - полноценный MSI/MSIX при необходимости.
-- Добавить браузерную/визуальную проверку GUI скриншотами после крупных UI-изменений.
+- Использовать visual QA matrix после крупных UI-изменений и прикладывать screenshots к ревью.
 - Улучшить Hugging Face UX:
   - отдельные фильтры size/MTP/vision/tools;
   - вывести уже собранные `FormattedSize`/`TotalSizeBytes` в GUI;
@@ -410,7 +414,7 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
    - явно отображать установленную/сохранённую версию runtime;
    - подписи/подсказки к CPU/CUDA/Vulkan/ROCm профилям.
 4. Запустить полный `dotnet build` + `dotnet test`, затем проверить CI в GitHub Actions.
-5. Довести визуальную QA-проверку:
-   - снять screenshot текущего окна после каждого крупного XAML-среза;
+5. Запускать visual QA matrix после каждого крупного XAML-среза:
+   - `.\scripts\Invoke-VisualQa.ps1 -WindowSizes 1280x720,1024x720,1440x900 -CloseAfterCapture`;
    - проверить нижние блоки на высоте около `720px`;
    - если блоки не видны без scroll, убедиться, что scroll работает ожидаемо и это не выглядит как обрезанный UI.

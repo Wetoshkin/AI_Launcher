@@ -24,6 +24,15 @@
   -CloseAfterCapture
 ```
 
+Для проверки нескольких размеров окна:
+
+```powershell
+.\scripts\Invoke-VisualQa.ps1 `
+  -ExecutablePath .\publish\AI-Launcher-Studio-win-x64\Launcher.Desktop.exe `
+  -WindowSizes 1280x720,1024x720,1440x900 `
+  -CloseAfterCapture
+```
+
 Скрипт создаст локальную папку `TestResults\visual-qa\<timestamp>\`, сделает screenshot и положит туда `visual-qa-checklist.md`.
 
 ## Режимы screenshot
@@ -33,6 +42,8 @@
 Fallback-режим - `fullscreen fallback`: если окно процесса найти не удалось, например приложение не запускалось скриптом, `MainWindowHandle` еще пустой или Windows не вернула bounds окна, скрипт сохраняет весь виртуальный рабочий стол в файл `launcher-fullscreen.png`. Это сохраняет прежнюю совместимость visual smoke.
 
 Фактически использованный режим записывается в `visual-qa-checklist.md` в строке `Capture mode`.
+
+Режим `window matrix` включается параметром `-WindowSizes`. Скрипт меняет размер окна и сохраняет отдельные файлы вида `launcher-window-1280x720.png`, `launcher-window-1024x720.png`.
 
 ## Чеклист
 
@@ -45,7 +56,7 @@ Fallback-режим - `fullscreen fallback`: если окно процесса 
 - [ ] Очередь скачивания Hugging Face видна и не ломает layout.
 - [ ] Длинные пути модели, runtime и проекта не налезают на соседние кнопки.
 - [ ] Текст статусов, ошибок и предупреждений не перекрывает соседние элементы.
-- [ ] На размере около `1280x720` нет критичных переполнений; если контента много, есть ожидаемый scroll.
+- [ ] На размерах `1280x720`, `1024x720` и `1440x900` нет критичных переполнений; если контента много, есть ожидаемый scroll.
 
 ## Что приложить к ревью
 
