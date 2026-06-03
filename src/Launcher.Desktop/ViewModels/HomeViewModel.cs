@@ -1319,11 +1319,13 @@ public sealed partial class HomeViewModel : ViewModelBase
             var models = await _huggingFaceClient.SearchAsync(
                 new HuggingFaceModelSearchRequest(HfSearchText, HfSort, Limit: 50, GgufOnly: true),
                 default);
-            var capabilityFiltered = ApplyHfCapabilityFilter(models);
-            var filtered = capabilityFiltered
-                .Where(MatchesHfFamilyFilter)
-                .Where(MatchesHfQuantFilter)
-                .Where(MatchesHfSizeFilter)
+            var filtered = RemoteModelFilterController
+                .ApplyModels(
+                    models,
+                    HfFamilyFilter,
+                    HfQuantFilter,
+                    HfSizeFilter,
+                    SelectedHfCapabilityFilterOption?.Filter)
                 .Take(10)
                 .ToArray();
 
@@ -1344,86 +1346,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
     }
 
-    private IReadOnlyList<HuggingFaceModelSummary> ApplyHfCapabilityFilter(IEnumerable<HuggingFaceModelSummary> models)
-    {
-        if (SelectedHfCapabilityFilterOption?.Filter is not { } filter)
-        {
-            return models.ToArray();
-        }
-
-        return HuggingFaceCapabilityFilters.Apply(models, [filter]);
-    }
-
-    private bool MatchesHfQuantFilter(HuggingFaceModelSummary model)
-    {
-        if (string.IsNullOrWhiteSpace(HfQuantFilter)
-            || HfQuantFilter.Equals("любой", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        return model.SiblingFiles?.Any(file => file.Contains(HfQuantFilter, StringComparison.OrdinalIgnoreCase)) == true;
-    }
-
-    private bool MatchesHfSizeFilter(HuggingFaceModelSummary model)
-    {
-        if (IsAnyHfSizeFilter())
-        {
-            return true;
-        }
-
-        return FilterHfDownloadOptions(HuggingFaceGgufFileSelector.SelectDownloadOptions(model)).Count > 0;
-    }
-
     private bool MatchesHfSizeFilter(RemoteGgufDownloadOptionRowViewModel option)
-    {
-        if (IsAnyHfSizeFilter())
-        {
-            return true;
-        }
-
-        return MatchesHfSizeFilter(option.Option);
-    }
-
-    private bool MatchesHfSizeFilter(HuggingFaceGgufDownloadOption option)
-    {
-        if (IsAnyHfSizeFilter())
-        {
-            return true;
-        }
-
-        return FilterHfDownloadOptions([option]).Count == 1;
-    }
-
-    private bool IsAnyHfSizeFilter() =>
-        string.IsNullOrWhiteSpace(HfSizeFilter)
-        || HfSizeFilter.Equals("любой размер", StringComparison.OrdinalIgnoreCase);
-
-    private IReadOnlyList<HuggingFaceGgufDownloadOption> FilterHfDownloadOptions(IEnumerable<HuggingFaceGgufDownloadOption> options) =>
-        HuggingFaceGgufDownloadSizeFilter.Apply(options, SelectedHfSizeRange());
-
-    private HuggingFaceGgufDownloadSizeRange SelectedHfSizeRange() => HfSizeFilter switch
-    {
-        "до 8 ГБ" => HuggingFaceGgufDownloadSizeRange.UpTo8Gb,
-        "8-16 ГБ" => HuggingFaceGgufDownloadSizeRange.Between8And16Gb,
-        "16-32 ГБ" => HuggingFaceGgufDownloadSizeRange.Between16And32Gb,
-        "32+ ГБ" => HuggingFaceGgufDownloadSizeRange.Over32Gb,
-        "неизвестный" => HuggingFaceGgufDownloadSizeRange.Unknown,
-        _ => HuggingFaceGgufDownloadSizeRange.Any
-    };
-
-    private bool MatchesHfFamilyFilter(HuggingFaceModelSummary model)
-    {
-        if (string.IsNullOrWhiteSpace(HfFamilyFilter)
-            || HfFamilyFilter.Equals("любая", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        return model.Id.Contains(HfFamilyFilter, StringComparison.OrdinalIgnoreCase)
-            || model.Tags.Any(tag => tag.Contains(HfFamilyFilter, StringComparison.OrdinalIgnoreCase))
-            || (model.SiblingFiles?.Any(file => file.Contains(HfFamilyFilter, StringComparison.OrdinalIgnoreCase)) == true);
-    }
+        => RemoteModelFilterController.MatchesSize(option, HfSizeFilter);
 
     [RelayCommand]
     private void AddSelectedRemoteDownloadToQueue()
