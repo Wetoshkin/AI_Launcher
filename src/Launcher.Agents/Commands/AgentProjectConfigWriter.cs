@@ -53,6 +53,7 @@ public sealed class AgentProjectConfigWriter
         LocalOpenAiCommandRequestValidator.Validate(request);
 
         var path = Path.Combine(request.ProjectPath, "opencode.json");
+        var localModelId = StripLocalProviderPrefix(request.ProviderModel);
         var root = new JsonObject
         {
             ["provider"] = new JsonObject
@@ -68,7 +69,7 @@ public sealed class AgentProjectConfigWriter
                     },
                     ["models"] = new JsonObject
                     {
-                        [request.ProviderModel] = new JsonObject
+                        [localModelId] = new JsonObject
                         {
                             ["tools"] = new JsonObject
                             {
@@ -82,5 +83,13 @@ public sealed class AgentProjectConfigWriter
         };
         await File.WriteAllTextAsync(path, root.ToJsonString(JsonOptions), cancellationToken);
         return new AgentProjectConfigResult(true, path, "opencode.json обновлён.");
+    }
+
+    private static string StripLocalProviderPrefix(string providerModel)
+    {
+        const string prefix = "local/";
+        return providerModel.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            ? providerModel[prefix.Length..]
+            : providerModel;
     }
 }
