@@ -14,7 +14,7 @@
       <Setter Property="Foreground" Value="#33291F"/>
     </Style>
     <Style Selector="Button.mode-card">
-      <Setter Property="MinHeight" Value="156"/>
+      <Setter Property="MinHeight" Value="136"/>
       <Setter Property="Padding" Value="0"/>
       <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
       <Setter Property="VerticalContentAlignment" Value="Stretch"/>
@@ -66,12 +66,12 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid ColumnDefinitions="292,*" Background="#F7EFE3">
+  <Grid ColumnDefinitions="272,*" Background="#F7EFE3">
     <Border Grid.Column="0"
             Background="#FFF7EA"
             BorderBrush="#E7C89D"
             BorderThickness="0,0,1,0"
-            Padding="20,22">
+            Padding="18,20">
       <StackPanel Spacing="14">
         <StackPanel Spacing="2">
           <TextBlock Text="Пресеты" FontWeight="Bold" FontSize="18"/>
@@ -79,7 +79,7 @@
         </StackPanel>
         <ListBox ItemsSource="{Binding Presets}"
                  SelectedItem="{Binding SelectedPreset}"
-                 MaxHeight="500">
+                 MaxHeight="460">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:PresetRowViewModel">
               <Border Background="White"
@@ -113,10 +113,10 @@
     </Border>
 
     <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="22,20,22,26" Spacing="14">
+    <StackPanel Margin="18,18,18,24" Spacing="12">
       <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
         <StackPanel Grid.Row="0" Spacing="4">
-          <TextBlock Text="{Binding Title}" FontSize="32" FontWeight="Bold" Foreground="#201710"/>
+          <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="Bold" Foreground="#201710"/>
           <TextBlock Text="{Binding Subtitle}" FontSize="13" Foreground="#76614C"/>
         </StackPanel>
         <WrapPanel Grid.Row="1">
@@ -133,7 +133,7 @@
         </WrapPanel>
       </Grid>
 
-      <Grid ColumnDefinitions="*,170,Auto,Auto" ColumnSpacing="10">
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
         <ItemsControl Grid.Column="0" ItemsSource="{Binding WizardSteps}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
@@ -163,6 +163,7 @@
                    VerticalAlignment="Center"
                    Foreground="#C15F00"
                    FontWeight="Bold"
+                   Margin="8,0,0,0"
                    TextTrimming="CharacterEllipsis"/>
         <Button Grid.Column="2" Content="Назад" Command="{Binding PreviousStepCommand}" Classes="ghost"/>
         <Button Grid.Column="3" Content="Далее" Command="{Binding NextStepCommand}" Classes="primary"/>
@@ -175,14 +176,14 @@
                 BorderThickness="2"
                 Command="{Binding SelectAgentModeCommand}"
                 Classes="mode-card">
-          <Grid Margin="16" ColumnDefinitions="72,*" ColumnSpacing="14">
+          <Grid Margin="14" ColumnDefinitions="64,*" ColumnSpacing="12">
             <Border Grid.Column="0"
                     Background="#FFE7C6"
                     BorderBrush="#F1B15B"
                     BorderThickness="1"
                     CornerRadius="8"
-                    Width="72"
-                    Height="72"
+                    Width="64"
+                    Height="64"
                     VerticalAlignment="Center">
               <TextBlock Text="01"
                          Foreground="#C15F00"
@@ -199,7 +200,7 @@
                 <TextBlock Text="проект + CLI" Foreground="#8C4508" FontWeight="Bold" VerticalAlignment="Center"/>
               </StackPanel>
               <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="6">
-                <TextBlock Text="Запустить агента" FontSize="24" FontWeight="Bold" Foreground="#201710"/>
+                <TextBlock Text="Запустить агента" FontSize="22" FontWeight="Bold" Foreground="#201710"/>
                 <TextBlock Text="Выбор агента, проекта и локального runtime для запуска." Foreground="#6F5A45" TextWrapping="Wrap"/>
               </StackPanel>
             </Grid>
@@ -211,14 +212,14 @@
                 BorderThickness="2"
                 Command="{Binding SelectEndpointModeCommand}"
                 Classes="mode-card">
-          <Grid Margin="16" ColumnDefinitions="72,*" ColumnSpacing="14">
+          <Grid Margin="14" ColumnDefinitions="64,*" ColumnSpacing="12">
             <Border Grid.Column="0"
                     Background="#DDF5EC"
                     BorderBrush="#82C9B7"
                     BorderThickness="1"
                     CornerRadius="8"
-                    Width="72"
-                    Height="72"
+                    Width="64"
+                    Height="64"
                     VerticalAlignment="Center">
               <TextBlock Text="02"
                          Foreground="#247187"
@@ -235,7 +236,7 @@
                 <TextBlock Text="endpoint для клиента" Foreground="#20677A" FontWeight="Bold" VerticalAlignment="Center"/>
               </StackPanel>
               <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="6">
-                <TextBlock Text="Поднять сервер" FontSize="24" FontWeight="Bold" Foreground="#201710"/>
+                <TextBlock Text="Поднять сервер" FontSize="22" FontWeight="Bold" Foreground="#201710"/>
                 <TextBlock Text="Настройка llama-server без запуска агентного CLI." Foreground="#526B6E" TextWrapping="Wrap"/>
               </StackPanel>
             </Grid>
