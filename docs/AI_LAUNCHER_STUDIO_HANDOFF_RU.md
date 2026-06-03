@@ -111,6 +111,10 @@
   - `manual`;
   - `detected`;
   - человекочитаемые подписи возвращаются на русском языке.
+- Логика выбора runtime release вынесена из `HomeViewModel` в `RuntimeReleaseSelectionController`:
+  - profile/source опции;
+  - русские подсказки по CPU/CUDA/Vulkan/ROCm;
+  - фильтрация пакетов по source и лимит выдачи.
 - В launch review добавлена оценка памяти:
   - веса GGUF;
   - KV-cache по выбранному контексту/runtime;
