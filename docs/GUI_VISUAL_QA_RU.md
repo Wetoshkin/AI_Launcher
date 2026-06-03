@@ -16,7 +16,23 @@
 .\scripts\Invoke-VisualQa.ps1 -ExecutablePath .\publish\AI-Launcher-Studio-win-x64\Launcher.Desktop.exe
 ```
 
-Скрипт создаст локальную папку `TestResults\visual-qa\<timestamp>\`, сделает fullscreen screenshot и положит туда `visual-qa-checklist.md`.
+Для автоматического smoke-прогона без оставленного окна:
+
+```powershell
+.\scripts\Invoke-VisualQa.ps1 `
+  -ExecutablePath .\publish\AI-Launcher-Studio-win-x64\Launcher.Desktop.exe `
+  -CloseAfterCapture
+```
+
+Скрипт создаст локальную папку `TestResults\visual-qa\<timestamp>\`, сделает screenshot и положит туда `visual-qa-checklist.md`.
+
+## Режимы screenshot
+
+Основной режим - `window capture`: если скрипт сам запустил приложение и Windows вернула `MainWindowHandle` процесса, screenshot сохраняется по границам окна AI Launcher Studio в файл `launcher-window.png`.
+
+Fallback-режим - `fullscreen fallback`: если окно процесса найти не удалось, например приложение не запускалось скриптом, `MainWindowHandle` еще пустой или Windows не вернула bounds окна, скрипт сохраняет весь виртуальный рабочий стол в файл `launcher-fullscreen.png`. Это сохраняет прежнюю совместимость visual smoke.
+
+Фактически использованный режим записывается в `visual-qa-checklist.md` в строке `Capture mode`.
 
 ## Чеклист
 
@@ -33,6 +49,6 @@
 
 ## Что приложить к ревью
 
-- `launcher-fullscreen.png` из папки visual QA.
+- `launcher-window.png` или `launcher-fullscreen.png` из папки visual QA.
 - Заполненный `visual-qa-checklist.md`.
-- Короткую заметку, если screenshot сделан не с publish exe, а с уже открытого окна.
+- Короткую заметку, если screenshot сделан не с publish exe или сработал fullscreen fallback.

@@ -1472,6 +1472,55 @@ public sealed partial class HomeViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task RetryFailedRemoteDownloadsAsync()
+    {
+        var failedItems = RemoteDownloadQueue
+            .Where(item => item.Status == RemoteDownloadQueueItemStatus.Error)
+            .ToArray();
+        if (failedItems.Length == 0)
+        {
+            SetStatus("В очереди HF нет ошибок для повтора.");
+            return;
+        }
+
+        foreach (var item in failedItems)
+        {
+            item.MarkPending();
+        }
+
+        SelectedRemoteDownloadQueueItem = failedItems[0];
+        OnPropertyChanged(nameof(DownloadQueueStatusText));
+        SetStatus($"Повторяю ошибки HF: {failedItems.Length} {PendingDownloadCountText(failedItems.Length)}.");
+        await DownloadRemoteQueueAsync();
+    }
+
+    [RelayCommand]
+    private void ClearCompletedRemoteDownloads()
+    {
+        var completedItems = RemoteDownloadQueue
+            .Where(item => item.Status == RemoteDownloadQueueItemStatus.Completed)
+            .ToArray();
+        if (completedItems.Length == 0)
+        {
+            SetStatus("В очереди HF нет завершённых элементов для очистки.");
+            return;
+        }
+
+        foreach (var item in completedItems)
+        {
+            RemoteDownloadQueue.Remove(item);
+        }
+
+        if (SelectedRemoteDownloadQueueItem is null || !RemoteDownloadQueue.Contains(SelectedRemoteDownloadQueueItem))
+        {
+            SelectedRemoteDownloadQueueItem = RemoteDownloadQueue.FirstOrDefault();
+        }
+
+        OnPropertyChanged(nameof(DownloadQueueStatusText));
+        SetStatus($"Очищены завершённые элементы HF: {completedItems.Length}.");
+    }
+
+    [RelayCommand]
     private async Task DownloadSelectedRemoteModelAsync()
     {
         if (SelectedRemoteDownloadOption is null)

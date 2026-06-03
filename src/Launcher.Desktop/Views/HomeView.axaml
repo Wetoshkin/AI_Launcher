@@ -784,6 +784,10 @@
                 <Button Content="Скачать очередь"
                         Command="{Binding DownloadRemoteQueueCommand}"
                         Classes="primary"/>
+                <Button Content="Повторить ошибки"
+                        Command="{Binding RetryFailedRemoteDownloadsCommand}"/>
+                <Button Content="Очистить завершённые"
+                        Command="{Binding ClearCompletedRemoteDownloadsCommand}"/>
                 <Button Content="Удалить из очереди"
                         Command="{Binding RemoveSelectedRemoteDownloadFromQueueCommand}"/>
               </StackPanel>
