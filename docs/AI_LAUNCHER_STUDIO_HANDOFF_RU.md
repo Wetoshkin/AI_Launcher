@@ -2,10 +2,10 @@
 
 ## Где лежит работа
 
-- Рабочий каталог: `D:\AI\LlamaServerLauncherAvalonia\.worktrees\ai-launcher-studio-full-port`
+- Рабочий каталог: ветка `main-ai-launcher-studio-full-port` / GitHub branch `ai-launcher-studio-full-port`
 - Текущая ветка: `main-ai-launcher-studio-full-port`
 - Целевая публикация: `Wetoshkin/AI_Launcher`, ветка `ai-launcher-studio-full-port`
-- Исходная база: форк `Wetoshkin/LlamaServerLauncherAvalonia`
+- Целевой репозиторий продукта: `Wetoshkin/AI_Launcher`
 
 ## Что уже сделано
 
@@ -194,8 +194,8 @@
 Минимальная проверка свежего handoff и portable-сборки:
 
 ```powershell
-dotnet build .\llama-server-launcher-avalonia.sln --no-restore
-dotnet test .\llama-server-launcher-avalonia.sln --no-build
+dotnet build .\AI-Launcher-Studio.sln --no-restore
+dotnet test .\AI-Launcher-Studio.sln --no-build
 .\package-ai-launcher-studio.bat
 ```
 
@@ -303,8 +303,8 @@ publish\AI-Launcher-Studio-win-x64.zip
 - Для C#-части после среза запускать:
 
 ```powershell
-dotnet build .\llama-server-launcher-avalonia.sln --no-restore
-dotnet test .\llama-server-launcher-avalonia.sln --no-build
+dotnet build .\AI-Launcher-Studio.sln --no-restore
+dotnet test .\AI-Launcher-Studio.sln --no-build
 ```
 
 - Для точечных проверок использовать project-level tests:

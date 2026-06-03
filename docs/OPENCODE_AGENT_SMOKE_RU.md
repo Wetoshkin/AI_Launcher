@@ -13,7 +13,7 @@
 
 ```powershell
 .\scripts\Invoke-OpenCodeAgentSmoke.ps1 `
-  -RuntimePath "D:\AI\AI launcher\runtimes\turboquant\tqp-v0.1.1\llama-server.exe" `
+  -RuntimePath "D:\AI\runtimes\turboquant\tqp-v0.1.1\llama-server.exe" `
   -ModelPath "D:\AI\Models\Qwen\Qwen2.5-Coder-0.5B-Instruct-GGUF\qwen2.5-coder-0.5b-instruct-q4_k_m.gguf" `
   -ContextTokens 16384 `
   -Port 18084

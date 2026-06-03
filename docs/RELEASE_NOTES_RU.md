@@ -76,8 +76,8 @@ AI-Launcher-Studio-v1.0.0-release-prep
 
 ```powershell
 git status --short
-dotnet build .\llama-server-launcher-avalonia.sln --no-restore
-dotnet test .\llama-server-launcher-avalonia.sln --no-build
+dotnet build .\AI-Launcher-Studio.sln --no-restore
+dotnet test .\AI-Launcher-Studio.sln --no-build
 ```
 
 2. Брать маленький независимый срез и заранее объявлять ownership файлов.

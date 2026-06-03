@@ -66,7 +66,7 @@ function Find-RuntimeCandidates {
     Add-ExistingDirectory -Directories $directories -Path (Join-Path $ProjectRoot "publish")
     Add-ExistingDirectory -Directories $directories -Path (Join-Path $ProjectRoot "bin")
     Add-ExistingDirectory -Directories $directories -Path (Join-Path $ProjectRoot "tools")
-    Add-ExistingDirectory -Directories $directories -Path "D:\AI\AI launcher\runtimes"
+    Add-ExistingDirectory -Directories $directories -Path "D:\AI\runtimes"
     Add-ExistingDirectory -Directories $directories -Path "D:\AI\AI-Launcher-Studio\runtimes"
 
     $candidates = foreach ($directory in $directories) {
@@ -94,7 +94,6 @@ function Get-DefaultModelRoots {
     Add-ExistingDirectory -Directories $directories -Path (Join-Path $ProjectRoot "Models")
     Add-ExistingDirectory -Directories $directories -Path "D:\AI\Models"
     Add-ExistingDirectory -Directories $directories -Path "D:\AI\models"
-    Add-ExistingDirectory -Directories $directories -Path "D:\AI\AI launcher\models"
     Add-ExistingDirectory -Directories $directories -Path (Join-Path $HOME ".lmstudio\models")
     Add-ExistingDirectory -Directories $directories -Path (Join-Path $HOME ".lmstudio\.internal\bundled-models")
     Add-ExistingDirectory -Directories $directories -Path (Join-Path $HOME ".cache\lm-studio\models")

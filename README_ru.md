@@ -1,324 +1,136 @@
-# LlamaServerLauncher
+# AI Launcher Studio
 
 [English](README.md)
 
-![LlamaServerLauncher](docs/images/preview.png)
+AI Launcher Studio - Windows GUI для локальных AI-агентов, `llama-server`, GGUF-моделей и runtime-проверок. Приложение помогает выбрать папку проектов, папку моделей, runtime, агентный CLI, контекст/KV/MTP-параметры, проверить порт и запустить локальный endpoint или агентный сценарий.
 
-Кроссплатформенное десктопное приложение для запуска и управления серверными инстансами [llama.cpp](https://github.com/ggerganov/llama.cpp) с интуитивно понятным графическим интерфейсом.
+Проект собран на Avalonia UI и .NET 8. Основной продукт находится в `src\Launcher.Desktop`; старый root launcher-проект удалён из репозитория.
 
-Создано с использованием [Avalonia UI](https://avaloniaui.net/) и .NET 8.
+## Что умеет
 
-## Быстрый запуск AI Launcher Studio
+- Запуск `llama-server` как server-only endpoint для внешних клиентов.
+- Запуск агентных сценариев через OpenCode, Kilo, Claw и Aider.
+- Выбор папки проектов и папки моделей.
+- Локальный каталог GGUF с фильтрацией.
+- Поиск моделей на Hugging Face с сортировкой, фильтрами, рейтингами, downloads/likes и очередью скачивания.
+- Проверка runtime, GPU, портов и готовности `/v1/models`.
+- Освобождение занятого порта перед запуском.
+- KV-cache, context и MTP/TurboQuant параметры с русскими подсказками.
+- Пресеты быстрого запуска.
+- Светлая оранжевая GUI-тема и русскоязычный интерфейс.
+- Portable Windows build без installer framework.
 
-Новая GUI-оболочка находится в `src/Launcher.Desktop`.
-
-На Windows можно запустить текущий GUI из исходников двойным кликом по:
-
-```bat
-start-ai-launcher-studio.bat
-```
-
-Или из терминала:
+## Быстрый запуск из исходников
 
 ```powershell
 dotnet run --project src\Launcher.Desktop\Launcher.Desktop.csproj --no-restore
 ```
 
-Перед передачей сборки рекомендуется выполнить:
+Или двойным кликом:
 
-```powershell
-dotnet build .\llama-server-launcher-avalonia.sln --no-restore
-dotnet test .\llama-server-launcher-avalonia.sln --no-build
+```bat
+start-ai-launcher-studio.bat
 ```
 
-Чтобы собрать обычную Windows-папку с `Launcher.Desktop.exe`, запустите:
+## Сборка и тесты
+
+```powershell
+dotnet restore .\AI-Launcher-Studio.sln
+dotnet build .\AI-Launcher-Studio.sln --no-restore
+dotnet test .\AI-Launcher-Studio.sln --no-build
+```
+
+## Первый portable build
+
+Обычная publish-папка:
 
 ```bat
 publish-ai-launcher-studio.bat
 ```
 
-Готовая сборка появится в `publish\AI-Launcher-Studio-win-x64`.
-
-Чтобы сразу получить переносимый zip-архив, запустите:
+Готовый zip + `.sha256`:
 
 ```bat
 package-ai-launcher-studio.bat
 ```
 
-Архив появится в `publish\AI-Launcher-Studio-win-x64.zip`.
+Результат:
 
-GitHub Actions workflow `Package` также можно запускать вручную или tag'ом `v*` после того, как workflow-файл попадёт в default branch репозитория. Для tag-сборок он готовит версионированные artifacts вида `AI-Launcher-Studio-v1.0.0-win-x64`, `AI-Launcher-Studio-v1.0.0-release-notes` и `AI-Launcher-Studio-v1.0.0-release-prep`. Workflow не публикует GitHub Release автоматически: скачайте artifacts из успешного run, проверьте `.sha256` и создайте Release вручную для того же tag.
+```text
+publish\AI-Launcher-Studio-win-x64\
+publish\AI-Launcher-Studio-win-x64.zip
+publish\AI-Launcher-Studio-win-x64.zip.sha256
+```
 
-## Установка portable zip
+## Проверки перед релизом
 
-Коротко для пользователя готовой сборки:
-
-1. Скачайте `AI-Launcher-Studio-win-x64.zip` и соседний `AI-Launcher-Studio-win-x64.zip.sha256` из artifact/Release.
-2. Проверьте checksum:
+Visual QA:
 
 ```powershell
-Get-FileHash .\AI-Launcher-Studio-win-x64.zip -Algorithm SHA256
-Get-Content .\AI-Launcher-Studio-win-x64.zip.sha256
+.\scripts\Invoke-VisualQa.ps1 `
+  -ExecutablePath .\publish\AI-Launcher-Studio-win-x64\Launcher.Desktop.exe `
+  -CloseAfterCapture
 ```
 
-3. Распакуйте архив в `D:\AI\AI-Launcher-Studio` или другую папку без прав администратора.
-4. Запустите `Launcher.Desktop.exe`.
-
-Автоматическая распаковка с проверкой `.sha256`, если файл лежит рядом с zip:
+Runtime endpoint smoke:
 
 ```powershell
-.\scripts\Install-PortablePackage.ps1 `
-  -ZipPath .\AI-Launcher-Studio-win-x64.zip `
-  -Destination D:\AI\AI-Launcher-Studio
+.\scripts\Invoke-RuntimeSmoke.ps1 `
+  -RuntimePath "D:\AI\runtimes\turboquant\tqp-v0.1.1\llama-server.exe" `
+  -ModelPath "D:\AI\Models\Qwen\Qwen2.5-Coder-0.5B-Instruct-GGUF\qwen2.5-coder-0.5b-instruct-q4_k_m.gguf" `
+  -Port 18081 `
+  -ContextTokens 1024
 ```
 
-Подробная инструкция: `docs\INSTALL_PORTABLE_RU.md`.
-
-Проверить portable-сборку можно запуском:
+Agent E2E readiness:
 
 ```powershell
-.\publish\AI-Launcher-Studio-win-x64\Launcher.Desktop.exe
+.\scripts\Invoke-AgentE2eReadiness.ps1 `
+  -RuntimePath "D:\AI\runtimes\turboquant\tqp-v0.1.1\llama-server.exe" `
+  -ModelsRoot "D:\AI\Models" `
+  -RequiredAgent opencode
 ```
 
-Быстрый GUI smoke-check:
+OpenCode smoke:
 
-- для визуальной проверки дизайна можно использовать `docs\GUI_VISUAL_QA_RU.md` и `scripts\Invoke-VisualQa.ps1`;
-- для реальной проверки `llama-server.exe` + GGUF endpoint используйте `docs\RUNTIME_SMOKE_RU.md` и `scripts\Invoke-RuntimeSmoke.ps1`;
-- перед настоящим agent E2E проверьте блокеры окружения через `docs\AGENT_E2E_READINESS_RU.md` и `scripts\Invoke-AgentE2eReadiness.ps1`;
-- для полного минимального OpenCode smoke используйте `docs\OPENCODE_AGENT_SMOKE_RU.md` и `scripts\Invoke-OpenCodeAgentSmoke.ps1`;
-- открыть первый экран и убедиться, что виден рабочий dashboard AI Launcher Studio;
-- пройти вкладки `Runtime`, `Агенты`, `Модели`;
-- проверить выбор runtime/model/project paths;
-- проверить Hugging Face search и quant/family filters;
-- проверить launch preview для server-only и agent-сценария;
-- при наличии runtime и маленького GGUF запустить endpoint и дождаться готовности `/v1/models`.
-
-## Возможности
-
-### Настройка сервера
-- **Путь к исполняемому файлу** — Выберите бинарник `llama-server` или загрузите llama.cpp прямо из приложения
-- **Выбор модели** — Выберите конкретный файл модели (.gguf) или укажите директорию с моделями
-- **Сетевые настройки** — Настройте адрес хоста (по умолчанию: 127.0.0.1) и порт (по умолчанию: 8080)
-
-### Параметры модели
-- Размер контекста (`-c`, `--ctx-size`)
-- Количество потоков (`-t`, `--threads`)
-- GPU-слои (`-ngl`, `--gpu-layers`, `--n-gpu-layers`)
-- Размер батча (`-b`, `--batch-size`)
-- UBatch-размер (`-ub`, `--ubatch-size`)
-- Путь к MMProj (`-mm`, `--mmproj`)
-- Тип кэша K (`-ctk`, `--cache-type-k`)
-- Тип кэша V (`-ctv`, `--cache-type-v`)
-- Параллельные слоты (`-np`, `--parallel`)
-- Таймаут (`-to`, `--timeout`)
-- Seed (`-s`, `--seed`)
-
-### Параметры генерации
-- Температура (`--temp`, `--temperature`)
-- Максимум токенов (`-n`, `--predict`, `--n-predict`)
-- Min-P сэмплирование (`--min-p`)
-- Top-K сэмплирование (`--top-k`)
-- Top-P сэмплирование (`--top-p`)
-- Штраф за повторы (`--repeat-penalty`)
-- Штраф за присутствие (`--presence-penalty`)
-- Штраф за частоту (`--frequency-penalty`)
-- Режим рассуждения (`-rea`, `--reasoning`)
-- Бюджет рассуждений (`--reasoning-budget`)
-
-### Дополнительные опции
-- Flash Attention (`-fa`, `--flash-attn`)
-- Непрерывное батчирование (`-cb`, `--cont-batching`)
-- WebUI (`--webui`, `--no-webui`)
-- Режим эмбеддингов (`--embedding`, `--embeddings`)
-- Управление слотами (`--slots`, `--no-slots`)
-- Метрики (`--metrics`)
-- Кэширование промптов (`--cache-prompt`, `--no-cache-prompt`)
-- Сдвиг контекста (`--context-shift`, `--no-context-shift`)
-- Блокировка памяти (`--mlock`)
-- Отображение памяти (`--mmap`, `--no-mmap`)
-- Аутентификация по API-ключу (`--api-key`)
-- Псевдоним модели (`-a`, `--alias`)
-- Произвольные аргументы командной строки (с возможностью включения/отключения каждого аргумента)
-
-### Определение возможностей
-Приложение автоматически парсит вывод `llama-server --help` для определения поддерживаемых флагов. Неподдерживаемые опции визуально помечаются в интерфейсе.
-
-### Логирование и мониторинг
-- Вывод логов в файл (`--log-file`)
-- Подробное логирование (`-v`, `--verbose`)
-- Просмотрщик логов в реальном времени с автоскроллом
-- Отображение статуса сервера с PID процесса
-- Автоперезапуск при падении
-
-### Интеграция с llama.cpp
-- **Загрузка в один клик** — Скачивание официальных релизов llama.cpp напрямую с GitHub
-- **Уведомления об обновлениях** — Автоматическая проверка новых релизов llama.cpp
-- **Управление версиями** — Установка и переключение между различными версиями
-- **Интеграция с PATH** — Возможность добавить директорию llama.cpp в переменную окружения PATH
-
-### Обновление приложения
-- **Автообновление** — Автоматическая проверка новых релизов приложения и поддержка обновления в один клик с перезапуском
-
-### Поддержка Docker
-- Интеграция с Docker CLI для контейнерных сценариев использования
-
-### Управление профилями
-- Сохранение, загрузка, переименование и удаление профилей конфигурации
-- Экспорт профилей в JSON, Windows batch (.bat), Linux shell (.sh) или macOS script (.command)
-- Импорт профилей из JSON
-- Экспорт/импорт всех профилей в ZIP-архив
-- Отслеживание несохранённых изменений
-
-### Drag & Drop
-Перетаскивайте файлы на окно для импорта конфигураций или установки путей:
-- `.json` — Импорт профиля
-- `.bat` / `.cmd` — Парсинг Windows batch-файлов
-- `.sh` — Парсинг Linux shell-скриптов
-- `.command` — Парсинг macOS-скриптов
-- `.exe` — Установка пути к исполняемому файлу llama-server
-- `.gguf` — Установка пути к модели
-
-### Системный трей
-- Сворачивание в системный трей при минимизации окна
-- Меню иконки трея с управлением сервером (старт, стоп, выгрузка модели, открытие в браузере)
-- Двойной клик по иконке трея для восстановления окна
-
-### Локализация
-- Английский
-- Русский
-
-### Внешний вид и темы
-- Варианты тем: Тёмная и Светлая
-- Цветовые схемы: Стандартная, Океан, Лес, Закат, Ubuntu
-- Регулируемый размер шрифта (S, M, L, XL)
-- Выбор шрифта интерфейса
-- Режим авторазмера высоты окна (по содержимому)
-- Сворачиваемая панель логов и панель настроек
-- Сохранение позиции и размера окна
-
-### Управление данными
-- Настраиваемая директория данных (стандартная или произвольная)
-- Простая миграция всех данных (настроек, логов, llama.cpp) между директориями
-
-## Требования
-
-- .NET 8.0 Runtime или self-contained сборка
-- Бинарник сервера [llama.cpp](https://github.com/ggerganov/llama.cpp/releases) (`llama-server`), или загрузите его из приложения
-
-## Установка
-
-1. Скачайте последний релиз со [страницы релизов](https://github.com/pytraveler/LlamaServerLauncherAvalonia/releases) для вашей платформы
-2. Поместите исполняемый файл в удобное место
-3. Запустите `LlamaServerLauncher`
-
-## Сборка из исходников
-
-### Необходимые компоненты
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-
-### Команды сборки
-
-```bash
-# Отладочная сборка
-dotnet build LlamaServerLauncher.csproj
-
-# Linux
-dotnet publish LlamaServerLauncher.csproj -c Release -r linux-x64 -o ./publish/linux-x64
-
-# Windows
-dotnet publish LlamaServerLauncher.csproj -c Release -r win-x64 -o ./publish/win-x64
-
-# macOS
-dotnet publish LlamaServerLauncher.csproj -c Release -r osx-x64 -o ./publish/osx-x64
+```powershell
+.\scripts\Invoke-OpenCodeAgentSmoke.ps1 `
+  -RuntimePath "D:\AI\runtimes\turboquant\tqp-v0.1.1\llama-server.exe" `
+  -ModelPath "D:\AI\Models\Qwen\Qwen2.5-Coder-0.5B-Instruct-GGUF\qwen2.5-coder-0.5b-instruct-q4_k_m.gguf" `
+  -ContextTokens 16384 `
+  -Port 18084
 ```
 
-## Использование
+Подробные инструкции:
 
-1. Нажмите **Download llama.cpp**, чтобы скачать бинарник, или нажмите **Browse** рядом с **Executable** и выберите ваш `llama-server`
-2. Нажмите **Browse** рядом с **Model** и выберите файл модели (.gguf), или укажите директорию с моделями
-3. При необходимости настройте дополнительные параметры
-4. Нажмите **Start Server** для запуска llama-server
-5. Следите за логами в разделе **Log Output**
-6. Используйте **Open in Browser** для открытия WebUI llama-server
-
-### Управление профилями
-
-Для сохранения текущих настроек в профиль:
-1. Введите имя в поле профиля или выберите существующий профиль из выпадающего списка
-2. Нажмите **Save**
-
-Для загрузки сохранённого профиля:
-1. Выберите профиль из выпадающего списка
-2. Нажмите **Load**
-
-Для экспорта конфигураций:
-- Используйте **Export** для сохранения в JSON, batch-файл (.bat), shell-скрипт (.sh) или macOS-скрипт (.command)
-- Используйте **Export All** для сохранения всех профилей в ZIP-архив
-- Используйте **Import** для загрузки одного профиля из JSON
-- Используйте **Import All** для загрузки всех профилей из ZIP-архива
-- Перетащите файлы `.json`, `.bat`, `.cmd`, `.sh` или `.command` на окно приложения
+- `docs\INSTALL_PORTABLE_RU.md`
+- `docs\GUI_VISUAL_QA_RU.md`
+- `docs\RUNTIME_SMOKE_RU.md`
+- `docs\AGENT_E2E_READINESS_RU.md`
+- `docs\OPENCODE_AGENT_SMOKE_RU.md`
+- `docs\RELEASE_NOTES_RU.md`
 
 ## Архитектура
 
-- **Фреймворк**: Avalonia 12.0.1 (.NET 8.0)
-- **Паттерн**: MVVM (Model-View-ViewModel)
-- **Сборка**: Self-contained однофайловый исполняемый файл
-
-### Структура проекта
-```
-LlamaServerLauncher/
-├── Models/                   # Модели данных и сборка командной строки
-│   ├── ServerConfiguration   # Все параметры llama-server + маппинг KnownArguments
-│   ├── CommandLineBuilder    # Формирование полной командной строки llama-server
-│   ├── CommandLineParser     # Токенизация и парсинг аргументов (кавычки, JSON, массивы)
-│   ├── AppSettings           # Постоянные настройки приложения
-│   ├── ProfileInfo           # Метаданные профиля
-│   └── HelpArgumentInfo      # Метаданные аргументов справки для определения возможностей
-├── ViewModels/               # MVVM ViewModel'и
-│   ├── MainViewModel         # Основная логика и состояние приложения
-│   ├── DownloadDialogViewModel
-│   ├── ArgumentPickerViewModel
-│   ├── RelayCommand          # Кастомная реализация ICommand
-│   └── AsyncRelayCommand
-├── Services/                 # Сервисы бизнес-логики
-│   ├── LlamaServerService    # Управление процессами, HTTP-запросы слотов/моделей
-│   ├── ILlamaServerService   # Интерфейс сервиса
-│   ├── ConfigurationService  # Персистентность профилей и настроек (JSON)
-│   ├── LlamaCppDownloadService # Загрузка релизов llama.cpp с GitHub
-│   ├── LlamaHelpParserService  # Парсинг вывода --help для определения возможностей
-│   ├── LogService            # Управление логами приложения и сервера
-│   ├── WindowsFileDialogs    # Абстракции выбора файлов/папок
-│   ├── AppUpdateService      # Автообновление приложения через GitHub-релизы
-│   ├── DockerCliService      # Интеграция с Docker CLI
-│   └── DataPathResolver      # Разрешение путей и миграция директории данных
-├── Converters/               # UI-конвертеры значений
-├── Controls/                 # Пользовательские UI-элементы
-│   └── HistoryTextBox        # TextBox с навигацией по истории
-├── Resources/                # Локализация, темы и ресурсы
-│   ├── Strings.resx          # Английская локализация
-│   ├── Strings.ru.resx       # Русская локализация
-│   ├── LocalizedStrings.cs   # Строго типизированный доступ к локализации
-│   ├── Themes/
-│   │   ├── Dark.xaml         # Тёмная тема
-│   │   ├── Light.xaml        # Светлая тема
-│   │   └── Schemes/          # Цветовые акценты
-│   │       ├── Default.xaml
-│   │       ├── Ocean.xaml
-│   │       ├── Forest.xaml
-│   │       ├── Sunset.xaml
-│   │       └── Ubuntu.xaml
-│   └── *.svg                 # Иконки
-├── MainWindow.axaml          # Главное окно с поддержкой drag-and-drop
-├── DownloadDialogWindow.axaml
-├── ArgumentPickerWindow.axaml
-├── AboutDialogWindow.axaml
-└── App.axaml                 # Точка входа, иконка трея, управление культурой
+```text
+src\Launcher.Core      сценарии, профили, guards, review, decoding presets
+src\Launcher.Runtimes  llama.cpp runtime, ports, processes, GPU/VRAM, Ollama preflight
+src\Launcher.Models    локальный GGUF-каталог и Hugging Face каталог/скачивание
+src\Launcher.Agents    command builders и project config для OpenCode/Kilo/Claw/Aider
+src\Launcher.Desktop   Avalonia GUI
+tests\                 unit/smoke тесты по слоям
+scripts\               portable install, visual/runtime/agent smoke checks
+docs\                  русские инструкции по проверке и релизу
 ```
 
-## Благодарности
+## Не коммитить
 
-Спасибо за вклад в проект и моральную поддержку — [Methelina](https://github.com/Methelina). Спасибо за предоставленные [экспериментальные сборки llama.cpp-turboquant](https://github.com/pytraveler/llama-cpp-turboquant).
+- GGUF-модели.
+- `runtimes\` с бинарниками.
+- `publish\`.
+- `TestResults\`.
+- локальные настройки пользователя.
 
 ## Лицензия
 
-MIT License — подробности см. в файле LICENSE.
+MIT License. См. `LICENSE`.

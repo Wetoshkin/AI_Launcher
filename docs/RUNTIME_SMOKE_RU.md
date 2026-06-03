@@ -8,7 +8,7 @@
 
 ```powershell
 .\scripts\Invoke-RuntimeSmoke.ps1 `
-  -RuntimePath "D:\AI\AI launcher\runtimes\turboquant\tqp-v0.1.1\llama-server.exe" `
+  -RuntimePath "D:\AI\runtimes\turboquant\tqp-v0.1.1\llama-server.exe" `
   -ModelPath "C:\Users\Wetoshkin\.lmstudio\.internal\bundled-models\nomic-ai\nomic-embed-text-v1.5-GGUF\nomic-embed-text-v1.5.Q4_K_M.gguf" `
   -Port 18080 `
   -ContextTokens 512 `

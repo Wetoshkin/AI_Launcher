@@ -20,7 +20,7 @@
 
 ```powershell
 .\scripts\Invoke-AgentE2eReadiness.ps1 `
-  -RuntimePath "D:\AI\AI launcher\runtimes\turboquant\tqp-v0.1.1\llama-server.exe" `
+  -RuntimePath "D:\AI\runtimes\turboquant\tqp-v0.1.1\llama-server.exe" `
   -ModelsRoot "D:\AI\Models" `
   -RequiredAgent opencode
 ```

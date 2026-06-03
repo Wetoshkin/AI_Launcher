@@ -10,7 +10,7 @@
         MinHeight="700"
         WindowStartupLocation="CenterScreen"
         Background="#F7EFE3"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/ai-launcher-studio.ico"
         Title="AI Launcher Studio">
     <views:HomeView/>
 </Window>
