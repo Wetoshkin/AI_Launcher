@@ -147,7 +147,7 @@
   - локальный zip: `publish\AI-Launcher-Studio-win-x64.zip`;
   - проверен старт опубликованного `Launcher.Desktop.exe`.
 - Visual QA script поддерживает матрицу размеров окна:
-  - `-WindowSizes 1080x720,1280x720,1440x900`;
+  - `-WindowSizes 1024x700,1080x720,1280x720,1440x900`;
   - создаёт отдельный screenshot на каждый размер;
   - имя файла содержит requested и actual размер окна;
   - checklist перечисляет все созданные PNG.
@@ -420,6 +420,6 @@ dotnet test tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj --filter 
    - подписи/подсказки к CPU/CUDA/Vulkan/ROCm профилям.
 4. Запустить полный `dotnet build` + `dotnet test`, затем проверить CI в GitHub Actions.
 5. Запускать visual QA matrix после каждого крупного XAML-среза:
-   - `.\scripts\Invoke-VisualQa.ps1 -WindowSizes 1080x720,1280x720,1440x900 -CloseAfterCapture`;
+   - `.\scripts\Invoke-VisualQa.ps1 -WindowSizes 1024x700,1080x720,1280x720,1440x900 -CloseAfterCapture`;
    - проверить нижние блоки на высоте около `720px`;
    - если блоки не видны без scroll, убедиться, что scroll работает ожидаемо и это не выглядит как обрезанный UI.
