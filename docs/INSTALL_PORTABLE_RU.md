@@ -17,11 +17,18 @@ AI-Launcher-Studio-win-x64.zip
 AI-Launcher-Studio-v1.0.0-win-x64
 ```
 
-Внутри portable artifact должны лежать:
+Внутри portable artifact лежат zip и checksum с тем же basename. Для локальной сборки это:
 
 ```text
 AI-Launcher-Studio-win-x64.zip
 AI-Launcher-Studio-win-x64.zip.sha256
+```
+
+Для tag/manual GitHub Actions сборок имена будут версионированными, например:
+
+```text
+AI-Launcher-Studio-v1.0.0-win-x64.zip
+AI-Launcher-Studio-v1.0.0-win-x64.zip.sha256
 ```
 
 ## Проверить SHA256

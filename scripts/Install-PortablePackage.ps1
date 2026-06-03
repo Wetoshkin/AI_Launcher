@@ -43,6 +43,61 @@ function Get-ExpectedSha256 {
     return $match.Groups[1].Value.ToLowerInvariant()
 }
 
+function Expand-SafeZipArchive {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ArchivePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationPath
+    )
+
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+    $destinationFullPath = [System.IO.Path]::GetFullPath($DestinationPath)
+    if (-not $destinationFullPath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $destinationFullPath += [System.IO.Path]::DirectorySeparatorChar
+    }
+
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($ArchivePath)
+    try {
+        foreach ($entry in $archive.Entries) {
+            if ([string]::IsNullOrWhiteSpace($entry.FullName)) {
+                continue
+            }
+
+            if ([System.IO.Path]::IsPathRooted($entry.FullName)) {
+                throw "Unsafe rooted zip entry: $($entry.FullName)"
+            }
+
+            $targetPath = [System.IO.Path]::GetFullPath((Join-Path $destinationFullPath $entry.FullName))
+            if (-not $targetPath.StartsWith($destinationFullPath, [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Unsafe zip entry escapes destination: $($entry.FullName)"
+            }
+        }
+
+        foreach ($entry in $archive.Entries) {
+            if ([string]::IsNullOrWhiteSpace($entry.FullName)) {
+                continue
+            }
+
+            $targetPath = [System.IO.Path]::GetFullPath((Join-Path $destinationFullPath $entry.FullName))
+            if ($entry.FullName.EndsWith('/') -or $entry.FullName.EndsWith('\')) {
+                New-Item -ItemType Directory -Force -Path $targetPath | Out-Null
+                continue
+            }
+
+            $targetDirectory = Split-Path -Parent $targetPath
+            New-Item -ItemType Directory -Force -Path $targetDirectory | Out-Null
+            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $targetPath, $true)
+        }
+    }
+    finally {
+        $archive.Dispose()
+    }
+}
+
 $resolvedZipPath = Resolve-RequiredPath -Path $ZipPath -Label 'Zip package'
 $zipItem = Get-Item -LiteralPath $resolvedZipPath
 
@@ -70,7 +125,7 @@ $destinationPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPath
 New-Item -ItemType Directory -Force -Path $destinationPath | Out-Null
 
 Write-Host "Extracting to: $destinationPath"
-Expand-Archive -LiteralPath $resolvedZipPath -DestinationPath $destinationPath -Force
+Expand-SafeZipArchive -ArchivePath $resolvedZipPath -DestinationPath $destinationPath
 
 $exe = Get-ChildItem -LiteralPath $destinationPath -Filter 'Launcher.Desktop.exe' -Recurse -File |
     Select-Object -First 1

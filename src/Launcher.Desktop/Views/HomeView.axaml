@@ -378,7 +378,7 @@
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="4"
                           ToolTip.Tip="--spec-draft-n-min: минимум draft-токенов MTP перед проверкой. 0 отключает нижний порог, больше может ускорить стабильный draft.">
-                <TextBlock Text="MTP min" FontWeight="Bold" FontSize="12"/>
+                <TextBlock Text="MTP минимум" FontWeight="Bold" FontSize="12"/>
                 <NumericUpDown Minimum="0"
                                Maximum="{Binding MtpDraftTokens}"
                                Increment="1"
@@ -656,7 +656,7 @@
                       Margin="0,0,10,10"
                       ItemsSource="{Binding HfCapabilityFilterOptions}"
                       SelectedItem="{Binding SelectedHfCapabilityFilterOption}"
-                      ToolTip.Tip="Фильтр возможностей: все возможности, GGUF, визуальные, инструменты, MTP, совместимые runtime, TurboQuant.">
+                      ToolTip.Tip="Фильтр возможностей по тегам и файлам Hugging Face: все возможности, GGUF, визуальные, инструменты, MTP, GGUF по тегам, TurboQuant эвристика.">
               <ComboBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:HuggingFaceCapabilityFilterOptionViewModel">
                   <TextBlock Text="{Binding Label}"/>

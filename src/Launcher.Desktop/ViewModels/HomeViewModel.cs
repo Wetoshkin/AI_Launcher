@@ -717,8 +717,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         new(HuggingFaceCapabilityFilter.Vision, "визуальные"),
         new(HuggingFaceCapabilityFilter.Tools, "инструменты"),
         new(HuggingFaceCapabilityFilter.Mtp, "MTP"),
-        new(HuggingFaceCapabilityFilter.RuntimeCompatible, "совместимые runtime"),
-        new(HuggingFaceCapabilityFilter.TurboQuantCompatible, "TurboQuant")
+        new(HuggingFaceCapabilityFilter.RuntimeCompatible, "GGUF по тегам"),
+        new(HuggingFaceCapabilityFilter.TurboQuantCompatible, "TurboQuant эвристика")
     ];
 
     public IReadOnlyList<string> HfQuantFilterOptions { get; } =
@@ -1539,7 +1539,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         try
         {
-            foreach (var item in RemoteDownloadQueue.ToArray())
+            foreach (var item in RemoteDownloadQueue.Where(item => item.Status != RemoteDownloadQueueItemStatus.Completed).ToArray())
             {
                 item.MarkDownloading();
                 OnPropertyChanged(nameof(DownloadQueueStatusText));
