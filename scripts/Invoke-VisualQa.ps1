@@ -354,14 +354,21 @@ if (-not $ChecklistOnly) {
                 throw "Не удалось изменить размер окна до $($size.Label)."
             }
 
-            $windowScreenshotName = "launcher-window-$($size.Label).png"
+            $actualBounds = Get-ProcessMainWindowBounds -Process $process
+            $actualLabel = if ($actualBounds) {
+                "$($actualBounds.Width)x$($actualBounds.Height)"
+            }
+            else {
+                $size.Label
+            }
+            $windowScreenshotName = "launcher-window-requested-$($size.Label)-actual-$actualLabel.png"
             $windowScreenshotPath = Join-Path $runDirectory $windowScreenshotName
             if (-not (Save-WindowScreenshot -Process $process -ScreenshotPath $windowScreenshotPath)) {
                 throw "Не удалось сохранить screenshot окна для размера $($size.Label)."
             }
 
             $screenshotNames += $windowScreenshotName
-            Write-Host "Screenshot окна $($size.Label) сохранен: $windowScreenshotPath"
+            Write-Host "Screenshot окна requested $($size.Label), actual $actualLabel сохранен: $windowScreenshotPath"
         }
 
         $captureMode = "window matrix"
