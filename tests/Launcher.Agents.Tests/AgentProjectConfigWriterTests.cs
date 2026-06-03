@@ -60,7 +60,8 @@ public sealed class AgentProjectConfigWriterTests
         Assert.Equal("http://127.0.0.1:8080/v1", options["baseURL"]?.GetValue<string>());
         Assert.Equal("local", options["apiKey"]?.GetValue<string>());
 
-        var model = Assert.IsType<JsonObject>(provider["models"]?["local/llama.cpp/model"]);
+        Assert.Null(provider["models"]?["local/llama.cpp/model"]);
+        var model = Assert.IsType<JsonObject>(provider["models"]?["llama.cpp/model"]);
         Assert.True(model["tools"]?["disabled"]?.GetValue<bool>());
     }
 

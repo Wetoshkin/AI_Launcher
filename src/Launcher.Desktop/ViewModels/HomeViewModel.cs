@@ -2097,9 +2097,10 @@ public sealed partial class HomeViewModel : ViewModelBase
             LocalModels.Add(new ModelRowViewModel(model));
         }
 
-        if (SelectedLocalModel is null && LocalModels.Count > 0)
+        var selectedPath = SelectedLocalModel?.Path;
+        if (selectedPath is null || !LocalModels.Any(model => string.Equals(model.Path, selectedPath, StringComparison.OrdinalIgnoreCase)))
         {
-            SelectedLocalModel = LocalModels[0];
+            SelectedLocalModel = LocalModels.FirstOrDefault();
         }
     }
 
