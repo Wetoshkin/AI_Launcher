@@ -154,6 +154,10 @@
   - для agent-сценария поднимается `llama-server`;
   - после готовности endpoint пишется `kilo.jsonc` или `opencode.json`;
   - затем запускается выбранный CLI агента.
+- Сборка launch plan вынесена из `HomeViewModel` в `LaunchPlanComposer`:
+  - server plan учитывает найденный runtime executable;
+  - agent preview показывает отдельные `SERVER` и `AGENT` стадии;
+  - agent request/plan строятся в отдельной тестируемой точке.
 - Добавлен live output процессов в GUI:
   - stdout/stderr `llama-server` и CLI агента идут в лог-панель;
   - активные PID можно остановить кнопкой `Остановить`.

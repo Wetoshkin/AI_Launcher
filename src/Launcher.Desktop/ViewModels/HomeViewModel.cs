@@ -1618,12 +1618,13 @@ public sealed partial class HomeViewModel : ViewModelBase
     private void BuildLaunchCommand()
     {
         var profile = BuildDraftProfile();
+        var decodingPreset = BuildSelectedDecodingPreset();
         var plan = profile.Mode == LaunchMode.Endpoint
-            ? BuildServerPlan(profile)
-            : BuildAgentPlan(profile);
+            ? LaunchPlanComposer.BuildServerPlan(profile, decodingPreset, _bestRuntime)
+            : LaunchPlanComposer.BuildAgentPlan(profile);
         _lastLaunchPlan = plan;
         var preview = profile.Mode == LaunchMode.Agent
-            ? BuildAgentScenarioPreview(profile)
+            ? LaunchPlanComposer.BuildAgentScenarioPreview(profile, decodingPreset, _bestRuntime)
             : LaunchPlanFormatter.Format(plan);
 
         LaunchCommandPreview = preview.CommandLine;
@@ -1649,22 +1650,6 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         SetStatus("Команда запуска собрана. Проверьте её перед стартом.");
-    }
-
-    private LaunchPlanPreview BuildAgentScenarioPreview(LaunchProfile profile)
-    {
-        var serverProfile = profile with { Mode = LaunchMode.Endpoint, Agent = AgentKind.None };
-        var serverPreview = LaunchPlanFormatter.Format(BuildServerPlan(serverProfile));
-        var agentPreview = LaunchPlanFormatter.Format(BuildAgentPlan(profile));
-        var commandLine = string.Join(
-            Environment.NewLine,
-            $"SERVER: {serverPreview.CommandLine}",
-            $"AGENT: {agentPreview.CommandLine}");
-        var environmentLines = serverPreview.EnvironmentLines.Select(line => $"SERVER: {line}")
-            .Concat(agentPreview.EnvironmentLines.Select(line => $"AGENT: {line}"))
-            .ToArray();
-
-        return new LaunchPlanPreview(commandLine, environmentLines);
     }
 
     [RelayCommand]
@@ -1728,17 +1713,23 @@ public sealed partial class HomeViewModel : ViewModelBase
     {
         var messages = new List<string>();
         var serverProfile = profile with { Mode = LaunchMode.Endpoint, Agent = AgentKind.None };
-        var serverResult = await StartSinglePlanAsync(BuildServerPlan(serverProfile), profile.Port, workingDirectory: null);
+        var serverResult = await StartSinglePlanAsync(
+            LaunchPlanComposer.BuildServerPlan(serverProfile, BuildSelectedDecodingPreset(), _bestRuntime),
+            profile.Port,
+            workingDirectory: null);
         messages.AddRange(serverResult.Messages);
         if (!serverResult.Started)
         {
             return new RuntimeStartResult(false, null, messages);
         }
 
-        var request = BuildAgentRequest(profile);
+        var request = LaunchPlanComposer.BuildAgentRequest(profile);
         var config = await _agentProjectConfigWriter.WriteAsync(request, default);
         AppendProcessLogLine(config.Message);
-        var agentResult = await StartSinglePlanAsync(BuildAgentPlan(request), profile.Port, profile.ProjectPath);
+        var agentResult = await StartSinglePlanAsync(
+            LaunchPlanComposer.BuildAgentPlan(request),
+            profile.Port,
+            profile.ProjectPath);
         messages.AddRange(agentResult.Messages);
         return new RuntimeStartResult(agentResult.Started, agentResult.ProcessId, messages);
     }
@@ -1891,35 +1882,6 @@ public sealed partial class HomeViewModel : ViewModelBase
                     DraftMinTokens: MtpDraftMinTokens)
                 : null
         };
-    }
-
-    private LaunchPlan BuildServerPlan(LaunchProfile profile)
-    {
-        var plan = LlamaServerCommandBuilder.Build(profile, BuildSelectedDecodingPreset());
-        return _bestRuntime is null
-            ? plan
-            : plan with { Executable = _bestRuntime.ExecutablePath };
-    }
-
-    private static AgentLaunchRequest BuildAgentRequest(LaunchProfile profile) => new(
-        profile.Agent,
-        profile.ProjectPath ?? "",
-        LaunchProfileModelIds.ProviderModelId(profile),
-        $"http://127.0.0.1:{profile.Port}/v1");
-
-    private static LaunchPlan BuildAgentPlan(LaunchProfile profile) => BuildAgentPlan(BuildAgentRequest(profile));
-
-    private static LaunchPlan BuildAgentPlan(AgentLaunchRequest request)
-    {
-        IAgentCommandBuilder builder = request.Agent switch
-        {
-            AgentKind.OpenCode => new OpenCodeCommandBuilder(),
-            AgentKind.Claw => new ClawCommandBuilder(),
-            AgentKind.Aider => new AiderCommandBuilder(),
-            _ => new KiloCommandBuilder()
-        };
-
-        return builder.Build(request);
     }
 
     private DecodingPreset BuildSelectedDecodingPreset()
