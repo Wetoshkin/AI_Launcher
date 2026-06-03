@@ -2,6 +2,7 @@ param(
     [string]$ExecutablePath = "",
     [string]$OutputRoot = "TestResults\visual-qa",
     [int]$DelaySeconds = 6,
+    [string[]]$WindowSizes = @(),
     [switch]$NoLaunch,
     [switch]$ChecklistOnly,
     [switch]$CloseAfterCapture
@@ -73,6 +74,9 @@ namespace VisualQaNative
 
         [DllImport("user32.dll")]
         public static extern bool PrintWindow(IntPtr hWnd, IntPtr hdcBlt, uint nFlags);
+
+        [DllImport("user32.dll")]
+        public static extern bool MoveWindow(IntPtr hWnd, int x, int y, int nWidth, int nHeight, bool bRepaint);
     }
 }
 "@
@@ -134,6 +138,44 @@ function Get-ProcessMainWindowBounds {
 
     Add-Type -AssemblyName System.Drawing
     return [System.Drawing.Rectangle]::FromLTRB($rect.Left, $rect.Top, $rect.Right, $rect.Bottom)
+}
+
+function Set-ProcessMainWindowSize {
+    param(
+        [System.Diagnostics.Process]$Process,
+        [int]$Width,
+        [int]$Height
+    )
+
+    $handle = Get-ProcessMainWindowHandle -Process $Process
+    if ($handle -eq [IntPtr]::Zero) {
+        return $false
+    }
+
+    $bounds = Get-ProcessMainWindowBounds -Process $Process
+    if (-not $bounds) {
+        return $false
+    }
+
+    Ensure-NativeWindowApi
+    [VisualQaNative.WindowApi]::MoveWindow($handle, $bounds.Left, $bounds.Top, $Width, $Height, $true) | Out-Null
+    Start-Sleep -Milliseconds 800
+    return $true
+}
+
+function Convert-WindowSize {
+    param([string]$Size)
+
+    $match = [regex]::Match($Size, '^\s*(\d{3,5})\s*x\s*(\d{3,5})\s*$')
+    if (-not $match.Success) {
+        throw "Некорректный размер окна: $Size. Используйте формат 1280x720."
+    }
+
+    return [pscustomobject]@{
+        Label = "$($match.Groups[1].Value)x$($match.Groups[2].Value)"
+        Width = [int]$match.Groups[1].Value
+        Height = [int]$match.Groups[2].Value
+    }
 }
 
 function Save-BoundsScreenshot {
@@ -237,16 +279,16 @@ function Save-FullscreenScreenshot {
 function New-VisualQaChecklist {
     param(
         [string]$RunDirectory,
-        [string]$ScreenshotFileName,
+        [string[]]$ScreenshotFileNames,
         [string]$CaptureMode
     )
 
     $checklistPath = Join-Path $RunDirectory "visual-qa-checklist.md"
-    $screenshotLine = if ([string]::IsNullOrWhiteSpace($ScreenshotFileName)) {
+    $screenshotLine = if (-not $ScreenshotFileNames -or $ScreenshotFileNames.Count -eq 0) {
         "- Screenshot: не создавался"
     }
     else {
-        "- Screenshot: ``$ScreenshotFileName``"
+        (($ScreenshotFileNames | ForEach-Object { "- Screenshot: ``$_``" }) -join [Environment]::NewLine)
     }
 
     @"
@@ -298,27 +340,53 @@ if (-not $NoLaunch -and -not $ChecklistOnly) {
     Start-Sleep -Seconds $DelaySeconds
 }
 
-$screenshotName = ""
+$screenshotNames = @()
 $captureMode = "none"
 if (-not $ChecklistOnly) {
-    $windowScreenshotName = "launcher-window.png"
-    $windowScreenshotPath = Join-Path $runDirectory $windowScreenshotName
+    $sizes = @($WindowSizes | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { Convert-WindowSize $_ })
+    if ($sizes.Count -gt 0 -and -not $process) {
+        throw "-WindowSizes требует запущенный GUI. Уберите -NoLaunch или -ChecklistOnly."
+    }
 
-    if (Save-WindowScreenshot -Process $process -ScreenshotPath $windowScreenshotPath) {
-        $screenshotName = $windowScreenshotName
-        $captureMode = "window"
-        Write-Host "Screenshot окна сохранен: $windowScreenshotPath"
+    if ($sizes.Count -gt 0) {
+        foreach ($size in $sizes) {
+            if (-not (Set-ProcessMainWindowSize -Process $process -Width $size.Width -Height $size.Height)) {
+                throw "Не удалось изменить размер окна до $($size.Label)."
+            }
+
+            $windowScreenshotName = "launcher-window-$($size.Label).png"
+            $windowScreenshotPath = Join-Path $runDirectory $windowScreenshotName
+            if (-not (Save-WindowScreenshot -Process $process -ScreenshotPath $windowScreenshotPath)) {
+                throw "Не удалось сохранить screenshot окна для размера $($size.Label)."
+            }
+
+            $screenshotNames += $windowScreenshotName
+            Write-Host "Screenshot окна $($size.Label) сохранен: $windowScreenshotPath"
+        }
+
+        $captureMode = "window matrix"
     }
     else {
-        $screenshotName = "launcher-fullscreen.png"
-        $captureMode = "fullscreen fallback"
-        $fullscreenScreenshotPath = Join-Path $runDirectory $screenshotName
-        Save-FullscreenScreenshot -ScreenshotPath $fullscreenScreenshotPath
-        Write-Host "MainWindowHandle недоступен, сохранен fullscreen screenshot: $fullscreenScreenshotPath"
+        $windowScreenshotName = "launcher-window.png"
+        $windowScreenshotPath = Join-Path $runDirectory $windowScreenshotName
+
+        if (Save-WindowScreenshot -Process $process -ScreenshotPath $windowScreenshotPath) {
+            $screenshotNames += $windowScreenshotName
+            $captureMode = "window"
+            Write-Host "Screenshot окна сохранен: $windowScreenshotPath"
+        }
+        else {
+            $screenshotName = "launcher-fullscreen.png"
+            $captureMode = "fullscreen fallback"
+            $fullscreenScreenshotPath = Join-Path $runDirectory $screenshotName
+            Save-FullscreenScreenshot -ScreenshotPath $fullscreenScreenshotPath
+            $screenshotNames += $screenshotName
+            Write-Host "MainWindowHandle недоступен, сохранен fullscreen screenshot: $fullscreenScreenshotPath"
+        }
     }
 }
 
-$checklistPath = New-VisualQaChecklist -RunDirectory $runDirectory -ScreenshotFileName $screenshotName -CaptureMode $captureMode
+$checklistPath = New-VisualQaChecklist -RunDirectory $runDirectory -ScreenshotFileNames $screenshotNames -CaptureMode $captureMode
 Write-Host "Visual QA output: $runDirectory"
 Write-Host "Checklist: $checklistPath"
 
