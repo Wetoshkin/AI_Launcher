@@ -408,7 +408,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public ObservableCollection<RemoteDownloadQueueItemViewModel> RemoteDownloadQueue { get; } = [];
 
-    public string DownloadQueueStatusText => BuildDownloadQueueStatusText();
+    public string DownloadQueueStatusText => RemoteDownloadQueueController.BuildStatusText(RemoteDownloadQueue);
 
     public RemoteGgufDownloadOptionRowViewModel? SelectedRemoteDownloadOption
     {
@@ -1434,11 +1434,10 @@ public sealed partial class HomeViewModel : ViewModelBase
             return;
         }
 
-        var existing = RemoteDownloadQueue.FirstOrDefault(item => IsSameRemoteDownload(
-            item.RepoId,
-            item.Option,
+        var existing = RemoteDownloadQueueController.FindExisting(
+            RemoteDownloadQueue,
             SelectedRemoteDownloadOption.RepoId,
-            SelectedRemoteDownloadOption.Option));
+            SelectedRemoteDownloadOption.Option);
         if (existing is not null)
         {
             SelectedRemoteDownloadQueueItem = existing;
@@ -1474,50 +1473,34 @@ public sealed partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private async Task RetryFailedRemoteDownloadsAsync()
     {
-        var failedItems = RemoteDownloadQueue
-            .Where(item => item.Status == RemoteDownloadQueueItemStatus.Error)
-            .ToArray();
-        if (failedItems.Length == 0)
+        var retryResult = RemoteDownloadQueueController.ResetFailedItems(RemoteDownloadQueue);
+        if (retryResult.Count == 0)
         {
             SetStatus("В очереди HF нет ошибок для повтора.");
             return;
         }
 
-        foreach (var item in failedItems)
-        {
-            item.MarkPending();
-        }
-
-        SelectedRemoteDownloadQueueItem = failedItems[0];
+        SelectedRemoteDownloadQueueItem = retryResult.Items[0];
         OnPropertyChanged(nameof(DownloadQueueStatusText));
-        SetStatus($"Повторяю ошибки HF: {failedItems.Length} {PendingDownloadCountText(failedItems.Length)}.");
+        SetStatus($"Повторяю ошибки HF: {retryResult.Count} {RemoteDownloadQueueController.PendingDownloadCountText(retryResult.Count)}.");
         await DownloadRemoteQueueAsync();
     }
 
     [RelayCommand]
     private void ClearCompletedRemoteDownloads()
     {
-        var completedItems = RemoteDownloadQueue
-            .Where(item => item.Status == RemoteDownloadQueueItemStatus.Completed)
-            .ToArray();
-        if (completedItems.Length == 0)
+        var clearResult = RemoteDownloadQueueController.ClearCompletedItems(
+            RemoteDownloadQueue,
+            SelectedRemoteDownloadQueueItem);
+        if (clearResult.Count == 0)
         {
             SetStatus("В очереди HF нет завершённых элементов для очистки.");
             return;
         }
 
-        foreach (var item in completedItems)
-        {
-            RemoteDownloadQueue.Remove(item);
-        }
-
-        if (SelectedRemoteDownloadQueueItem is null || !RemoteDownloadQueue.Contains(SelectedRemoteDownloadQueueItem))
-        {
-            SelectedRemoteDownloadQueueItem = RemoteDownloadQueue.FirstOrDefault();
-        }
-
+        SelectedRemoteDownloadQueueItem = clearResult.SelectedItem;
         OnPropertyChanged(nameof(DownloadQueueStatusText));
-        SetStatus($"Очищены завершённые элементы HF: {completedItems.Length}.");
+        SetStatus($"Очищены завершённые элементы HF: {clearResult.Count}.");
     }
 
     [RelayCommand]
@@ -1588,7 +1571,7 @@ public sealed partial class HomeViewModel : ViewModelBase
 
         try
         {
-            foreach (var item in RemoteDownloadQueue.Where(item => item.Status != RemoteDownloadQueueItemStatus.Completed).ToArray())
+            foreach (var item in RemoteDownloadQueueController.ItemsToDownload(RemoteDownloadQueue))
             {
                 item.MarkDownloading();
                 OnPropertyChanged(nameof(DownloadQueueStatusText));
@@ -1619,7 +1602,7 @@ public sealed partial class HomeViewModel : ViewModelBase
             }
 
             RefreshLocalModels();
-            SetStatus($"Очередь HF завершена: {completed} скачано, {errors} {ErrorCountText(errors)}.");
+            SetStatus($"Очередь HF завершена: {completed} скачано, {errors} {RemoteDownloadQueueController.ErrorCountText(errors)}.");
         }
         finally
         {
@@ -2171,44 +2154,6 @@ public sealed partial class HomeViewModel : ViewModelBase
             : "может не поместиться";
         return string.Create(CultureInfo.InvariantCulture, $"GPU свободно {freeGpuGb:0.0} ГБ; {fitText}");
     }
-
-    private string BuildDownloadQueueStatusText()
-    {
-        if (RemoteDownloadQueue.Count == 0)
-        {
-            return "Очередь HF пуста.";
-        }
-
-        var pending = RemoteDownloadQueue.Count(item => item.Status == RemoteDownloadQueueItemStatus.Pending);
-        var completed = RemoteDownloadQueue.Count(item => item.Status == RemoteDownloadQueueItemStatus.Completed);
-        var errors = RemoteDownloadQueue.Count(item => item.Status == RemoteDownloadQueueItemStatus.Error);
-        var downloading = RemoteDownloadQueue.Count(item => item.Status == RemoteDownloadQueueItemStatus.Downloading);
-
-        if (completed == 0 && errors == 0 && downloading == 0)
-        {
-            return $"В очереди HF: {pending} {PendingDownloadCountText(pending)}.";
-        }
-
-        return $"Очередь HF: скачивается {downloading}, завершено {completed}, ошибок {errors}, ожидают {pending}.";
-    }
-
-    private static string PendingDownloadCountText(int count) => count % 10 == 1 && count % 100 != 11
-        ? "ожидает скачивания"
-        : "ожидают скачивания";
-
-    private static string ErrorCountText(int count) => count % 10 == 1 && count % 100 != 11
-        ? "ошибка"
-        : "ошибок";
-
-    private static bool IsSameRemoteDownload(
-        string leftRepoId,
-        HuggingFaceGgufDownloadOption leftOption,
-        string rightRepoId,
-        HuggingFaceGgufDownloadOption rightOption) =>
-        string.Equals(leftRepoId, rightRepoId, StringComparison.OrdinalIgnoreCase)
-        && string.Equals(leftOption.Label, rightOption.Label, StringComparison.OrdinalIgnoreCase)
-        && leftOption.Files.Select(file => file.FileName)
-            .SequenceEqual(rightOption.Files.Select(file => file.FileName), StringComparer.OrdinalIgnoreCase);
 
     private KvCacheProfile KvCacheFor() => new(SelectedKvCacheK, SelectedKvCacheV);
 
