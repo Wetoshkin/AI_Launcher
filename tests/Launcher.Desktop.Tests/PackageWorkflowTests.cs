@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.IO.Compression;
 
 namespace Launcher.Desktop.Tests;
 
@@ -61,6 +62,33 @@ public sealed class PackageWorkflowTests
         Assert.Contains(@".\docs\RELEASE_NOTES_RU.md", workflow, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task InstallPortablePackageRejectsZipEntriesEscapingDestination()
+    {
+        using var temp = new TempDirectory();
+        var zipPath = Path.Combine(temp.Path, "evil.zip");
+        var installPath = Path.Combine(temp.Path, "install");
+        var escapedPath = Path.Combine(temp.Path, "evil.txt");
+        using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        {
+            var entry = archive.CreateEntry("../evil.txt");
+            await using var stream = entry.Open();
+            await using var writer = new StreamWriter(stream);
+            await writer.WriteAsync("escaped");
+        }
+
+        var result = await RunPowerShellAsync(
+            RepositoryFile("scripts", "Install-PortablePackage.ps1"),
+            "-ZipPath",
+            zipPath,
+            "-Destination",
+            installPath);
+
+        Assert.NotEqual(0, result.ExitCode);
+        Assert.Contains("Unsafe zip entry escapes destination", result.CombinedOutput);
+        Assert.False(File.Exists(escapedPath));
+    }
+
     private static string ReadPackageWorkflow()
     {
         var repositoryRoot = FindRepositoryRoot(AppContext.BaseDirectory);
@@ -94,5 +122,62 @@ public sealed class PackageWorkflowTests
 
         Assert.True(match.Success, $"Workflow step not found: {stepName}");
         return match.Value;
+    }
+
+    private static string RepositoryFile(params string[] pathParts)
+    {
+        var repositoryRoot = FindRepositoryRoot(AppContext.BaseDirectory);
+        return Path.Combine(new[] { repositoryRoot }.Concat(pathParts).ToArray());
+    }
+
+    private static async Task<ProcessResult> RunPowerShellAsync(string scriptPath, params string[] arguments)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "powershell",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        psi.ArgumentList.Add("-NoProfile");
+        psi.ArgumentList.Add("-ExecutionPolicy");
+        psi.ArgumentList.Add("Bypass");
+        psi.ArgumentList.Add("-File");
+        psi.ArgumentList.Add(scriptPath);
+        foreach (var argument in arguments)
+        {
+            psi.ArgumentList.Add(argument);
+        }
+
+        using var process = System.Diagnostics.Process.Start(psi)
+            ?? throw new InvalidOperationException("Не удалось запустить PowerShell.");
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        var stdout = await stdoutTask;
+        var stderr = await stderrTask;
+
+        return new ProcessResult(process.ExitCode, stdout + stderr);
+    }
+
+    private sealed record ProcessResult(int ExitCode, string CombinedOutput);
+
+    private sealed class TempDirectory : IDisposable
+    {
+        public TempDirectory()
+        {
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "launcher-package-test-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path);
+        }
+
+        public string Path { get; }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+            {
+                Directory.Delete(Path, recursive: true);
+            }
+        }
     }
 }

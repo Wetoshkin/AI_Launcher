@@ -18,7 +18,7 @@ public sealed class MtpSettingsFlowTests
     {
         var xaml = File.ReadAllText(FindRepositoryFile("src", "Launcher.Desktop", "Views", "HomeView.axaml"));
 
-        Assert.Contains("Text=\"MTP min\"", xaml);
+        Assert.Contains("Text=\"MTP минимум\"", xaml);
         Assert.Contains("Value=\"{Binding MtpDraftMinTokens}\"", xaml);
         Assert.Contains("--spec-draft-n-min", xaml);
         Assert.Contains("минимум draft-токенов", xaml);
@@ -57,7 +57,8 @@ public sealed class MtpSettingsFlowTests
         Assert.Contains("визуальные", xaml);
         Assert.Contains("инструменты", xaml);
         Assert.Contains("MTP", xaml);
-        Assert.Contains("совместимые runtime", xaml);
+        Assert.Contains("GGUF по тегам", xaml);
+        Assert.Contains("TurboQuant эвристика", xaml);
         Assert.Contains("TurboQuant", xaml);
     }
 

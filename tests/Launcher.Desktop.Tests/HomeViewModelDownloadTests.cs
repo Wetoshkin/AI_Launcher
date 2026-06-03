@@ -365,6 +365,31 @@ public sealed class HomeViewModelDownloadTests
     }
 
     [Fact]
+    public async Task DownloadRemoteQueueCommandSkipsCompletedItemsOnSecondRun()
+    {
+        using var temp = new TempDirectory();
+        var downloadService = new FakeDownloadService();
+        var viewModel = new HomeViewModel(
+            new HuggingFaceModelClient(new HttpClient(new EmptyHttpHandler()) { BaseAddress = new Uri("https://huggingface.co") }),
+            new RuntimeDashboardService(new EmptyGpuProbe(), new EmptyPortInspector()),
+            new RuntimeStartCoordinator(new EmptyPortInspector(), new EmptyPortReleaser(), new EmptyProcessStarter()),
+            downloadService)
+        {
+            FolderPicker = new FixedFolderPicker(temp.Path)
+        };
+        await viewModel.ChooseModelsFolderCommand.ExecuteAsync(null);
+        AddRemoteOptionToQueue(viewModel, "unsloth/Qwen3-Coder-GGUF", "Qwen3-Coder-Q4_K_M.gguf");
+
+        await viewModel.DownloadRemoteQueueCommand.ExecuteAsync(null);
+        await viewModel.DownloadRemoteQueueCommand.ExecuteAsync(null);
+
+        var request = Assert.Single(downloadService.Requests);
+        Assert.Equal("unsloth/Qwen3-Coder-GGUF", request.RepoId);
+        Assert.Equal("Очередь HF завершена: 0 скачано, 0 ошибок.", viewModel.StatusMessage);
+        Assert.Equal("завершено", viewModel.RemoteDownloadQueue.Single().StatusText);
+    }
+
+    [Fact]
     public async Task DownloadRemoteQueueCommandContinuesAfterItemError()
     {
         using var temp = new TempDirectory();
