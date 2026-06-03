@@ -83,6 +83,7 @@ Get-Content .\AI-Launcher-Studio-win-x64.zip.sha256
 Быстрый GUI smoke-check:
 
 - для визуальной проверки дизайна можно использовать `docs\GUI_VISUAL_QA_RU.md` и `scripts\Invoke-VisualQa.ps1`;
+- для реальной проверки `llama-server.exe` + GGUF endpoint используйте `docs\RUNTIME_SMOKE_RU.md` и `scripts\Invoke-RuntimeSmoke.ps1`;
 - открыть первый экран и убедиться, что виден рабочий dashboard AI Launcher Studio;
 - пройти вкладки `Runtime`, `Агенты`, `Модели`;
 - проверить выбор runtime/model/project paths;
