@@ -4,6 +4,25 @@
              xmlns:nav="using:Launcher.Desktop.Navigation"
              x:Class="Launcher.Desktop.Views.ShellView"
              x:DataType="vm:ShellViewModel">
+  <UserControl.Styles>
+    <Style Selector="ListBox.nav">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="10,4"/>
+    </Style>
+    <Style Selector="ListBox.nav ListBoxItem">
+      <Setter Property="Padding" Value="12,11"/>
+      <Setter Property="Margin" Value="0,0,0,4"/>
+      <Setter Property="CornerRadius" Value="10"/>
+    </Style>
+    <Style Selector="ListBox.nav ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+    </Style>
+    <Style Selector="ListBox.nav ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+    </Style>
+  </UserControl.Styles>
+
   <Grid ColumnDefinitions="Auto,*" Background="{DynamicResource PaperBrush}">
     <Border Grid.Column="0" Width="240" Background="{DynamicResource SurfaceBrush}"
             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
@@ -12,20 +31,18 @@
           <TextBlock Text="AI Launcher Studio" FontSize="17" FontWeight="Bold"/>
           <TextBlock Text="локально и онлайн" FontSize="12" Foreground="{DynamicResource InkSoftBrush}"/>
         </StackPanel>
-        <ItemsControl Grid.Row="1" Margin="10,4" ItemsSource="{Binding NavigationItems}">
-          <ItemsControl.ItemTemplate>
+        <ListBox Grid.Row="1" Classes="nav"
+                 ItemsSource="{Binding NavigationItems}"
+                 SelectedItem="{Binding SelectedItem}">
+          <ListBox.ItemTemplate>
             <DataTemplate x:DataType="nav:NavigationItem">
-              <Button Classes="nav"
-                      Command="{Binding $parent[ItemsControl].((vm:ShellViewModel)DataContext).NavigateCommand}"
-                      CommandParameter="{Binding}">
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <TextBlock Text="{Binding Icon}" FontSize="16"/>
-                  <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
-                </StackPanel>
-              </Button>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="{Binding Icon}" FontSize="16"/>
+                <TextBlock Text="{Binding Title}" FontSize="14" VerticalAlignment="Center"/>
+              </StackPanel>
             </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+          </ListBox.ItemTemplate>
+        </ListBox>
         <Border Grid.Row="2" Margin="14" Padding="12,10" CornerRadius="10"
                 Background="{DynamicResource SurfaceAltBrush}"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
