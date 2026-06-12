@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Launcher.Desktop.Services;
 using Launcher.Online;
 
 namespace Launcher.Desktop.ViewModels.Pages;
@@ -13,7 +14,29 @@ namespace Launcher.Desktop.ViewModels.Pages;
 public sealed partial class ChatViewModel : ViewModelBase
 {
     private readonly IChatClient? _injectedClient;
+    private readonly LocalServerLauncher _serverLauncher = new();
     private CancellationTokenSource? _cts;
+
+    [ObservableProperty]
+    private string _runtimeExe = LocalServerLauncher.FindInstalledRuntime() ?? string.Empty;
+
+    [ObservableProperty]
+    private string _localModelPath = string.Empty;
+
+    [ObservableProperty]
+    private int _serverPort = 8080;
+
+    [ObservableProperty]
+    private string _serverStatus = "Локальный сервер не запущен.";
+
+    [ObservableProperty]
+    private bool _isServerStarting;
+
+    [ObservableProperty]
+    private bool _isServerRunning;
+
+    /// <summary>Делегат выбора файла модели (подставляет App с доступом к окну).</summary>
+    public Func<string, IReadOnlyList<string>, Task<string?>>? PickModelAsync { get; set; }
 
     [ObservableProperty]
     private string _input = string.Empty;
@@ -154,6 +177,76 @@ public sealed partial class ChatViewModel : ViewModelBase
 
     private IReadOnlyList<ChatMessage> BuildRequestMessages() =>
         Messages.Select(m => new ChatMessage(m.Role, m.Content)).ToList();
+
+    [RelayCommand]
+    private async Task BrowseModelAsync()
+    {
+        if (PickModelAsync is null)
+        {
+            return;
+        }
+
+        var path = await PickModelAsync("Выберите GGUF-модель", new[] { ".gguf" });
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            LocalModelPath = path;
+        }
+    }
+
+    [RelayCommand]
+    private async Task StartServerAsync()
+    {
+        if (IsServerStarting)
+        {
+            return;
+        }
+
+        IsServerStarting = true;
+        ServerStatus = "Запускаем локальный сервер и загружаем модель в память…";
+
+        try
+        {
+            var result = await _serverLauncher.StartAsync(
+                RuntimeExe.Trim(),
+                LocalModelPath.Trim(),
+                ServerPort,
+                contextTokens: 4096,
+                log: line => ServerStatus = Shorten(line),
+                CancellationToken.None);
+
+            IsServerRunning = _serverLauncher.IsRunning;
+
+            if (result.Ready)
+            {
+                SelectedProvider = ProviderRegistry.ForKind(ProviderKind.Local);
+                UseEndpoint(result.BaseUrl, result.Model);
+                ServerStatus = "✓ Локальный сервер готов. Можно писать сообщения.";
+            }
+            else
+            {
+                ServerStatus = "⚠ " + result.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "Ошибка запуска сервера: " + ex.Message;
+        }
+        finally
+        {
+            IsServerStarting = false;
+        }
+    }
+
+    [RelayCommand]
+    private void StopServer()
+    {
+        _serverLauncher.Stop();
+        IsServerRunning = false;
+        ServerStatus = "Локальный сервер остановлен.";
+    }
+
+    private static string Shorten(string line) =>
+        line.Length > 120 ? line[..120] + "…" : line;
 
     [RelayCommand]
     private void Stop() => _cts?.Cancel();
