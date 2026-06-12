@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace Launcher.Online;
@@ -11,6 +12,8 @@ namespace Launcher.Online;
 /// </summary>
 public sealed class OpenAiChatClient(HttpClient httpClient) : IChatClient
 {
+    private static readonly JsonSerializerOptions JsonOptions =
+        new() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
     public async IAsyncEnumerable<string> StreamAsync(
         ChatEndpoint endpoint,
         IReadOnlyList<ChatMessage> messages,
@@ -26,7 +29,7 @@ public sealed class OpenAiChatClient(HttpClient httpClient) : IChatClient
         var url = endpoint.BaseUrl.TrimEnd('/') + "/chat/completions";
         using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
-            Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"),
+            Content = new StringContent(JsonSerializer.Serialize(payload, JsonOptions), Encoding.UTF8, "application/json"),
         };
         if (!string.IsNullOrWhiteSpace(endpoint.ApiKey))
         {
