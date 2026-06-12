@@ -24,8 +24,12 @@
                 <Button Grid.Column="1" Content="Обзор…" Command="{Binding BrowseModelCommand}"/>
               </Grid>
               <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Режим" VerticalAlignment="Center"/>
+                <ComboBox MinWidth="160" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}"/>
+                <ctrl:HelpHint Title="Режим запуска"
+                               Text="Быстро/Сбалансированно/Качество — это размер контекста (память модели). Больше контекст — модель помнит больше, но требует больше памяти и работает чуть медленнее."/>
                 <TextBlock Text="Порт" VerticalAlignment="Center"/>
-                <TextBox Width="90" Text="{Binding ServerPort}"/>
+                <TextBox Width="80" Text="{Binding ServerPort}"/>
                 <Button Content="Запустить" Classes="primary" Command="{Binding StartServerCommand}"
                         IsEnabled="{Binding !IsServerStarting}"/>
                 <Button Content="Остановить" Command="{Binding StopServerCommand}" IsEnabled="{Binding IsServerRunning}"/>

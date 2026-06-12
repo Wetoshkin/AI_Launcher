@@ -27,6 +27,11 @@ public sealed partial class ChatViewModel : ViewModelBase
     private int _serverPort = 8080;
 
     [ObservableProperty]
+    private LaunchPreset _selectedPreset = LaunchPreset.Default;
+
+    public IReadOnlyList<LaunchPreset> Presets => LaunchPreset.All;
+
+    [ObservableProperty]
     private string _serverStatus = "Локальный сервер не запущен.";
 
     [ObservableProperty]
@@ -210,7 +215,7 @@ public sealed partial class ChatViewModel : ViewModelBase
                 RuntimeExe.Trim(),
                 LocalModelPath.Trim(),
                 ServerPort,
-                contextTokens: 4096,
+                contextTokens: SelectedPreset.ContextTokens,
                 log: line => ServerStatus = Shorten(line),
                 CancellationToken.None);
 
