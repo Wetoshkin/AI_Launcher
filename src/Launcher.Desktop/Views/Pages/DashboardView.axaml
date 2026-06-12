@@ -4,12 +4,65 @@
              xmlns:ctrl="using:Launcher.Desktop.Controls"
              x:Class="Launcher.Desktop.Views.Pages.DashboardView"
              x:DataType="vm:DashboardViewModel">
+  <UserControl.Styles>
+    <Style Selector="Button.card">
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+      <Setter Property="Padding" Value="20"/>
+      <Setter Property="CornerRadius" Value="14"/>
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="Button.card:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
+    </Style>
+    <Style Selector="Button.cardPrimary">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+    </Style>
+  </UserControl.Styles>
+
   <ScrollViewer>
     <StackPanel Margin="32" Spacing="20" VerticalAlignment="Top" MaxWidth="900" HorizontalAlignment="Left">
       <StackPanel Spacing="6">
         <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold"/>
         <TextBlock Text="{Binding Description}" FontSize="14" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
       </StackPanel>
+
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+        <Button Grid.Column="0" Classes="card cardPrimary" Command="{Binding OpenLocalChatCommand}">
+          <StackPanel Spacing="6">
+            <TextBlock Text="💻  Локальная нейросеть" FontSize="18" FontWeight="Bold"/>
+            <TextBlock Text="Запустите модель на своём ПК и общайтесь без интернета. Бесплатно и приватно."
+                       FontSize="13" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="1" Classes="card" Command="{Binding OpenOnlineChatCommand}">
+          <StackPanel Spacing="6">
+            <TextBlock Text="☁  Онлайн нейросеть" FontSize="18" FontWeight="Bold"/>
+            <TextBlock Text="Подключитесь к облачной модели (OpenAI, Anthropic и др.) по API-ключу."
+                       FontSize="13" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Button>
+      </Grid>
+
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+        <Button Grid.Column="0" Classes="card" Command="{Binding OpenModelsCommand}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="📦  Модели" FontSize="15" FontWeight="Bold"/>
+            <TextBlock Text="Скачать или выбрать GGUF-модель." FontSize="12"
+                       Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="1" Classes="card" Command="{Binding OpenRuntimesCommand}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="⚙  Среды (runtime)" FontSize="15" FontWeight="Bold"/>
+            <TextBlock Text="Установить движок llama.cpp под ваше железо." FontSize="12"
+                       Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Button>
+      </Grid>
 
       <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
               BorderThickness="1" CornerRadius="14" Padding="20">
