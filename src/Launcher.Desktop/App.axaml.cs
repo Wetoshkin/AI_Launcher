@@ -25,6 +25,12 @@ public partial class App : Application
                 DataContext = shell,
             };
 
+            var startPage = System.Environment.GetEnvironmentVariable("ALS_START_PAGE");
+            if (!string.IsNullOrWhiteSpace(startPage))
+            {
+                shell.SelectByTitle(startPage);
+            }
+
             var probe = new WmiHardwareProbe(new ProcessCommandRunner());
             _ = shell.LoadHardwareAsync(probe);
         }

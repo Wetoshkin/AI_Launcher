@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Launcher.Desktop.Controls.HelpHint"
+             VerticalAlignment="Center">
+  <Border x:Name="Badge" Width="18" Height="18" CornerRadius="9"
+          Background="{DynamicResource AccentSoftBrush}"
+          BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+          Cursor="Help">
+    <TextBlock Text="?" FontSize="12" FontWeight="Bold"
+               Foreground="#8C4508"
+               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+  </Border>
+</UserControl>
