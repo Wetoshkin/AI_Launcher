@@ -19,6 +19,7 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // ShellViewModel создаёт SettingsViewModel, который применяет сохранённые тему и язык.
             var shell = new ShellViewModel();
             var window = new MainWindow
             {
@@ -36,7 +37,7 @@ public partial class App : Application
             var startPage = System.Environment.GetEnvironmentVariable("ALS_START_PAGE");
             if (!string.IsNullOrWhiteSpace(startPage))
             {
-                shell.SelectByTitle(startPage);
+                shell.SelectByKey(startPage);
             }
 
             var probe = new WmiHardwareProbe(new ProcessCommandRunner());

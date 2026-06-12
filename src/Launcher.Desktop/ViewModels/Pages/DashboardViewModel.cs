@@ -26,16 +26,16 @@ public sealed partial class DashboardViewModel : ViewModelBase
         "На шаге запуска диаграмма пересчитается под вашу модель и настройки.";
 
     [RelayCommand]
-    private void OpenLocalChat() => RequestNavigate?.Invoke("Чат");
+    private void OpenLocalChat() => RequestNavigate?.Invoke("chat");
 
     [RelayCommand]
-    private void OpenOnlineChat() => RequestNavigate?.Invoke("Чат");
+    private void OpenOnlineChat() => RequestNavigate?.Invoke("chat");
 
     [RelayCommand]
-    private void OpenModels() => RequestNavigate?.Invoke("Модели");
+    private void OpenModels() => RequestNavigate?.Invoke("models");
 
     [RelayCommand]
-    private void OpenRuntimes() => RequestNavigate?.Invoke("Среды (runtime)");
+    private void OpenRuntimes() => RequestNavigate?.Invoke("runtimes");
 
     /// <summary>Применяет реальное железо: краткая сводка + диаграмма для модели-примера.</summary>
     public void ApplyHardware(SystemHardware hardware)

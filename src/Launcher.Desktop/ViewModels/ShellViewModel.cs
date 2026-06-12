@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Launcher.Desktop.Localization;
 using Launcher.Desktop.Navigation;
 using Launcher.Desktop.ViewModels.Pages;
 using Launcher.Runtimes.Hardware;
@@ -16,6 +17,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     private readonly ModelsViewModel _models = new();
     private readonly RuntimesViewModel _runtimes = new();
     private readonly AgentsViewModel _agents = new();
+    private readonly SettingsViewModel _settings = new();
 
     [ObservableProperty]
     private ViewModelBase _currentPage;
@@ -24,7 +26,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     private NavigationItem _selectedItem;
 
     [ObservableProperty]
-    private string _hardwareSummary = "определение…";
+    private string _hardwareSummary = "…";
 
     public IReadOnlyList<NavigationItem> NavigationItems { get; }
 
@@ -32,48 +34,44 @@ public sealed partial class ShellViewModel : ViewModelBase
     public ModelsViewModel Models => _models;
     public RuntimesViewModel Runtimes => _runtimes;
     public AgentsViewModel Agents => _agents;
+    public SettingsViewModel Settings => _settings;
 
     public ShellViewModel()
     {
         _dashboard = new DashboardViewModel();
-        _dashboard.RequestNavigate = SelectByTitle;
+        _dashboard.RequestNavigate = SelectByKey;
 
         NavigationItems = new List<NavigationItem>
         {
-            new("Главная", "🏠", _dashboard),
-            new("Чат", "💬", _chat),
-            new("Модели", "📦", _models),
-            new("Агенты", "🤖", _agents),
-            new("Среды (runtime)", "⚙", _runtimes),
-            new("Настройки", "🛠", new SettingsViewModel()),
+            new("home", "🏠", _dashboard),
+            new("chat", "💬", _chat),
+            new("models", "📦", _models),
+            new("agents", "🤖", _agents),
+            new("runtimes", "⚙", _runtimes),
+            new("settings", "🛠", _settings),
         };
 
         _selectedItem = NavigationItems[0];
         _currentPage = _selectedItem.Page;
     }
 
-    /// <summary>
-    /// Загружает железо в фоне и обновляет сводку в сайдбаре и диаграмму на главной.
-    /// Вызывается из App, а не из конструктора, чтобы тесты не запускали внешние процессы.
-    /// </summary>
     public async Task LoadHardwareAsync(IHardwareProbe probe, CancellationToken cancellationToken = default)
     {
         var hardware = await probe.GetHardwareAsync(cancellationToken);
         _dashboard.ApplyHardware(hardware);
         _runtimes.ApplyHardware(hardware);
+        _chat.ApplyHardware(hardware);
 
-        var gpu = hardware.HasGpu
-            ? hardware.Gpus[0].Name
-            : "CPU (без видеокарты)";
-        HardwareSummary = $"{gpu}\nОЗУ: {hardware.RamTotalGb:0.0} ГБ";
+        var gpu = hardware.HasGpu ? hardware.Gpus[0].Name : "CPU";
+        HardwareSummary = $"{gpu}\n{hardware.RamTotalGb:0.0} GB RAM";
     }
 
-    /// <summary>Выбрать вкладку по заголовку (для deep-link/QA). Тихо игнорирует неизвестный.</summary>
-    public void SelectByTitle(string title)
+    /// <summary>Выбрать вкладку по стабильному ключу (home/chat/models/agents/runtimes/settings).</summary>
+    public void SelectByKey(string key)
     {
         foreach (var item in NavigationItems)
         {
-            if (string.Equals(item.Title, title, System.StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(item.Key, key, System.StringComparison.OrdinalIgnoreCase))
             {
                 SelectedItem = item;
                 return;

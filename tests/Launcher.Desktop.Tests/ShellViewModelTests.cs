@@ -11,8 +11,8 @@ public class ShellViewModelTests
     {
         var shell = new ShellViewModel();
         Assert.Equal(6, shell.NavigationItems.Count);
-        Assert.Equal("Главная", shell.NavigationItems.First().Title);
-        Assert.Contains(shell.NavigationItems, i => i.Title == "Агенты");
+        Assert.Equal("home", shell.NavigationItems.First().Key);
+        Assert.Contains(shell.NavigationItems, i => i.Key == "agents");
     }
 
     [Fact]
@@ -27,11 +27,19 @@ public class ShellViewModelTests
     public void Navigate_changes_current_page_and_selection()
     {
         var shell = new ShellViewModel();
-        var chat = shell.NavigationItems.Single(i => i.Title == "Чат");
+        var chat = shell.NavigationItems.Single(i => i.Key == "chat");
 
         shell.NavigateCommand.Execute(chat);
 
         Assert.IsType<ChatViewModel>(shell.CurrentPage);
         Assert.Same(chat, shell.SelectedItem);
+    }
+
+    [Fact]
+    public void Select_by_key_switches_page()
+    {
+        var shell = new ShellViewModel();
+        shell.SelectByKey("models");
+        Assert.IsType<ModelsViewModel>(shell.CurrentPage);
     }
 }

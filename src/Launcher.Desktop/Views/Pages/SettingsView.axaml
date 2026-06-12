@@ -2,47 +2,81 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Launcher.Desktop.ViewModels.Pages"
              xmlns:ctrl="using:Launcher.Desktop.Controls"
+             xmlns:l="using:Launcher.Desktop.Localization"
              x:Class="Launcher.Desktop.Views.Pages.SettingsView"
              x:DataType="vm:SettingsViewModel">
   <ScrollViewer>
-    <StackPanel Margin="32" Spacing="20" VerticalAlignment="Top" MaxWidth="900" HorizontalAlignment="Left">
+    <StackPanel Margin="40,36" Spacing="24" VerticalAlignment="Top" MaxWidth="820" HorizontalAlignment="Left">
       <StackPanel Spacing="6">
-        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold"/>
-        <TextBlock Text="{Binding Description}" FontSize="14" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+        <TextBlock Text="{l:T settings.title}" FontSize="30" FontWeight="ExtraBold"/>
+        <TextBlock Text="{l:T settings.subtitle}" FontSize="14" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
       </StackPanel>
 
-      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="1" CornerRadius="14" Padding="20">
-        <StackPanel Spacing="12">
-          <TextBlock Text="Подсказки у параметров" FontSize="16" FontWeight="Bold"/>
-          <TextBlock Text="У каждого параметра есть иконка «?» — наведите, чтобы понять, что это и зачем."
-                     FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
-
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="Контекст" VerticalAlignment="Center"/>
-            <ctrl:HelpHint HelpId="context"/>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="MTP" VerticalAlignment="Center"/>
-            <ctrl:HelpHint HelpId="mtp"/>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="Тип KV-кэша (K)" VerticalAlignment="Center"/>
-            <ctrl:HelpHint HelpId="kv-type-k"/>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="Игнорировать конец ответа" VerticalAlignment="Center"/>
-            <ctrl:HelpHint HelpId="ignore-eos"/>
-          </StackPanel>
+      <!-- Внешний вид -->
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Text="{l:T settings.appearance}" FontSize="17" FontWeight="Bold"/>
+          <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto" RowSpacing="14">
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="{l:T settings.theme}" VerticalAlignment="Center"/>
+            <ComboBox Grid.Row="0" Grid.Column="1" MinWidth="220" HorizontalAlignment="Left"
+                      SelectedIndex="{Binding ThemeIndex}">
+              <ComboBoxItem><TextBlock Text="{l:T settings.theme.light}"/></ComboBoxItem>
+              <ComboBoxItem><TextBlock Text="{l:T settings.theme.dark}"/></ComboBoxItem>
+              <ComboBoxItem><TextBlock Text="{l:T settings.theme.system}"/></ComboBoxItem>
+            </ComboBox>
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="{l:T settings.language}" VerticalAlignment="Center"/>
+            <ComboBox Grid.Row="1" Grid.Column="1" MinWidth="220" HorizontalAlignment="Left"
+                      SelectedIndex="{Binding LanguageIndex}">
+              <ComboBoxItem><TextBlock Text="Русский"/></ComboBoxItem>
+              <ComboBoxItem><TextBlock Text="English"/></ComboBoxItem>
+            </ComboBox>
+          </Grid>
         </StackPanel>
       </Border>
 
-      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="1" CornerRadius="14" Padding="20">
+      <!-- Обновления -->
+      <Border Classes="card">
         <StackPanel Spacing="12">
-          <TextBlock Text="Проверка конфликтов настроек" FontSize="16" FontWeight="Bold"/>
-          <TextBlock Text="Пример: включён MTP на модели без MTP-головы и контекст больше нативного."
-                     FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+          <TextBlock Text="{l:T settings.updates.title}" FontSize="17" FontWeight="Bold"/>
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <TextBlock Text="{Binding AppVersion}" VerticalAlignment="Center" Foreground="{DynamicResource InkSoftBrush}"/>
+            <Button Content="{l:T settings.updates.check}" Classes="primary" Command="{Binding CheckUpdatesCommand}"
+                    IsEnabled="{Binding !IsCheckingUpdate}"/>
+          </StackPanel>
+          <TextBlock Text="{Binding UpdateStatus}" FontSize="12.5" Foreground="{DynamicResource InkSoftBrush}"
+                     TextWrapping="Wrap" IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        </StackPanel>
+      </Border>
+
+      <!-- Подсказки -->
+      <Border Classes="card">
+        <StackPanel Spacing="14">
+          <TextBlock Text="{l:T settings.hints.title}" FontSize="17" FontWeight="Bold"/>
+          <WrapPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,22,10">
+              <TextBlock Text="Контекст" VerticalAlignment="Center"/>
+              <ctrl:HelpHint HelpId="context"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,22,10">
+              <TextBlock Text="MTP" VerticalAlignment="Center"/>
+              <ctrl:HelpHint HelpId="mtp"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,22,10">
+              <TextBlock Text="KV-кэш (K)" VerticalAlignment="Center"/>
+              <ctrl:HelpHint HelpId="kv-type-k"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,22,10">
+              <TextBlock Text="DRY" VerticalAlignment="Center"/>
+              <ctrl:HelpHint HelpId="dry"/>
+            </StackPanel>
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Конфликты -->
+      <Border Classes="card">
+        <StackPanel Spacing="14">
+          <TextBlock Text="{l:T settings.conflicts.title}" FontSize="17" FontWeight="Bold"/>
           <ctrl:ConflictPanel Findings="{Binding SampleFindings}"/>
         </StackPanel>
       </Border>

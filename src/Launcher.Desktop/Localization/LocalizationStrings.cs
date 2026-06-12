@@ -1,0 +1,159 @@
+using System.Collections.Generic;
+
+namespace Launcher.Desktop.Localization;
+
+/// <summary>Таблица строк интерфейса для русского и английского языков.</summary>
+public static class LocalizationStrings
+{
+    public static readonly IReadOnlyDictionary<string, string> Ru = new Dictionary<string, string>
+    {
+        ["app.subtitle"] = "локально и онлайн",
+        ["nav.home"] = "Главная",
+        ["nav.chat"] = "Чат",
+        ["nav.models"] = "Модели",
+        ["nav.agents"] = "Агенты",
+        ["nav.runtimes"] = "Среды",
+        ["nav.settings"] = "Настройки",
+        ["hardware.title"] = "Железо",
+        ["hardware.detecting"] = "определение…",
+
+        ["home.title"] = "Главная",
+        ["home.subtitle"] = "Нажмите пару кнопок и начните общаться с нейросетью — локально на своём ПК или онлайн.",
+        ["home.local.title"] = "Локальная нейросеть",
+        ["home.local.desc"] = "Запустите модель на своём ПК и общайтесь без интернета. Бесплатно и приватно.",
+        ["home.online.title"] = "Онлайн нейросеть",
+        ["home.online.desc"] = "Подключитесь к облачной модели (OpenAI, Anthropic и др.) по API-ключу.",
+        ["home.models.title"] = "Модели",
+        ["home.models.desc"] = "Скачать или выбрать GGUF-модель.",
+        ["home.runtimes.title"] = "Среды (runtime)",
+        ["home.runtimes.desc"] = "Установить движок llama.cpp под ваше железо.",
+        ["home.hw.title"] = "Ваше железо",
+        ["home.mem.title"] = "Как модель ложится в память",
+
+        ["settings.title"] = "Настройки",
+        ["settings.subtitle"] = "Внешний вид, язык и проверка совместимости настроек.",
+        ["settings.appearance"] = "Внешний вид",
+        ["settings.theme"] = "Тема",
+        ["settings.theme.light"] = "Светлая",
+        ["settings.theme.dark"] = "Тёмная",
+        ["settings.theme.system"] = "Системная",
+        ["settings.language"] = "Язык",
+        ["settings.hints.title"] = "Подсказки у параметров",
+        ["settings.conflicts.title"] = "Проверка конфликтов настроек",
+        ["settings.updates.title"] = "Обновления",
+        ["settings.updates.check"] = "Проверить обновления",
+
+        ["chat.title"] = "Чат",
+        ["chat.localserver"] = "Локальный сервер — запустить модель на этом ПК",
+        ["chat.engine"] = "Движок",
+        ["chat.model"] = "Модель",
+        ["chat.mode"] = "Режим",
+        ["chat.port"] = "Порт",
+        ["chat.connection"] = "Подключение к модели",
+        ["chat.provider"] = "Провайдер",
+        ["chat.proxy"] = "Через прокси (Hiddify)",
+        ["chat.address"] = "Адрес",
+        ["chat.apikey"] = "API-ключ",
+        ["chat.placeholder"] = "Напишите сообщение…",
+        ["chat.log"] = "Лог сервера",
+
+        ["common.run"] = "Запустить",
+        ["common.stop"] = "Остановить",
+        ["common.browse"] = "Обзор…",
+        ["common.send"] = "Отправить",
+        ["common.clear"] = "Очистить",
+        ["common.search"] = "Искать",
+        ["common.scan"] = "Сканировать",
+        ["common.install"] = "Скачать и установить",
+        ["common.find"] = "Найти сборки",
+
+        ["models.title"] = "Модели",
+        ["models.local"] = "Локальные GGUF-модели",
+        ["models.hf"] = "Поиск моделей на Hugging Face",
+        ["agents.title"] = "Агенты",
+        ["agents.installed"] = "Установленные агенты",
+        ["agents.check"] = "Проверить агенты",
+        ["agents.launch"] = "Запустить агента в проекте",
+        ["runtimes.title"] = "Среды (runtime)",
+        ["runtimes.engine"] = "Движок",
+    };
+
+    public static readonly IReadOnlyDictionary<string, string> En = new Dictionary<string, string>
+    {
+        ["app.subtitle"] = "local and online",
+        ["nav.home"] = "Home",
+        ["nav.chat"] = "Chat",
+        ["nav.models"] = "Models",
+        ["nav.agents"] = "Agents",
+        ["nav.runtimes"] = "Runtimes",
+        ["nav.settings"] = "Settings",
+        ["hardware.title"] = "Hardware",
+        ["hardware.detecting"] = "detecting…",
+
+        ["home.title"] = "Home",
+        ["home.subtitle"] = "Press a couple of buttons and start chatting with AI — locally on your PC or online.",
+        ["home.local.title"] = "Local AI",
+        ["home.local.desc"] = "Run a model on your PC and chat without the internet. Free and private.",
+        ["home.online.title"] = "Online AI",
+        ["home.online.desc"] = "Connect to a cloud model (OpenAI, Anthropic, etc.) with an API key.",
+        ["home.models.title"] = "Models",
+        ["home.models.desc"] = "Download or pick a GGUF model.",
+        ["home.runtimes.title"] = "Runtimes",
+        ["home.runtimes.desc"] = "Install a llama.cpp engine for your hardware.",
+        ["home.hw.title"] = "Your hardware",
+        ["home.mem.title"] = "How the model fits in memory",
+
+        ["settings.title"] = "Settings",
+        ["settings.subtitle"] = "Appearance, language and settings compatibility checks.",
+        ["settings.appearance"] = "Appearance",
+        ["settings.theme"] = "Theme",
+        ["settings.theme.light"] = "Light",
+        ["settings.theme.dark"] = "Dark",
+        ["settings.theme.system"] = "System",
+        ["settings.language"] = "Language",
+        ["settings.hints.title"] = "Parameter hints",
+        ["settings.conflicts.title"] = "Settings conflict check",
+        ["settings.updates.title"] = "Updates",
+        ["settings.updates.check"] = "Check for updates",
+
+        ["chat.title"] = "Chat",
+        ["chat.localserver"] = "Local server — run a model on this PC",
+        ["chat.engine"] = "Engine",
+        ["chat.model"] = "Model",
+        ["chat.mode"] = "Mode",
+        ["chat.port"] = "Port",
+        ["chat.connection"] = "Model connection",
+        ["chat.provider"] = "Provider",
+        ["chat.proxy"] = "Via proxy (Hiddify)",
+        ["chat.address"] = "Address",
+        ["chat.apikey"] = "API key",
+        ["chat.placeholder"] = "Type a message…",
+        ["chat.log"] = "Server log",
+
+        ["common.run"] = "Start",
+        ["common.stop"] = "Stop",
+        ["common.browse"] = "Browse…",
+        ["common.send"] = "Send",
+        ["common.clear"] = "Clear",
+        ["common.search"] = "Search",
+        ["common.scan"] = "Scan",
+        ["common.install"] = "Download and install",
+        ["common.find"] = "Find builds",
+
+        ["models.title"] = "Models",
+        ["models.local"] = "Local GGUF models",
+        ["models.hf"] = "Hugging Face model search",
+        ["agents.title"] = "Agents",
+        ["agents.installed"] = "Installed agents",
+        ["agents.check"] = "Check agents",
+        ["agents.launch"] = "Launch an agent in a project",
+        ["runtimes.title"] = "Runtimes",
+        ["runtimes.engine"] = "Engine",
+    };
+
+    public static string Get(string language, string key)
+    {
+        var table = language == "en" ? En : Ru;
+        return table.TryGetValue(key, out var value) ? value : key;
+    }
+}
