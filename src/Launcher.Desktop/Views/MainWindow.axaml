@@ -8,7 +8,7 @@
         MinWidth="960" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource PaperBrush}"
-        Icon="/Assets/ai-launcher-studio.ico"
+        Icon="/Assets/ai-launcher-studio.png"
         Title="AI Launcher Studio">
   <views:ShellView/>
 </Window>

@@ -15,6 +15,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     private readonly ChatViewModel _chat = new();
     private readonly ModelsViewModel _models = new();
     private readonly RuntimesViewModel _runtimes = new();
+    private readonly AgentsViewModel _agents = new();
 
     [ObservableProperty]
     private ViewModelBase _currentPage;
@@ -30,6 +31,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     public ChatViewModel Chat => _chat;
     public ModelsViewModel Models => _models;
     public RuntimesViewModel Runtimes => _runtimes;
+    public AgentsViewModel Agents => _agents;
 
     public ShellViewModel()
     {
@@ -41,6 +43,7 @@ public sealed partial class ShellViewModel : ViewModelBase
             new("Главная", "🏠", _dashboard),
             new("Чат", "💬", _chat),
             new("Модели", "📦", _models),
+            new("Агенты", "🤖", _agents),
             new("Среды (runtime)", "⚙", _runtimes),
             new("Настройки", "🛠", new SettingsViewModel()),
         };

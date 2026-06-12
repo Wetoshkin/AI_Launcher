@@ -7,11 +7,12 @@ namespace Launcher.Desktop.Tests;
 public class ShellViewModelTests
 {
     [Fact]
-    public void Exposes_five_nav_items()
+    public void Exposes_all_nav_items()
     {
         var shell = new ShellViewModel();
-        Assert.Equal(5, shell.NavigationItems.Count);
+        Assert.Equal(6, shell.NavigationItems.Count);
         Assert.Equal("Главная", shell.NavigationItems.First().Title);
+        Assert.Contains(shell.NavigationItems, i => i.Title == "Агенты");
     }
 
     [Fact]
