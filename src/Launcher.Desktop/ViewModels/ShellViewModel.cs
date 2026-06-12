@@ -13,6 +13,7 @@ public sealed partial class ShellViewModel : ViewModelBase
 {
     private readonly DashboardViewModel _dashboard;
     private readonly ModelsViewModel _models = new();
+    private readonly RuntimesViewModel _runtimes = new();
 
     [ObservableProperty]
     private ViewModelBase _currentPage;
@@ -26,6 +27,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     public IReadOnlyList<NavigationItem> NavigationItems { get; }
 
     public ModelsViewModel Models => _models;
+    public RuntimesViewModel Runtimes => _runtimes;
 
     public ShellViewModel()
     {
@@ -37,7 +39,7 @@ public sealed partial class ShellViewModel : ViewModelBase
             new("Главная", "🏠", _dashboard),
             new("Чат", "💬", new ChatViewModel()),
             new("Модели", "📦", _models),
-            new("Среды (runtime)", "⚙", new RuntimesViewModel()),
+            new("Среды (runtime)", "⚙", _runtimes),
             new("Настройки", "🛠", new SettingsViewModel()),
         };
 
@@ -53,6 +55,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     {
         var hardware = await probe.GetHardwareAsync(cancellationToken);
         _dashboard.ApplyHardware(hardware);
+        _runtimes.ApplyHardware(hardware);
 
         var gpu = hardware.HasGpu
             ? hardware.Gpus[0].Name
