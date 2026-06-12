@@ -31,10 +31,17 @@ public sealed partial class ShellViewModel : ViewModelBase
         _currentPage = _selectedItem.Page;
     }
 
+    partial void OnSelectedItemChanged(NavigationItem value)
+    {
+        if (value is not null)
+        {
+            CurrentPage = value.Page;
+        }
+    }
+
     [RelayCommand]
     private void Navigate(NavigationItem item)
     {
         SelectedItem = item;
-        CurrentPage = item.Page;
     }
 }
