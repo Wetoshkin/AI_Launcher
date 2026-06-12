@@ -1,10 +1,34 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Launcher.Desktop.ViewModels.Pages"
+             xmlns:ctrl="using:Launcher.Desktop.Controls"
              x:Class="Launcher.Desktop.Views.Pages.DashboardView"
              x:DataType="vm:DashboardViewModel">
-  <StackPanel Margin="32" Spacing="10" VerticalAlignment="Top">
-    <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold"/>
-    <TextBlock Text="{Binding Description}" FontSize="14" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
-  </StackPanel>
+  <ScrollViewer>
+    <StackPanel Margin="32" Spacing="20" VerticalAlignment="Top" MaxWidth="900" HorizontalAlignment="Left">
+      <StackPanel Spacing="6">
+        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold"/>
+        <TextBlock Text="{Binding Description}" FontSize="14" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+      </StackPanel>
+
+      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Ваше железо" FontSize="16" FontWeight="Bold"/>
+          <TextBlock Text="{Binding HardwareSummary}" FontSize="13" TextWrapping="Wrap"
+                     Foreground="{DynamicResource InkSoftBrush}"/>
+        </StackPanel>
+      </Border>
+
+      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+              BorderThickness="1" CornerRadius="14" Padding="20">
+        <StackPanel Spacing="14">
+          <TextBlock Text="Как модель ложится в память" FontSize="16" FontWeight="Bold"/>
+          <TextBlock Text="{Binding SampleCaption}" FontSize="12" TextWrapping="Wrap"
+                     Foreground="{DynamicResource InkSoftBrush}"/>
+          <ctrl:HardwareMemoryView Plan="{Binding MemoryPlan}"/>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
 </UserControl>

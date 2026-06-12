@@ -48,7 +48,7 @@
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
           <StackPanel Spacing="2">
             <TextBlock Text="Железо" FontSize="11" Foreground="{DynamicResource InkSoftBrush}"/>
-            <TextBlock Text="определение…" FontSize="12" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding HardwareSummary}" FontSize="12" TextWrapping="Wrap"/>
           </StackPanel>
         </Border>
       </Grid>
