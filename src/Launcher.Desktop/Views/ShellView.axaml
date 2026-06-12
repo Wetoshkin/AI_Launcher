@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Launcher.Desktop.ViewModels"
+             xmlns:nav="using:Launcher.Desktop.Navigation"
+             x:Class="Launcher.Desktop.Views.ShellView"
+             x:DataType="vm:ShellViewModel">
+  <Grid ColumnDefinitions="Auto,*" Background="{DynamicResource PaperBrush}">
+    <Border Grid.Column="0" Width="240" Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+      <Grid RowDefinitions="Auto,*,Auto">
+        <StackPanel Grid.Row="0" Margin="18,20,18,12" Spacing="2">
+          <TextBlock Text="AI Launcher Studio" FontSize="17" FontWeight="Bold"/>
+          <TextBlock Text="локально и онлайн" FontSize="12" Foreground="{DynamicResource InkSoftBrush}"/>
+        </StackPanel>
+        <ItemsControl Grid.Row="1" Margin="10,4" ItemsSource="{Binding NavigationItems}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="nav:NavigationItem">
+              <Button Classes="nav"
+                      Command="{Binding $parent[ItemsControl].((vm:ShellViewModel)DataContext).NavigateCommand}"
+                      CommandParameter="{Binding}">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Text="{Binding Icon}" FontSize="16"/>
+                  <TextBlock Text="{Binding Title}" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Border Grid.Row="2" Margin="14" Padding="12,10" CornerRadius="10"
+                Background="{DynamicResource SurfaceAltBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Железо" FontSize="11" Foreground="{DynamicResource InkSoftBrush}"/>
+            <TextBlock Text="определение…" FontSize="12" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Border>
+
+    <ContentControl Grid.Column="1" Content="{Binding CurrentPage}"/>
+  </Grid>
+</UserControl>
