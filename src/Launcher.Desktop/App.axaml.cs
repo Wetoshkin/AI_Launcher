@@ -20,10 +20,14 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var shell = new ShellViewModel();
-            desktop.MainWindow = new MainWindow
+            var window = new MainWindow
             {
                 DataContext = shell,
             };
+            desktop.MainWindow = window;
+
+            var folderPicker = new Services.AvaloniaFolderPicker(window);
+            shell.Models.PickFolderAsync = folderPicker.PickFolderAsync;
 
             var startPage = System.Environment.GetEnvironmentVariable("ALS_START_PAGE");
             if (!string.IsNullOrWhiteSpace(startPage))

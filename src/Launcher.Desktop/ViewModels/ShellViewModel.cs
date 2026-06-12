@@ -12,6 +12,7 @@ namespace Launcher.Desktop.ViewModels;
 public sealed partial class ShellViewModel : ViewModelBase
 {
     private readonly DashboardViewModel _dashboard;
+    private readonly ModelsViewModel _models = new();
 
     [ObservableProperty]
     private ViewModelBase _currentPage;
@@ -24,6 +25,8 @@ public sealed partial class ShellViewModel : ViewModelBase
 
     public IReadOnlyList<NavigationItem> NavigationItems { get; }
 
+    public ModelsViewModel Models => _models;
+
     public ShellViewModel()
     {
         _dashboard = new DashboardViewModel();
@@ -33,7 +36,7 @@ public sealed partial class ShellViewModel : ViewModelBase
         {
             new("Главная", "🏠", _dashboard),
             new("Чат", "💬", new ChatViewModel()),
-            new("Модели", "📦", new ModelsViewModel()),
+            new("Модели", "📦", _models),
             new("Среды (runtime)", "⚙", new RuntimesViewModel()),
             new("Настройки", "🛠", new SettingsViewModel()),
         };
