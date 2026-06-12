@@ -1,5 +1,7 @@
+using System;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Launcher.Runtimes.Hardware;
 using Launcher.Runtimes.Memory;
 
@@ -13,12 +15,27 @@ public sealed partial class DashboardViewModel : ViewModelBase
     [ObservableProperty]
     private DeviceMemoryPlan? _memoryPlan;
 
+    /// <summary>Колбэк навигации: оболочка подставляет переход на вкладку по названию.</summary>
+    public Action<string>? RequestNavigate { get; set; }
+
     public string Title => "Главная";
-    public string Description => "Статус системы и быстрый запуск локальной или онлайн нейросети.";
+    public string Description => "Нажмите пару кнопок и начните общаться с нейросетью — локально на своём ПК или онлайн.";
 
     public string SampleCaption =>
         "Пример раскладки: модель 7B в кванте Q4_K_M при контексте 8K токенов. " +
         "На шаге запуска диаграмма пересчитается под вашу модель и настройки.";
+
+    [RelayCommand]
+    private void OpenLocalChat() => RequestNavigate?.Invoke("Чат");
+
+    [RelayCommand]
+    private void OpenOnlineChat() => RequestNavigate?.Invoke("Чат");
+
+    [RelayCommand]
+    private void OpenModels() => RequestNavigate?.Invoke("Модели");
+
+    [RelayCommand]
+    private void OpenRuntimes() => RequestNavigate?.Invoke("Среды (runtime)");
 
     /// <summary>Применяет реальное железо: краткая сводка + диаграмма для модели-примера.</summary>
     public void ApplyHardware(SystemHardware hardware)

@@ -27,6 +27,7 @@ public sealed partial class ShellViewModel : ViewModelBase
     public ShellViewModel()
     {
         _dashboard = new DashboardViewModel();
+        _dashboard.RequestNavigate = SelectByTitle;
 
         NavigationItems = new List<NavigationItem>
         {
