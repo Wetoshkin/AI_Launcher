@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Launcher.Desktop.Services;
 using Launcher.Online;
+using Launcher.Runtimes.Hardware;
 
 namespace Launcher.Desktop.ViewModels.Pages;
 
@@ -16,6 +17,11 @@ public sealed partial class ChatViewModel : ViewModelBase
     private readonly IChatClient? _injectedClient;
     private readonly LocalServerLauncher _serverLauncher = new();
     private CancellationTokenSource? _cts;
+
+    private SystemHardware? _hardware;
+
+    /// <summary>Запоминает железо для подсказок по мульти-GPU при запуске.</summary>
+    public void ApplyHardware(SystemHardware hardware) => _hardware = hardware;
 
     [ObservableProperty]
     private string _runtimeExe = LocalServerLauncher.FindInstalledRuntime() ?? string.Empty;

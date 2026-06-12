@@ -1,21 +1,38 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <!-- Палитра -->
-  <Color x:Key="PaperColor">#F7EFE3</Color>
-  <Color x:Key="SurfaceColor">#FFF9F0</Color>
-  <Color x:Key="SurfaceAltColor">#FFF4E5</Color>
-  <Color x:Key="BorderColor">#E6CBA6</Color>
-  <Color x:Key="AccentColor">#E86F16</Color>
-  <Color x:Key="AccentSoftColor">#FFE4BD</Color>
-  <Color x:Key="InkColor">#2C241B</Color>
-  <Color x:Key="InkSoftColor">#76614C</Color>
+  <ResourceDictionary.ThemeDictionaries>
 
-  <SolidColorBrush x:Key="PaperBrush" Color="{StaticResource PaperColor}"/>
-  <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}"/>
-  <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource SurfaceAltColor}"/>
-  <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
-  <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
-  <SolidColorBrush x:Key="AccentSoftBrush" Color="{StaticResource AccentSoftColor}"/>
-  <SolidColorBrush x:Key="InkBrush" Color="{StaticResource InkColor}"/>
-  <SolidColorBrush x:Key="InkSoftBrush" Color="{StaticResource InkSoftColor}"/>
+    <!-- Светлая тема (чистая, воздушная, macOS-вдохновлённая) -->
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="PaperBrush" Color="#F4F5F7"/>
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="SurfaceAltBrush" Color="#EEEFF3"/>
+      <SolidColorBrush x:Key="BorderBrush" Color="#E2E3E8"/>
+      <SolidColorBrush x:Key="AccentBrush" Color="#F2750A"/>
+      <SolidColorBrush x:Key="AccentSoftBrush" Color="#FBE7D4"/>
+      <SolidColorBrush x:Key="InkBrush" Color="#1C1C1E"/>
+      <SolidColorBrush x:Key="InkSoftBrush" Color="#6E6E73"/>
+      <SolidColorBrush x:Key="SidebarBrush" Color="#FBFBFD"/>
+      <Color x:Key="ShadowColor">#1A000000</Color>
+      <Color x:Key="AcrylicTintColor">#FFFFFF</Color>
+      <x:Double x:Key="AcrylicTintOpacity">0.72</x:Double>
+    </ResourceDictionary>
+
+    <!-- Тёмная тема (глубокая, контрастный светлый текст) -->
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="PaperBrush" Color="#1B1B1D"/>
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#2A2A2D"/>
+      <SolidColorBrush x:Key="SurfaceAltBrush" Color="#343438"/>
+      <SolidColorBrush x:Key="BorderBrush" Color="#3C3C40"/>
+      <SolidColorBrush x:Key="AccentBrush" Color="#FF8A33"/>
+      <SolidColorBrush x:Key="AccentSoftBrush" Color="#4A3320"/>
+      <SolidColorBrush x:Key="InkBrush" Color="#F4F4F6"/>
+      <SolidColorBrush x:Key="InkSoftBrush" Color="#9A9AA0"/>
+      <SolidColorBrush x:Key="SidebarBrush" Color="#232326"/>
+      <Color x:Key="ShadowColor">#55000000</Color>
+      <Color x:Key="AcrylicTintColor">#1B1B1D</Color>
+      <x:Double x:Key="AcrylicTintOpacity">0.70</x:Double>
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>
