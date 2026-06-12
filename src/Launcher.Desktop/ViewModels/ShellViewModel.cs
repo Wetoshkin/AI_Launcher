@@ -56,6 +56,19 @@ public sealed partial class ShellViewModel : ViewModelBase
         HardwareSummary = $"{gpu}\nОЗУ: {hardware.RamTotalGb:0.0} ГБ";
     }
 
+    /// <summary>Выбрать вкладку по заголовку (для deep-link/QA). Тихо игнорирует неизвестный.</summary>
+    public void SelectByTitle(string title)
+    {
+        foreach (var item in NavigationItems)
+        {
+            if (string.Equals(item.Title, title, System.StringComparison.OrdinalIgnoreCase))
+            {
+                SelectedItem = item;
+                return;
+            }
+        }
+    }
+
     partial void OnSelectedItemChanged(NavigationItem value)
     {
         if (value is not null)

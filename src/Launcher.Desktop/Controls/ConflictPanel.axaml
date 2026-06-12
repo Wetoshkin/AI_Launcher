@@ -1,0 +1,5 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Launcher.Desktop.Controls.ConflictPanel">
+  <StackPanel x:Name="Items" Spacing="10"/>
+</UserControl>
