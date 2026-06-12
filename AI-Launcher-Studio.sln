@@ -26,6 +26,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher.Desktop", "src\Lau
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher.Desktop.Tests", "tests\Launcher.Desktop.Tests\Launcher.Desktop.Tests.csproj", "{494D07D3-1DEC-4ED4-BDA5-831E12EAC82B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher.Online", "src\Launcher.Online\Launcher.Online.csproj", "{7EC29996-868A-4508-8BD9-91AA42BBA3F1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher.Online.Tests", "tests\Launcher.Online.Tests\Launcher.Online.Tests.csproj", "{FB7F9795-CA52-4143-A044-83787EA4A56C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,6 +76,14 @@ Global
 		{494D07D3-1DEC-4ED4-BDA5-831E12EAC82B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{494D07D3-1DEC-4ED4-BDA5-831E12EAC82B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{494D07D3-1DEC-4ED4-BDA5-831E12EAC82B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EC29996-868A-4508-8BD9-91AA42BBA3F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EC29996-868A-4508-8BD9-91AA42BBA3F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EC29996-868A-4508-8BD9-91AA42BBA3F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EC29996-868A-4508-8BD9-91AA42BBA3F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB7F9795-CA52-4143-A044-83787EA4A56C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB7F9795-CA52-4143-A044-83787EA4A56C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB7F9795-CA52-4143-A044-83787EA4A56C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB7F9795-CA52-4143-A044-83787EA4A56C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -90,5 +102,7 @@ Global
 		{93C2FBA4-6B09-4AA0-91CE-FDE7E12C56D8} = {3B6D508C-8119-45BE-B4BA-134CA0BE5D13}
 		{4B05381D-50CA-4226-9804-1AEC49C3BCF5} = {2D2D594C-366E-4A85-95C1-54201C44E610}
 		{494D07D3-1DEC-4ED4-BDA5-831E12EAC82B} = {3B6D508C-8119-45BE-B4BA-134CA0BE5D13}
+		{7EC29996-868A-4508-8BD9-91AA42BBA3F1} = {2D2D594C-366E-4A85-95C1-54201C44E610}
+		{FB7F9795-CA52-4143-A044-83787EA4A56C} = {3B6D508C-8119-45BE-B4BA-134CA0BE5D13}
 	EndGlobalSection
 EndGlobal

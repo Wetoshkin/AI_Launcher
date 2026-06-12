@@ -26,5 +26,6 @@
     <ProjectReference Include="..\Launcher.Agents\Launcher.Agents.csproj" />
     <ProjectReference Include="..\Launcher.Models\Launcher.Models.csproj" />
     <ProjectReference Include="..\Launcher.Runtimes\Launcher.Runtimes.csproj" />
+    <ProjectReference Include="..\Launcher.Online\Launcher.Online.csproj" />
   </ItemGroup>
 </Project>
