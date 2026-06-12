@@ -2,6 +2,8 @@
 
 [Русский](README_ru.md)
 
+> 🚧 A major UI redesign is in progress — making it clear for beginners and powerful for pros. Progress: `docs/REDESIGN_PROGRESS_RU.md`.
+
 AI Launcher Studio is a Windows desktop GUI for local AI agents, `llama-server`, GGUF models, Hugging Face discovery, runtime checks, and portable local AI workflows.
 
 The product lives in `src/Launcher.Desktop` and is built with Avalonia UI and .NET 8. The previous root launcher app has been removed; this repository now tracks AI Launcher Studio as the main project.
