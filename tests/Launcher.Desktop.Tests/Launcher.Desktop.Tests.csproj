@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Launcher.Desktop\Launcher.Desktop.csproj" />
+    <ProjectReference Include="..\..\src\Launcher.Online\Launcher.Online.csproj" />
   </ItemGroup>
 
 </Project>
