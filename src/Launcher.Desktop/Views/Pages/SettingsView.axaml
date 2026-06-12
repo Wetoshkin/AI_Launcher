@@ -1,0 +1,10 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Launcher.Desktop.ViewModels.Pages"
+             x:Class="Launcher.Desktop.Views.Pages.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+  <StackPanel Margin="32" Spacing="10" VerticalAlignment="Top">
+    <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold"/>
+    <TextBlock Text="{Binding Description}" FontSize="14" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+  </StackPanel>
+</UserControl>

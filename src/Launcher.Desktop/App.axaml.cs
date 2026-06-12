@@ -1,10 +1,6 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Data.Core;
-using Avalonia.Data.Core.Plugins;
-using System.Linq;
 using Avalonia.Markup.Xaml;
-using Launcher.Desktop.Services;
 using Launcher.Desktop.ViewModels;
 using Launcher.Desktop.Views;
 
@@ -21,15 +17,10 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var viewModel = new HomeViewModel();
-            var window = new MainWindow
+            desktop.MainWindow = new MainWindow
             {
-                DataContext = viewModel,
+                DataContext = new ShellViewModel(),
             };
-            viewModel.FolderPicker = new AvaloniaFolderPicker(window);
-            viewModel.FilePicker = new AvaloniaFilePicker(window);
-            _ = viewModel.LoadSettingsCommand.ExecuteAsync(null);
-            desktop.MainWindow = window;
         }
 
         base.OnFrameworkInitializationCompleted();
