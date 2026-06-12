@@ -31,6 +31,7 @@ public partial class App : Application
 
             var filePicker = new Services.AvaloniaFilePicker(window);
             shell.Chat.PickModelAsync = filePicker.PickFileAsync;
+            shell.Agents.PickFolderAsync = folderPicker.PickFolderAsync;
 
             var startPage = System.Environment.GetEnvironmentVariable("ALS_START_PAGE");
             if (!string.IsNullOrWhiteSpace(startPage))

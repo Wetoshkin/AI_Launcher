@@ -41,7 +41,9 @@ public sealed class WindowsExecutableResolver : IExecutableResolver
             var stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken);
             var stderr = await process.StandardError.ReadToEndAsync(cancellationToken);
             await process.WaitForExitAsync(cancellationToken);
-            return process.ExitCode == 0 ? stdout : stderr;
+            // На ненулевом коде выхода (например where.exe не нашёл файл) возвращаем пусто,
+            // иначе stderr ("не удалось найти") ошибочно трактуется как найденный путь.
+            return process.ExitCode == 0 ? stdout : string.Empty;
         }
         catch
         {
