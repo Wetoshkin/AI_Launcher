@@ -1,0 +1,8 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Launcher.Desktop.Controls.HardwareMemoryView">
+  <StackPanel Spacing="12">
+    <StackPanel x:Name="Rows" Spacing="12"/>
+    <TextBlock x:Name="Verdict" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"/>
+  </StackPanel>
+</UserControl>
