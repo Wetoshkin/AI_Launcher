@@ -6,6 +6,10 @@
 
 Built with .NET 8 and Avalonia UI 12.
 
+## Install
+
+Download the installer from [Releases](https://github.com/Wetoshkin/AI_Launcher/releases) — `AI-Launcher-Studio-Setup-*.exe` (no admin rights, no separate .NET needed), or the portable zip.
+
 ## Features
 
 - **Local AI** — runs `llama-server` with your GGUF model and chats with it in a built-in chat. Works on CPU and Intel/AMD GPUs (Vulkan), not only NVIDIA.
@@ -16,6 +20,9 @@ Built with .NET 8 and Avalonia UI 12.
 - **Models** — local GGUF catalog and Hugging Face search highlighting dynamic quants (UD-Q4_K_XL, etc.).
 - **Runtimes** — recommends a backend for your hardware and really downloads and installs a llama.cpp build from GitHub.
 - **Agents** — launch coding agents (OpenCode, Kilo, Claw, Aider) on a local or online model.
+- **Anti-looping** — DRY sampler on by default (the best fix for model repetition); multi-GPU via tensor-split.
+- **Expert mode** — free-form llama-server arguments for full control; server log console.
+- **Appearance** — light and dark themes, Russian and English, in-app update check.
 
 ## Run From Source
 
