@@ -22,7 +22,7 @@ public class AgentsViewModelTests
 
         await vm.CheckAgentsCommand.ExecuteAsync(null);
 
-        Assert.Equal(6, vm.Agents.Count);
+        Assert.Equal(7, vm.Agents.Count);
         Assert.All(vm.Agents, a => Assert.False(a.Installed));
     }
 

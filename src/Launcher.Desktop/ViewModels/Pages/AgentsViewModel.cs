@@ -195,8 +195,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
 
     public ObservableCollection<AgentStatusRow> Agents { get; } = new();
 
-    public IReadOnlyList<AgentKind> AgentKinds { get; } =
-        new[] { AgentKind.OpenCode, AgentKind.Kilo, AgentKind.Claw, AgentKind.Aider, AgentKind.Pi };
+    public IReadOnlyList<AgentKind> AgentKinds { get; } = AgentCatalog.Supported;
 
     public Func<string, Task<string?>>? PickFolderAsync { get; set; }
 
@@ -477,7 +476,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
             string.IsNullOrWhiteSpace(LocalModelPath) ? "model" : LocalModelPath);
 
         var sb = new System.Text.StringBuilder();
-        sb.Append($"{exe} -m \"{model}\" --alias {alias} --ctx-size {ContextTokens} --port {ServerPort} --host 127.0.0.1 --dry-multiplier 0.8");
+        sb.Append($"{exe} -m \"{model}\" --alias {alias} --ctx-size {ContextTokens} --port {ServerPort} --host 127.0.0.1 --jinja --dry-multiplier 0.8");
         var extra = ComposeServerArgs();
         if (!string.IsNullOrWhiteSpace(extra))
         {
@@ -1045,16 +1044,25 @@ public sealed partial class AgentsViewModel : ViewModelBase
                 config = await new AgentProjectConfigWriter().WriteAsync(request, CancellationToken.None);
             }
 
+            // Агент должен быть установлен — иначе подскажем кнопку «Установить».
+            var display = AgentCatalog.Get(SelectedAgent).Display;
+            var installed = await _catalog.CheckAsync(SelectedAgent, CancellationToken.None);
+            if (!installed.IsInstalled)
+            {
+                Status = $"Конфиг записан ({config.Message}). Агент «{display}» не установлен — нажмите «Установить» в списке ниже.";
+                return;
+            }
+
             var plan = BuildPlan(request);
-            var psi = new ProcessStartInfo(plan.Executable)
+
+            // Запускаем через cmd /k: так задаются переменные окружения (нужны Claude Code и др.)
+            // и агент остаётся в видимом интерактивном окне.
+            var psi = new ProcessStartInfo("cmd.exe")
             {
                 UseShellExecute = true,
                 WorkingDirectory = ProjectFolder.Trim(),
+                Arguments = BuildShellCommand(plan),
             };
-            foreach (var arg in plan.Arguments)
-            {
-                psi.ArgumentList.Add(arg);
-            }
 
             try
             {
@@ -1068,7 +1076,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
                         {
                             IsAgentRunning = false;
                             _agentProcess = null;
-                            Status = $"Агент «{SelectedAgent}» завершён.";
+                            Status = $"Агент «{display}» завершён.";
                         }
                     });
                     _agentProcess = proc;
@@ -1076,12 +1084,11 @@ public sealed partial class AgentsViewModel : ViewModelBase
                 }
 
                 SaveLastLaunch();
-                Status = $"Конфиг: {config.Message} Запущен агент «{SelectedAgent}» в новом окне.";
+                Status = $"Конфиг: {config.Message} Запущен агент «{display}» в новом окне.";
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Status = $"Конфиг записан ({config.Message}), но агент «{SelectedAgent}» не найден в PATH. " +
-                         "Установите его CLI и повторите. Команда: " + plan.Executable + " " + string.Join(' ', plan.Arguments);
+                Status = $"Не удалось запустить агента «{display}»: {ex.Message}";
             }
         }
         catch (ArgumentException)
@@ -1122,6 +1129,27 @@ public sealed partial class AgentsViewModel : ViewModelBase
         Status = $"Агент «{SelectedAgent}» остановлен.";
     }
 
+    /// <summary>Строит команду для cmd /k: задаёт переменные окружения и запускает агента в видимом окне.</summary>
+    private static string BuildShellCommand(Launcher.Core.LaunchPlans.LaunchPlan plan)
+    {
+        var sb = new System.Text.StringBuilder("/k ");
+        foreach (var kv in plan.Environment)
+        {
+            sb.Append($"set \"{kv.Key}={kv.Value}\"&& ");
+        }
+
+        sb.Append(Quote(plan.Executable));
+        foreach (var arg in plan.Arguments)
+        {
+            sb.Append(' ').Append(Quote(arg));
+        }
+
+        return sb.ToString();
+    }
+
+    private static string Quote(string value) =>
+        value.Contains(' ') && !value.StartsWith('"') ? $"\"{value}\"" : value;
+
     private static Launcher.Core.LaunchPlans.LaunchPlan BuildPlan(AgentLaunchRequest request)
     {
         IAgentCommandBuilder builder = request.Agent switch
@@ -1133,6 +1161,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
             AgentKind.Pi => new PiCommandBuilder(),
             AgentKind.Crush => new CrushCommandBuilder(),
             AgentKind.Goose => new GooseCommandBuilder(),
+            AgentKind.ClaudeCode => new ClaudeCodeCommandBuilder(),
             _ => new OpenCodeCommandBuilder(),
         };
         return builder.Build(request);
