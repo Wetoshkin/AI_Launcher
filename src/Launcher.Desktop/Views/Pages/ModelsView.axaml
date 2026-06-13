@@ -79,6 +79,8 @@
                         <TextBlock Text="{Binding Fit}" FontSize="12.5" FontWeight="Medium"
                                    Foreground="{Binding FitLevel, Converter={x:Static conv:FitConverters.LevelToBrush}}"/>
                       </StackPanel>
+                      <ProgressBar Minimum="0" Maximum="100" Value="{Binding DownloadProgress}" Height="6"
+                                   Margin="0,3,0,0" IsVisible="{Binding IsBusy}"/>
                       <TextBlock Text="{Binding DownloadStatus}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}"
                                  TextWrapping="Wrap"
                                  IsVisible="{Binding DownloadStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>

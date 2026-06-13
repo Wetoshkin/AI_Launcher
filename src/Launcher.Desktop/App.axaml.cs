@@ -13,7 +13,17 @@ namespace Launcher.Desktop;
 
 public partial class App : Application
 {
-    private bool _reallyExit;
+    private static bool _reallyExit;
+
+    /// <summary>Принудительно и по-настоящему закрыть приложение (для авто-обновления).</summary>
+    public static void ForceExit()
+    {
+        _reallyExit = true;
+        if (Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+        }
+    }
 
     public override void Initialize()
     {
@@ -35,7 +45,7 @@ public partial class App : Application
             shell.Models.PickFolderAsync = folderPicker.PickFolderAsync;
 
             var filePicker = new Services.AvaloniaFilePicker(window);
-            shell.Chat.PickModelAsync = filePicker.PickFileAsync;
+            shell.Agents.PickModelAsync = filePicker.PickFileAsync;
             shell.Agents.PickFolderAsync = folderPicker.PickFolderAsync;
 
             var startPage = Environment.GetEnvironmentVariable("ALS_START_PAGE");
@@ -46,10 +56,13 @@ public partial class App : Application
 
             SetupTray(desktop, window);
 
-            // Закрытие окна сворачивает в трей; реальный выход — из меню трея.
+            // Крестик пользователя сворачивает в трей; завершение ОС/установщиком или
+            // программный выход (авто-обновление) — закрывают приложение по-настоящему,
+            // иначе процесс держит файлы и установщик не может их заменить.
             window.Closing += (_, e) =>
             {
-                if (!_reallyExit)
+                var userClickedClose = e.CloseReason == WindowCloseReason.WindowClosing && !e.IsProgrammatic;
+                if (!_reallyExit && userClickedClose)
                 {
                     e.Cancel = true;
                     window.Hide();

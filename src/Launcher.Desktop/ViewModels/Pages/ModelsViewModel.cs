@@ -22,6 +22,7 @@ public sealed partial class ModelsViewModel : ViewModelBase
     private readonly IHuggingFaceModelDownloadService _downloadService;
     private readonly ConcurrentDictionary<string, IReadOnlyList<HuggingFaceSiblingFile>> _fileCache = new();
 
+    private SystemHardware? _hardware;
     private double _vramGb;
     private double _ramGb;
 
@@ -70,20 +71,24 @@ public sealed partial class ModelsViewModel : ViewModelBase
     {
         _hfClient = hfClient;
         _downloadService = downloadService;
+        GpuSettings.Instance.Changed += (_, _) => Dispatcher.UIThread.Post(RecomputeBudget);
     }
 
     public void ApplyHardware(SystemHardware hardware)
     {
-        _ramGb = hardware.RamTotalGb;
+        _hardware = hardware;
+        RecomputeBudget();
+    }
 
-        // Видеопамять для оценки: дискретные NVIDIA-карты (их видит CUDA), иначе — карты с заметной VRAM.
-        var nvidia = hardware.Gpus
-            .Where(g => g.Name.Contains("nvidia", StringComparison.OrdinalIgnoreCase)
-                || g.Name.Contains("geforce", StringComparison.OrdinalIgnoreCase)
-                || g.Name.Contains("rtx", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        var cards = nvidia.Count > 0 ? nvidia : hardware.Gpus.Where(g => g.TotalGb >= 4.0).ToList();
-        _vramGb = cards.Sum(g => g.TotalGb);
+    private void RecomputeBudget()
+    {
+        if (_hardware is null)
+        {
+            return;
+        }
+
+        _ramGb = _hardware.RamTotalGb;
+        _vramGb = GpuClassifier.UsableVramGb(_hardware, GpuSettings.Instance.UseIntegratedGpu);
 
         // Пересчитать бейджи у уже показанных строк.
         RecomputeLocalFit();
@@ -219,7 +224,6 @@ public sealed partial class ModelsViewModel : ViewModelBase
     private async Task FillSizesAsync(IReadOnlyList<HfModelRow> rows)
     {
         using var gate = new SemaphoreSlim(5);
-        var folderSet = !string.IsNullOrWhiteSpace(ModelsFolder);
 
         var tasks = rows.Select(async row =>
         {
@@ -242,8 +246,7 @@ public sealed partial class ModelsViewModel : ViewModelBase
                     row.RecommendedQuant = option.Quant ?? option.Label;
                     row.Fit = $"{fit}  ·  квант {row.RecommendedQuant}";
                     row.FitLevel = level;
-                    row.CanDownload = folderSet;
-                    row.DownloadStatus = folderSet ? string.Empty : "Укажите папку для моделей вверху, чтобы скачать.";
+                    row.CanDownload = true;
                 });
             }
             catch
@@ -274,13 +277,24 @@ public sealed partial class ModelsViewModel : ViewModelBase
             return;
         }
 
+        // Папка общая с разделом «Локальные модели». Если её ещё нет — предложим выбрать прямо здесь.
+        if (string.IsNullOrWhiteSpace(ModelsFolder) && PickFolderAsync is not null)
+        {
+            var folder = await PickFolderAsync("Куда скачивать модели");
+            if (!string.IsNullOrWhiteSpace(folder))
+            {
+                ModelsFolder = folder;
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(ModelsFolder))
         {
-            row.DownloadStatus = "Сначала укажите папку для моделей вверху.";
+            row.DownloadStatus = "Выберите папку для моделей (поле «Локальные модели» вверху) — туда сохраним файл.";
             return;
         }
 
         row.IsBusy = true;
+        row.DownloadProgress = 0;
         row.DownloadStatus = "Подбираю файл…";
 
         try
@@ -292,16 +306,54 @@ public sealed partial class ModelsViewModel : ViewModelBase
                 return;
             }
 
+            var label = option.Quant ?? option.Label;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var lastTick = 0.0;
+            long lastBytes = 0;
+            var speedText = string.Empty;
+
+            // Каждая загрузка идёт в своей задаче и обновляет только свою строку —
+            // поэтому несколько моделей качаются параллельно, не мешая друг другу.
             var request = new HuggingFaceModelDownloadRequest(row.Id, option, ModelsFolder);
             await _downloadService.DownloadAsync(request, CancellationToken.None, p =>
             {
-                var pct = p.TotalBytes is > 0 ? (int)(100.0 * p.BytesReceived / p.TotalBytes.Value) : 0;
-                var text = p.IsSkipped
-                    ? $"Уже скачано: {p.FileName}"
-                    : $"Скачиваю {option.Quant ?? option.Label}: {pct}% (файл {p.FileIndex}/{p.TotalFiles})";
-                Dispatcher.UIThread.Post(() => row.DownloadStatus = text);
+                if (p.IsSkipped)
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        row.DownloadProgress = 100;
+                        row.DownloadStatus = $"Уже скачано: {p.FileName}";
+                    });
+                    return;
+                }
+
+                var pct = p.TotalBytes is > 0 ? 100.0 * p.BytesReceived / p.TotalBytes.Value : 0;
+
+                var elapsed = sw.Elapsed.TotalSeconds;
+                if (elapsed - lastTick >= 0.5)
+                {
+                    var bytesPerSec = (p.BytesReceived - lastBytes) / System.Math.Max(0.001, elapsed - lastTick);
+                    speedText = FormatSpeed(bytesPerSec);
+                    lastBytes = p.BytesReceived;
+                    lastTick = elapsed;
+
+                    var received = FormatBytes(p.BytesReceived);
+                    var total = p.TotalBytes is > 0 ? FormatBytes(p.TotalBytes.Value) : "?";
+                    var fileInfo = p.TotalFiles > 1 ? $" · файл {p.FileIndex}/{p.TotalFiles}" : string.Empty;
+
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        row.DownloadProgress = pct;
+                        row.DownloadStatus = $"Скачиваю {label}: {pct:0}% · {received} из {total} · {speedText}{fileInfo}";
+                    });
+                }
+                else
+                {
+                    Dispatcher.UIThread.Post(() => row.DownloadProgress = pct);
+                }
             });
 
+            row.DownloadProgress = 100;
             row.DownloadStatus = "Готово ✓ — модель добавлена в папку.";
             Scan();
         }
@@ -313,6 +365,27 @@ public sealed partial class ModelsViewModel : ViewModelBase
         {
             row.IsBusy = false;
         }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        double b = bytes;
+        if (b >= 1024L * 1024 * 1024)
+        {
+            return $"{b / 1024 / 1024 / 1024:0.0} ГБ";
+        }
+
+        return $"{b / 1024 / 1024:0} МБ";
+    }
+
+    private static string FormatSpeed(double bytesPerSec)
+    {
+        if (bytesPerSec >= 1024.0 * 1024)
+        {
+            return $"{bytesPerSec / 1024 / 1024:0.0} МБ/с";
+        }
+
+        return $"{bytesPerSec / 1024:0} КБ/с";
     }
 
     /// <summary>Берёт файлы репозитория и выбирает лучший квант, который влезает в железо.</summary>

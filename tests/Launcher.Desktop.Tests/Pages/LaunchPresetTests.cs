@@ -21,9 +21,9 @@ public class LaunchPresetTests
     }
 
     [Fact]
-    public void Chat_uses_balanced_preset_by_default()
+    public void Agents_use_balanced_preset_by_default()
     {
-        var vm = new ChatViewModel();
+        var vm = new AgentsViewModel();
         Assert.Equal(4096, vm.SelectedPreset.ContextTokens);
     }
 }

@@ -10,9 +10,10 @@ public class ShellViewModelTests
     public void Exposes_all_nav_items()
     {
         var shell = new ShellViewModel();
-        Assert.Equal(6, shell.NavigationItems.Count);
+        Assert.Equal(5, shell.NavigationItems.Count);
         Assert.Equal("home", shell.NavigationItems.First().Key);
         Assert.Contains(shell.NavigationItems, i => i.Key == "agents");
+        Assert.DoesNotContain(shell.NavigationItems, i => i.Key == "chat");
     }
 
     [Fact]
@@ -27,12 +28,12 @@ public class ShellViewModelTests
     public void Navigate_changes_current_page_and_selection()
     {
         var shell = new ShellViewModel();
-        var chat = shell.NavigationItems.Single(i => i.Key == "chat");
+        var agents = shell.NavigationItems.Single(i => i.Key == "agents");
 
-        shell.NavigateCommand.Execute(chat);
+        shell.NavigateCommand.Execute(agents);
 
-        Assert.IsType<ChatViewModel>(shell.CurrentPage);
-        Assert.Same(chat, shell.SelectedItem);
+        Assert.IsType<AgentsViewModel>(shell.CurrentPage);
+        Assert.Same(agents, shell.SelectedItem);
     }
 
     [Fact]
