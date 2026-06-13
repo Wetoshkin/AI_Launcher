@@ -22,6 +22,7 @@
         <Style Selector="Window">
             <Setter Property="FontFamily" Value="avares://Launcher.Desktop/Assets/Fonts/Manrope.ttf#Manrope"/>
             <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Medium"/>
         </Style>
 
         <Style Selector="TextBlock">

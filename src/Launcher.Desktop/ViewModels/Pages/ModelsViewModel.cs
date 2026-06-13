@@ -1,20 +1,29 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Launcher.Desktop.Services;
 using Launcher.Models.Catalog;
 using Launcher.Models.HuggingFace;
+using Launcher.Runtimes.Hardware;
 
 namespace Launcher.Desktop.ViewModels.Pages;
 
 public sealed partial class ModelsViewModel : ViewModelBase
 {
     private readonly HuggingFaceModelClient _hfClient;
+    private readonly IHuggingFaceModelDownloadService _downloadService;
+    private readonly ConcurrentDictionary<string, IReadOnlyList<HuggingFaceSiblingFile>> _fileCache = new();
+
+    private double _vramGb;
+    private double _ramGb;
 
     [ObservableProperty]
     private string _modelsFolder = string.Empty;
@@ -37,19 +46,64 @@ public sealed partial class ModelsViewModel : ViewModelBase
     /// <summary>Делегат выбора папки (подставляет App с доступом к окну).</summary>
     public Func<string, Task<string?>>? PickFolderAsync { get; set; }
 
+    /// <summary>Передать выбранную локальную модель в «Чат» (путь к GGUF).</summary>
+    public Action<string>? UseLocalModel { get; set; }
+
     public string Title => "Модели";
     public string Description =>
         "Локальные GGUF-модели и поиск на Hugging Face. Совет: берите динамические кванты " +
         "(UD-Q4_K_XL от Unsloth/Bartowski) — при том же размере качество выше, чем у обычного Q4_K_M.";
 
     public ModelsViewModel()
-        : this(new HuggingFaceModelClient(new HttpClient { BaseAddress = new Uri("https://huggingface.co") }))
+        : this(
+            new HuggingFaceModelClient(new HttpClient { BaseAddress = new Uri("https://huggingface.co") }),
+            new HuggingFaceModelDownloadService(new HttpClient { BaseAddress = new Uri("https://huggingface.co") }))
     {
     }
 
     public ModelsViewModel(HuggingFaceModelClient hfClient)
+        : this(hfClient, new HuggingFaceModelDownloadService(new HttpClient { BaseAddress = new Uri("https://huggingface.co") }))
+    {
+    }
+
+    public ModelsViewModel(HuggingFaceModelClient hfClient, IHuggingFaceModelDownloadService downloadService)
     {
         _hfClient = hfClient;
+        _downloadService = downloadService;
+    }
+
+    public void ApplyHardware(SystemHardware hardware)
+    {
+        _ramGb = hardware.RamTotalGb;
+
+        // Видеопамять для оценки: дискретные NVIDIA-карты (их видит CUDA), иначе — карты с заметной VRAM.
+        var nvidia = hardware.Gpus
+            .Where(g => g.Name.Contains("nvidia", StringComparison.OrdinalIgnoreCase)
+                || g.Name.Contains("geforce", StringComparison.OrdinalIgnoreCase)
+                || g.Name.Contains("rtx", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var cards = nvidia.Count > 0 ? nvidia : hardware.Gpus.Where(g => g.TotalGb >= 4.0).ToList();
+        _vramGb = cards.Sum(g => g.TotalGb);
+
+        // Пересчитать бейджи у уже показанных строк.
+        RecomputeLocalFit();
+    }
+
+    private void RecomputeLocalFit()
+    {
+        if (LocalModels.Count == 0)
+        {
+            return;
+        }
+
+        var snapshot = LocalModels.ToList();
+        LocalModels.Clear();
+        foreach (var m in snapshot)
+        {
+            var sizeGb = ParseGb(m.Size);
+            var (fit, level) = ModelFit.Describe(sizeGb, _vramGb, _ramGb);
+            LocalModels.Add(m with { Fit = fit, FitLevel = level });
+        }
     }
 
     [RelayCommand]
@@ -83,22 +137,37 @@ public sealed partial class ModelsViewModel : ViewModelBase
             var found = LocalModelCatalog.Scan(new[] { ModelsFolder });
             foreach (var m in found)
             {
+                var (fit, level) = ModelFit.Describe(m.SizeGb, _vramGb, _ramGb);
                 LocalModels.Add(new LocalModelRow(
                     System.IO.Path.GetFileName(m.Path),
                     m.Family,
                     m.Quant ?? "—",
                     $"{m.SizeGb:0.0} ГБ",
-                    m.Path));
+                    m.Path,
+                    fit,
+                    level));
             }
 
             LocalStatus = found.Count == 0
                 ? "GGUF-модели не найдены. Скачайте модель ниже на Hugging Face."
-                : $"Найдено моделей: {found.Count}.";
+                : $"Найдено моделей: {found.Count}. Нажмите «Использовать», чтобы открыть модель в Чате.";
         }
         catch (Exception ex)
         {
             LocalStatus = "Не удалось просканировать папку: " + ex.Message;
         }
+    }
+
+    [RelayCommand]
+    private void UseLocal(LocalModelRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        UseLocalModel?.Invoke(row.Path);
+        LocalStatus = $"Модель «{row.FileName}» открыта в Чате. Перейдите на вкладку 💬 и запустите сервер.";
     }
 
     private bool CanSearch => !IsSearching && !string.IsNullOrWhiteSpace(SearchQuery);
@@ -118,18 +187,23 @@ public sealed partial class ModelsViewModel : ViewModelBase
             var request = new HuggingFaceModelSearchRequest(SearchQuery.Trim(), HuggingFaceSort.Downloads, Limit: 20);
             var results = await _hfClient.SearchAsync(request, CancellationToken.None);
 
+            var rows = new List<HfModelRow>();
             foreach (var r in results)
             {
-                SearchResults.Add(new HfModelRow(
+                var row = new HfModelRow(
                     r.Id,
                     $"↓ {r.Downloads:N0}   ♥ {r.Likes:N0}",
                     DescribeQuants(r.SiblingFiles ?? Array.Empty<string>()),
-                    r.IsRuntimeCompatible));
+                    r.IsRuntimeCompatible);
+                rows.Add(row);
+                SearchResults.Add(row);
             }
 
             SearchStatus = results.Count == 0
                 ? "Ничего не найдено. Попробуйте другой запрос."
-                : $"Найдено: {results.Count}. Выбирайте репозитории с пометкой GGUF.";
+                : $"Найдено: {results.Count}. Размер и пригодность под ваше железо подгружаются…";
+
+            _ = FillSizesAsync(rows.Where(r => r.HasGguf).ToList());
         }
         catch (Exception ex)
         {
@@ -139,6 +213,158 @@ public sealed partial class ModelsViewModel : ViewModelBase
         {
             IsSearching = false;
         }
+    }
+
+    /// <summary>Подгружает реальные размеры файлов и считает «влезет ли», параллельно но без перегруза.</summary>
+    private async Task FillSizesAsync(IReadOnlyList<HfModelRow> rows)
+    {
+        using var gate = new SemaphoreSlim(5);
+        var folderSet = !string.IsNullOrWhiteSpace(ModelsFolder);
+
+        var tasks = rows.Select(async row =>
+        {
+            await gate.WaitAsync();
+            try
+            {
+                var option = await GetRecommendedOptionAsync(row.Id, CancellationToken.None);
+                var sizeGb = option?.TotalSizeBytes is long b ? b / 1024.0 / 1024.0 / 1024.0 : 0;
+                var (fit, level) = ModelFit.Describe(sizeGb, _vramGb, _ramGb);
+
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (option is null)
+                    {
+                        row.Fit = "Не удалось определить размер";
+                        row.FitLevel = 3;
+                        return;
+                    }
+
+                    row.RecommendedQuant = option.Quant ?? option.Label;
+                    row.Fit = $"{fit}  ·  квант {row.RecommendedQuant}";
+                    row.FitLevel = level;
+                    row.CanDownload = folderSet;
+                    row.DownloadStatus = folderSet ? string.Empty : "Укажите папку для моделей вверху, чтобы скачать.";
+                });
+            }
+            catch
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    row.Fit = "Не удалось определить размер";
+                    row.FitLevel = 3;
+                });
+            }
+            finally
+            {
+                gate.Release();
+            }
+        });
+
+        await Task.WhenAll(tasks);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+            SearchStatus = SearchResults.Count == 0 ? SearchStatus : $"Найдено: {SearchResults.Count}. Зелёный бейдж — модель поместится в видеопамять.");
+    }
+
+    [RelayCommand]
+    private async Task DownloadHfAsync(HfModelRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(ModelsFolder))
+        {
+            row.DownloadStatus = "Сначала укажите папку для моделей вверху.";
+            return;
+        }
+
+        row.IsBusy = true;
+        row.DownloadStatus = "Подбираю файл…";
+
+        try
+        {
+            var option = await GetRecommendedOptionAsync(row.Id, CancellationToken.None);
+            if (option is null)
+            {
+                row.DownloadStatus = "В репозитории не нашлось подходящего GGUF-файла.";
+                return;
+            }
+
+            var request = new HuggingFaceModelDownloadRequest(row.Id, option, ModelsFolder);
+            await _downloadService.DownloadAsync(request, CancellationToken.None, p =>
+            {
+                var pct = p.TotalBytes is > 0 ? (int)(100.0 * p.BytesReceived / p.TotalBytes.Value) : 0;
+                var text = p.IsSkipped
+                    ? $"Уже скачано: {p.FileName}"
+                    : $"Скачиваю {option.Quant ?? option.Label}: {pct}% (файл {p.FileIndex}/{p.TotalFiles})";
+                Dispatcher.UIThread.Post(() => row.DownloadStatus = text);
+            });
+
+            row.DownloadStatus = "Готово ✓ — модель добавлена в папку.";
+            Scan();
+        }
+        catch (Exception ex)
+        {
+            row.DownloadStatus = "Ошибка загрузки: " + ex.Message;
+        }
+        finally
+        {
+            row.IsBusy = false;
+        }
+    }
+
+    /// <summary>Берёт файлы репозитория и выбирает лучший квант, который влезает в железо.</summary>
+    private async Task<HuggingFaceGgufDownloadOption?> GetRecommendedOptionAsync(string repoId, CancellationToken ct)
+    {
+        if (!_fileCache.TryGetValue(repoId, out var files))
+        {
+            files = await _hfClient.GetGgufFilesAsync(repoId, ct);
+            _fileCache[repoId] = files;
+        }
+
+        var summary = new HuggingFaceModelSummary(repoId, 0, 0, Array.Empty<string>(),
+            false, false, true, SiblingFileMetadata: files);
+        var options = HuggingFaceGgufFileSelector.SelectDownloadOptions(summary)
+            .Where(o => o.TotalSizeBytes is > 0)
+            .ToList();
+
+        if (options.Count == 0)
+        {
+            return null;
+        }
+
+        double Gb(HuggingFaceGgufDownloadOption o) => (o.TotalSizeBytes ?? 0) / 1024.0 / 1024.0 / 1024.0;
+
+        // Лучшее качество, что целиком влезет в видеопамять.
+        var fitsVram = options
+            .Where(o => _vramGb > 0 && Gb(o) + 1.5 <= _vramGb)
+            .OrderByDescending(Gb)
+            .FirstOrDefault();
+        if (fitsVram is not null)
+        {
+            return fitsVram;
+        }
+
+        // Иначе — лучшее, что влезет в ОЗУ (+VRAM с offload).
+        var fitsRam = options
+            .Where(o => Gb(o) + 3 <= _ramGb + Math.Max(0, _vramGb))
+            .OrderByDescending(Gb)
+            .FirstOrDefault();
+        if (fitsRam is not null)
+        {
+            return fitsRam;
+        }
+
+        // На крайний случай — самый маленький.
+        return options.OrderBy(Gb).First();
+    }
+
+    private static double ParseGb(string size)
+    {
+        var digits = new string(size.Where(c => char.IsDigit(c) || c == '.' || c == ',').ToArray()).Replace(',', '.');
+        return double.TryParse(digits, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0;
     }
 
     private static string DescribeQuants(IReadOnlyList<string> files)

@@ -12,20 +12,32 @@ public static class RuntimeReleaseAssetSelector
             .Where(release => !release.Draft)
             .Where(release => includePrerelease || !release.Prerelease)
             .OrderByDescending(release => release.PublishedAt)
-            .SelectMany(release => release.Assets
-                .Where(asset => IsZip(asset))
-                .Where(asset => MatchesFragments(asset.Name, requiredNameFragments))
-                .Select(asset => new RuntimeReleasePackage(
-                    release.TagName,
-                    release.Name,
-                    release.PublishedAt,
-                    asset.Name,
-                    asset.DownloadUrl,
-                    asset.SizeBytes,
-                    release.Prerelease,
-                    source)))
+            .SelectMany(release =>
+            {
+                // CUDA-сборкам нужны библиотеки cudart — кладём их URL рядом, чтобы докачать при установке.
+                var cudart = release.Assets.FirstOrDefault(a =>
+                    IsZip(a) && IsCudart(a.Name) && a.Name.Contains("x64", StringComparison.OrdinalIgnoreCase));
+
+                return release.Assets
+                    .Where(asset => IsZip(asset))
+                    .Where(asset => !IsCudart(asset.Name)) // cudart — не самостоятельный runtime, исключаем из списка
+                    .Where(asset => MatchesFragments(asset.Name, requiredNameFragments))
+                    .Select(asset => new RuntimeReleasePackage(
+                        release.TagName,
+                        release.Name,
+                        release.PublishedAt,
+                        asset.Name,
+                        asset.DownloadUrl,
+                        asset.SizeBytes,
+                        release.Prerelease,
+                        source,
+                        asset.Name.Contains("cuda", StringComparison.OrdinalIgnoreCase) ? cudart?.DownloadUrl : null));
+            })
             .ToArray();
     }
+
+    private static bool IsCudart(string name) =>
+        name.Contains("cudart", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsZip(GitHubReleaseAsset asset) =>
         asset.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)

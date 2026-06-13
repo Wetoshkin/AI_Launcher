@@ -17,6 +17,40 @@
                    Foreground="{DynamicResource AccentBrush}"/>
       </Border>
 
+      <!-- Установленные движки -->
+      <Border Classes="card">
+        <StackPanel Spacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <TextBlock Text="Установленные движки" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
+            <Button Content="Обновить список" Command="{Binding RefreshInstalledCommand}"/>
+          </StackPanel>
+          <TextBlock Text="{Binding InstalledStatus}" FontSize="12.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+          <ItemsControl ItemsSource="{Binding Installed}" IsVisible="{Binding HasInstalled}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:InstalledRuntimeRow">
+                <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1" CornerRadius="11" Padding="13" Margin="0,0,0,8">
+                  <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                    <Border Grid.Column="0" Background="#2E9E5B" CornerRadius="6" Padding="7,2" VerticalAlignment="Center"
+                            IsVisible="{Binding IsActive}">
+                      <TextBlock Text="✓ активный" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Text="{Binding ExePath}" FontSize="11" Foreground="{DynamicResource InkSoftBrush}" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="{Binding SizeText}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    <Button Grid.Column="3" Content="Удалить" VerticalAlignment="Center"
+                            Command="{Binding $parent[ItemsControl].((vm:RuntimesViewModel)DataContext).DeleteRuntimeCommand}"
+                            CommandParameter="{Binding}"/>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
       <Border Classes="card">
         <StackPanel Spacing="14">
           <StackPanel Orientation="Horizontal" Spacing="10">
@@ -24,7 +58,10 @@
             <ComboBox MinWidth="160" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"/>
             <Button Content="{l:T common.find}" Classes="primary" Command="{Binding ListReleasesCommand}"/>
           </StackPanel>
-          <TextBlock Text="{Binding Status}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+          <TextBlock Text="{Binding Status}" FontSize="12.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+          <Button Content="⭐ Установить рекомендованную (самую свежую)" Classes="primary"
+                  HorizontalAlignment="Left" IsVisible="{Binding HasReleases}"
+                  Command="{Binding InstallRecommendedCommand}"/>
           <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                   CornerRadius="9" Padding="11" IsVisible="{Binding RuntimePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
             <TextBlock Text="{Binding RuntimePath}" FontSize="12" TextWrapping="Wrap"/>
@@ -36,7 +73,13 @@
                         BorderThickness="1" CornerRadius="11" Padding="13" Margin="0,0,0,8">
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="2">
-                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" Padding="7,2"
+                                IsVisible="{Binding IsRecommended}">
+                          <TextBlock Text="⭐ Рекомендуется" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
+                        </Border>
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                      </StackPanel>
                       <TextBlock Text="{Binding Subtitle}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}"/>
                     </StackPanel>
                     <Button Grid.Column="1" Content="{l:T common.install}" Classes="primary"

@@ -406,6 +406,7 @@ public sealed partial class ChatViewModel : ViewModelBase
             {
                 SelectedProvider = ProviderRegistry.ForKind(ProviderKind.Local);
                 UseEndpoint(result.BaseUrl, result.Model);
+                RunningModel.Instance.Set(result.BaseUrl, result.Model);
                 ServerStatus = "✓ Локальный сервер готов. Можно писать сообщения.";
             }
             else
@@ -428,6 +429,7 @@ public sealed partial class ChatViewModel : ViewModelBase
     {
         _serverLauncher.Stop();
         IsServerRunning = false;
+        RunningModel.Instance.Clear();
         ServerStatus = "Локальный сервер остановлен.";
     }
 
@@ -494,15 +496,35 @@ public sealed partial class ChatViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Tensor-split пропорционально VRAM при двух+ видеокартах (например 3090+3060 → 24,12).</summary>
+    /// <summary>
+    /// Tensor-split пропорционально VRAM при двух+ ДИСКРЕТНЫХ картах (например 3090+3060 → 24,12).
+    /// Встроенная графика исключается — иначе CUDA-сборка с N≠числу карт падает.
+    /// </summary>
     private string? ComputeTensorSplit()
     {
-        if (_hardware is null || _hardware.Gpus.Count < 2)
+        if (_hardware is null)
         {
             return null;
         }
 
-        return string.Join(",", _hardware.Gpus.Select(g => ((int)System.Math.Round(System.Math.Max(1.0, g.TotalGb))).ToString()));
+        bool IsNvidia(string n) =>
+            n.Contains("nvidia", System.StringComparison.OrdinalIgnoreCase)
+            || n.Contains("geforce", System.StringComparison.OrdinalIgnoreCase)
+            || n.Contains("rtx", System.StringComparison.OrdinalIgnoreCase);
+
+        // Предпочитаем NVIDIA-карты (CUDA видит только их); иначе — карты с заметной VRAM (≥4 ГБ).
+        var cards = _hardware.Gpus.Where(g => IsNvidia(g.Name)).ToList();
+        if (cards.Count < 2)
+        {
+            cards = _hardware.Gpus.Where(g => g.TotalGb >= 4.0).ToList();
+        }
+
+        if (cards.Count < 2)
+        {
+            return null;
+        }
+
+        return string.Join(",", cards.Select(g => ((int)System.Math.Round(System.Math.Max(1.0, g.TotalGb))).ToString()));
     }
 
     [RelayCommand]

@@ -4,11 +4,13 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Launcher.Agents.Commands;
 using Launcher.Agents.Discovery;
 using Launcher.Core.Scenarios;
+using Launcher.Desktop.Services;
 
 namespace Launcher.Desktop.ViewModels.Pages;
 
@@ -33,6 +35,12 @@ public sealed partial class AgentsViewModel : ViewModelBase
     [ObservableProperty]
     private string _status = "Нажмите «Проверить агенты», чтобы увидеть, что установлено.";
 
+    [ObservableProperty]
+    private bool _isModelRunning;
+
+    [ObservableProperty]
+    private string _connectionHint = "Модель не запущена. Откройте вкладку «Чат» → «Локальный сервер» и запустите модель — адрес и название подставятся сюда автоматически.";
+
     public ObservableCollection<AgentStatusRow> Agents { get; } = new();
 
     public IReadOnlyList<AgentKind> AgentKinds { get; } =
@@ -53,6 +61,33 @@ public sealed partial class AgentsViewModel : ViewModelBase
     public AgentsViewModel(AgentCliCatalogService catalog)
     {
         _catalog = catalog;
+        RunningModel.Instance.Changed += (_, _) => Dispatcher.UIThread.Post(SyncFromRunningModel);
+        SyncFromRunningModel();
+    }
+
+    /// <summary>Автоподстановка адреса и id модели из запущенного локального сервера.</summary>
+    private void SyncFromRunningModel()
+    {
+        var running = RunningModel.Instance;
+        IsModelRunning = running.IsRunning;
+
+        if (running.IsRunning)
+        {
+            BaseUrl = NormalizeAgentBaseUrl(running.BaseUrl);
+            Model = string.IsNullOrWhiteSpace(running.ModelId) ? "local-model" : running.ModelId;
+            ConnectionHint = $"✓ Подключено к запущенной модели: {Model}  ({BaseUrl}). Агент будет отвечать через неё.";
+        }
+        else
+        {
+            ConnectionHint = "Модель не запущена. Откройте вкладку «Чат» → «Локальный сервер» и запустите модель — " +
+                "адрес и название подставятся сюда автоматически. Либо впишите онлайн-адрес и ключ вручную.";
+        }
+    }
+
+    private static string NormalizeAgentBaseUrl(string baseUrl)
+    {
+        var url = baseUrl.TrimEnd('/');
+        return url.EndsWith("/v1", StringComparison.OrdinalIgnoreCase) ? url : url + "/v1";
     }
 
     [RelayCommand]
@@ -109,6 +144,17 @@ public sealed partial class AgentsViewModel : ViewModelBase
         try
         {
             var config = await new AgentProjectConfigWriter().WriteAsync(request, CancellationToken.None);
+
+            // Конфиг записан; но если адрес локальный, а сервер не запущен — запускать агента бессмысленно.
+            var isLocalUrl = BaseUrl.Contains("127.0.0.1", StringComparison.OrdinalIgnoreCase)
+                || BaseUrl.Contains("localhost", StringComparison.OrdinalIgnoreCase);
+            if (isLocalUrl && !IsModelRunning)
+            {
+                Status = $"Конфиг записан ({config.Message}), но локальная модель не запущена — агенту не к чему подключиться. " +
+                    "Откройте «Чат» → «Локальный сервер», запустите модель и вернитесь сюда (адрес подставится сам).";
+                return;
+            }
+
             var plan = BuildPlan(request);
 
             var psi = new ProcessStartInfo(plan.Executable)

@@ -50,6 +50,35 @@ public sealed class HuggingFaceModelClient(HttpClient httpClient)
             .ToArray();
     }
 
+    /// <summary>
+    /// Возвращает список GGUF-файлов репозитория с реальными размерами (из дерева файлов).
+    /// Поиск таких размеров не отдаёт, поэтому для оценки «влезет/не влезет» нужен отдельный запрос.
+    /// </summary>
+    public async Task<IReadOnlyList<HuggingFaceSiblingFile>> GetGgufFilesAsync(
+        string repoId,
+        CancellationToken cancellationToken)
+    {
+        var escaped = string.Join("/", repoId
+            .Split('/', StringSplitOptions.RemoveEmptyEntries)
+            .Select(Uri.EscapeDataString));
+        var uri = $"/api/models/{escaped}/tree/main?recursive=true";
+
+        var entries = await httpClient.GetFromJsonAsync<List<ApiTreeEntry>>(uri, cancellationToken) ?? [];
+
+        return entries
+            .Where(e => e.Type == "file"
+                && e.Path is not null
+                && e.Path.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase))
+            .Select(e => new HuggingFaceSiblingFile(e.Path!, NormalizeSize(e.Lfs?.Size ?? e.Size)))
+            .ToArray();
+    }
+
+    private sealed record ApiTreeEntry(
+        [property: JsonPropertyName("type")] string? Type,
+        [property: JsonPropertyName("path")] string? Path,
+        [property: JsonPropertyName("size")] long? Size,
+        [property: JsonPropertyName("lfs")] ApiLfs? Lfs);
+
     private static string SortName(HuggingFaceSort sort) => sort switch
     {
         HuggingFaceSort.Downloads => "downloads",
