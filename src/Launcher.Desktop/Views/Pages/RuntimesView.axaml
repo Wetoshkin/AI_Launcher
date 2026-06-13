@@ -1,45 +1,45 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Launcher.Desktop.ViewModels.Pages"
+             xmlns:l="using:Launcher.Desktop.Localization"
              x:Class="Launcher.Desktop.Views.Pages.RuntimesView"
              x:DataType="vm:RuntimesViewModel">
   <ScrollViewer>
-    <StackPanel Margin="32" Spacing="18" VerticalAlignment="Top" MaxWidth="980" HorizontalAlignment="Left">
+    <StackPanel Margin="40,32" Spacing="22" VerticalAlignment="Top" MaxWidth="1000" HorizontalAlignment="Left">
       <StackPanel Spacing="6">
-        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold"/>
-        <TextBlock Text="{Binding Description}" FontSize="13" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+        <TextBlock Text="{l:T runtimes.title}" FontSize="30" FontWeight="ExtraBold"/>
+        <TextBlock Text="{Binding Description}" FontSize="13.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
       </StackPanel>
 
       <Border Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBrush}"
-              BorderThickness="1" CornerRadius="12" Padding="14">
-        <TextBlock Text="{Binding Recommendation}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"/>
+              BorderThickness="1" CornerRadius="14" Padding="16">
+        <TextBlock Text="{Binding Recommendation}" FontSize="13.5" FontWeight="SemiBold" TextWrapping="Wrap"
+                   Foreground="{DynamicResource AccentBrush}"/>
       </Border>
 
-      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="1" CornerRadius="14" Padding="20">
-        <StackPanel Spacing="12">
+      <Border Classes="card">
+        <StackPanel Spacing="14">
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <TextBlock Text="Движок" VerticalAlignment="Center"/>
+            <TextBlock Text="{l:T runtimes.engine}" VerticalAlignment="Center"/>
             <ComboBox MinWidth="160" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"/>
-            <Button Content="Найти сборки" Classes="primary" Command="{Binding ListReleasesCommand}"/>
+            <Button Content="{l:T common.find}" Classes="primary" Command="{Binding ListReleasesCommand}"/>
           </StackPanel>
           <TextBlock Text="{Binding Status}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
-          <Border Background="White" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                  CornerRadius="8" Padding="10" IsVisible="{Binding RuntimePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                  CornerRadius="9" Padding="11" IsVisible="{Binding RuntimePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
             <TextBlock Text="{Binding RuntimePath}" FontSize="12" TextWrapping="Wrap"/>
           </Border>
-
           <ItemsControl ItemsSource="{Binding Releases}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:RuntimeReleaseRow">
-                <Border Background="White" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                        CornerRadius="10" Padding="12" Margin="0,0,0,8">
+                <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1" CornerRadius="11" Padding="13" Margin="0,0,0,8">
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="2">
                       <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                       <TextBlock Text="{Binding Subtitle}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}"/>
                     </StackPanel>
-                    <Button Grid.Column="1" Content="Скачать и установить" Classes="primary"
+                    <Button Grid.Column="1" Content="{l:T common.install}" Classes="primary"
                             VerticalAlignment="Center"
                             Command="{Binding $parent[ItemsControl].((vm:RuntimesViewModel)DataContext).DownloadAndInstallCommand}"
                             CommandParameter="{Binding}"/>

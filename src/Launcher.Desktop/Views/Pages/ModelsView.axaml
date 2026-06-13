@@ -1,39 +1,38 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Launcher.Desktop.ViewModels.Pages"
+             xmlns:l="using:Launcher.Desktop.Localization"
              x:Class="Launcher.Desktop.Views.Pages.ModelsView"
              x:DataType="vm:ModelsViewModel">
   <ScrollViewer>
-    <StackPanel Margin="32" Spacing="18" VerticalAlignment="Top" MaxWidth="980" HorizontalAlignment="Left">
+    <StackPanel Margin="40,32" Spacing="22" VerticalAlignment="Top" MaxWidth="1000" HorizontalAlignment="Left">
       <StackPanel Spacing="6">
-        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold"/>
-        <TextBlock Text="{Binding Description}" FontSize="13" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+        <TextBlock Text="{l:T models.title}" FontSize="30" FontWeight="ExtraBold"/>
+        <TextBlock Text="{Binding Description}" FontSize="13.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
       </StackPanel>
 
-      <!-- Локальные модели -->
-      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="1" CornerRadius="14" Padding="20">
-        <StackPanel Spacing="12">
-          <TextBlock Text="Локальные GGUF-модели" FontSize="16" FontWeight="Bold"/>
+      <Border Classes="card">
+        <StackPanel Spacing="14">
+          <TextBlock Text="{l:T models.local}" FontSize="17" FontWeight="Bold"/>
           <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-            <TextBox Grid.Column="0" Text="{Binding ModelsFolder}" PlaceholderText="Папка с моделями, напр. D:\AI\Models"/>
-            <Button Grid.Column="1" Content="Обзор…" Command="{Binding BrowseFolderCommand}"/>
-            <Button Grid.Column="2" Content="Сканировать" Classes="primary" Command="{Binding ScanCommand}"/>
+            <TextBox Grid.Column="0" Text="{Binding ModelsFolder}" PlaceholderText="D:\AI\Models"/>
+            <Button Grid.Column="1" Content="{l:T common.browse}" Command="{Binding BrowseFolderCommand}"/>
+            <Button Grid.Column="2" Content="{l:T common.scan}" Classes="primary" Command="{Binding ScanCommand}"/>
           </Grid>
           <TextBlock Text="{Binding LocalStatus}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}"/>
           <ItemsControl ItemsSource="{Binding LocalModels}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:LocalModelRow">
-                <Border Background="White" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                        CornerRadius="10" Padding="12" Margin="0,0,0,8">
+                <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1" CornerRadius="11" Padding="13" Margin="0,0,0,8">
                   <Grid ColumnDefinitions="*,Auto,Auto">
                     <StackPanel Grid.Column="0" Spacing="2">
                       <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                       <TextBlock Text="{Binding Path}" FontSize="11" Foreground="{DynamicResource InkSoftBrush}" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
-                    <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="6"
-                            Padding="8,3" Margin="8,0" VerticalAlignment="Center">
-                      <TextBlock Text="{Binding Quant}" FontSize="12"/>
+                    <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="7"
+                            Padding="9,3" Margin="8,0" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Quant}" FontSize="12" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold"/>
                     </Border>
                     <TextBlock Grid.Column="2" Text="{Binding Size}" VerticalAlignment="Center" FontWeight="SemiBold"/>
                   </Grid>
@@ -44,26 +43,24 @@
         </StackPanel>
       </Border>
 
-      <!-- Hugging Face -->
-      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="1" CornerRadius="14" Padding="20">
-        <StackPanel Spacing="12">
-          <TextBlock Text="Поиск моделей на Hugging Face" FontSize="16" FontWeight="Bold"/>
+      <Border Classes="card">
+        <StackPanel Spacing="14">
+          <TextBlock Text="{l:T models.hf}" FontSize="17" FontWeight="Bold"/>
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-            <TextBox Grid.Column="0" Text="{Binding SearchQuery}" PlaceholderText="напр. qwen2.5 coder"/>
-            <Button Grid.Column="1" Content="Искать" Classes="primary" Command="{Binding SearchHuggingFaceCommand}"/>
+            <TextBox Grid.Column="0" Text="{Binding SearchQuery}" PlaceholderText="qwen2.5 coder"/>
+            <Button Grid.Column="1" Content="{l:T common.search}" Classes="primary" Command="{Binding SearchHuggingFaceCommand}"/>
           </Grid>
           <TextBlock Text="{Binding SearchStatus}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}"/>
           <ItemsControl ItemsSource="{Binding SearchResults}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:HfModelRow">
-                <Border Background="White" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                        CornerRadius="10" Padding="12" Margin="0,0,0,8">
+                <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1" CornerRadius="11" Padding="13" Margin="0,0,0,8">
                   <StackPanel Spacing="3">
                     <TextBlock Text="{Binding Id}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                     <StackPanel Orientation="Horizontal" Spacing="14">
                       <TextBlock Text="{Binding Stats}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}"/>
-                      <TextBlock Text="{Binding Quants}" FontSize="12" Foreground="#8C4508"/>
+                      <TextBlock Text="{Binding Quants}" FontSize="12" Foreground="{DynamicResource AccentBrush}"/>
                     </StackPanel>
                   </StackPanel>
                 </Border>

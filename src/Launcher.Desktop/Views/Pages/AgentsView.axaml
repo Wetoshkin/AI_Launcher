@@ -2,28 +2,28 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Launcher.Desktop.ViewModels.Pages"
              xmlns:ctrl="using:Launcher.Desktop.Controls"
+             xmlns:l="using:Launcher.Desktop.Localization"
              x:Class="Launcher.Desktop.Views.Pages.AgentsView"
              x:DataType="vm:AgentsViewModel">
   <ScrollViewer>
-    <StackPanel Margin="32" Spacing="18" VerticalAlignment="Top" MaxWidth="980" HorizontalAlignment="Left">
+    <StackPanel Margin="40,32" Spacing="22" VerticalAlignment="Top" MaxWidth="1000" HorizontalAlignment="Left">
       <StackPanel Spacing="6">
-        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold"/>
-        <TextBlock Text="{Binding Description}" FontSize="13" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+        <TextBlock Text="{l:T agents.title}" FontSize="30" FontWeight="ExtraBold"/>
+        <TextBlock Text="{Binding Description}" FontSize="13.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
       </StackPanel>
 
-      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="1" CornerRadius="14" Padding="20">
-        <StackPanel Spacing="12">
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <TextBlock Text="Установленные агенты" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
-            <Button Content="Проверить агенты" Classes="primary" Command="{Binding CheckAgentsCommand}"/>
+      <Border Classes="card">
+        <StackPanel Spacing="14">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <TextBlock Text="{l:T agents.installed}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
+            <Button Content="{l:T agents.check}" Classes="primary" Command="{Binding CheckAgentsCommand}"/>
           </StackPanel>
           <TextBlock Text="{Binding Status}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
           <ItemsControl ItemsSource="{Binding Agents}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:AgentStatusRow">
-                <Border Background="White" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                        CornerRadius="8" Padding="10" Margin="0,0,0,6">
+                <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,7">
                   <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="{Binding Status}" FontWeight="SemiBold"/>
@@ -35,27 +35,26 @@
         </StackPanel>
       </Border>
 
-      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="1" CornerRadius="14" Padding="20">
-        <StackPanel Spacing="12">
-          <TextBlock Text="Запустить агента в проекте" FontSize="16" FontWeight="Bold"/>
-          <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="8">
+      <Border Classes="card">
+        <StackPanel Spacing="14">
+          <TextBlock Text="{l:T agents.launch}" FontSize="17" FontWeight="Bold"/>
+          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="9" ColumnSpacing="10">
             <TextBlock Grid.Row="0" Grid.Column="0" Text="Проект" VerticalAlignment="Center"/>
             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-              <TextBox Grid.Column="0" Text="{Binding ProjectFolder}" PlaceholderText="папка вашего проекта"/>
-              <Button Grid.Column="1" Content="Обзор…" Command="{Binding BrowseProjectCommand}"/>
+              <TextBox Grid.Column="0" Text="{Binding ProjectFolder}" PlaceholderText="папка проекта"/>
+              <Button Grid.Column="1" Content="{l:T common.browse}" Command="{Binding BrowseProjectCommand}"/>
             </Grid>
             <TextBlock Grid.Row="1" Grid.Column="0" Text="Агент" VerticalAlignment="Center"/>
             <ComboBox Grid.Row="1" Grid.Column="1" MinWidth="180" HorizontalAlignment="Left"
                       ItemsSource="{Binding AgentKinds}" SelectedItem="{Binding SelectedAgent}"/>
             <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-              <TextBlock Text="Адрес модели" VerticalAlignment="Center"/>
+              <TextBlock Text="Адрес" VerticalAlignment="Center"/>
               <ctrl:HelpHint Title="Источник модели"
-                             Text="Локально: запустите сервер во вкладке Чат и используйте http://127.0.0.1:8080/v1. Онлайн: укажите адрес провайдера (через прокси при необходимости)."/>
+                             Text="Локально: запустите сервер во вкладке Чат и используйте http://127.0.0.1:8080/v1. Онлайн: укажите адрес провайдера."/>
             </StackPanel>
             <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto,160" ColumnSpacing="8">
               <TextBox Grid.Column="0" Text="{Binding BaseUrl}"/>
-              <TextBlock Grid.Column="1" Text="Модель" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="{l:T chat.model}" VerticalAlignment="Center"/>
               <TextBox Grid.Column="2" Text="{Binding Model}"/>
             </Grid>
             <Button Grid.Row="3" Grid.Column="1" Content="Подготовить конфиг и запустить" Classes="primary"

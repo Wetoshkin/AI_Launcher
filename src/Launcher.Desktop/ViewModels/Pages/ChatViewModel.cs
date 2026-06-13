@@ -41,6 +41,11 @@ public sealed partial class ChatViewModel : ViewModelBase
     private string _serverStatus = "Локальный сервер не запущен.";
 
     [ObservableProperty]
+    private string _serverLog = string.Empty;
+
+    private readonly System.Collections.Generic.Queue<string> _logLines = new();
+
+    [ObservableProperty]
     private bool _isServerStarting;
 
     [ObservableProperty]
@@ -214,6 +219,8 @@ public sealed partial class ChatViewModel : ViewModelBase
 
         IsServerStarting = true;
         ServerStatus = "Запускаем локальный сервер и загружаем модель в память…";
+        _logLines.Clear();
+        ServerLog = string.Empty;
 
         try
         {
@@ -222,7 +229,7 @@ public sealed partial class ChatViewModel : ViewModelBase
                 LocalModelPath.Trim(),
                 ServerPort,
                 contextTokens: SelectedPreset.ContextTokens,
-                log: line => ServerStatus = Shorten(line),
+                log: AppendServerLog,
                 CancellationToken.None);
 
             IsServerRunning = _serverLauncher.IsRunning;
@@ -256,8 +263,27 @@ public sealed partial class ChatViewModel : ViewModelBase
         ServerStatus = "Локальный сервер остановлен.";
     }
 
-    private static string Shorten(string line) =>
-        line.Length > 120 ? line[..120] + "…" : line;
+    /// <summary>Дописывает строку лога сервера (с маршалингом в UI-поток, с ограничением размера).</summary>
+    private void AppendServerLog(string line)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            _logLines.Enqueue(line);
+            while (_logLines.Count > 500)
+            {
+                _logLines.Dequeue();
+            }
+
+            ServerLog = string.Join("\n", _logLines);
+        });
+    }
+
+    [RelayCommand]
+    private void ClearLog()
+    {
+        _logLines.Clear();
+        ServerLog = string.Empty;
+    }
 
     [RelayCommand]
     private void Stop() => _cts?.Cancel();
