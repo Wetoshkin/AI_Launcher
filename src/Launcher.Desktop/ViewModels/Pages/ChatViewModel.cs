@@ -230,7 +230,9 @@ public sealed partial class ChatViewModel : ViewModelBase
                 ServerPort,
                 contextTokens: SelectedPreset.ContextTokens,
                 log: AppendServerLog,
-                CancellationToken.None);
+                CancellationToken.None,
+                antiLoop: true,
+                tensorSplit: ComputeTensorSplit());
 
             IsServerRunning = _serverLauncher.IsRunning;
 
@@ -283,6 +285,17 @@ public sealed partial class ChatViewModel : ViewModelBase
     {
         _logLines.Clear();
         ServerLog = string.Empty;
+    }
+
+    /// <summary>Tensor-split пропорционально VRAM при двух+ видеокартах (например 3090+3060 → 24,12).</summary>
+    private string? ComputeTensorSplit()
+    {
+        if (_hardware is null || _hardware.Gpus.Count < 2)
+        {
+            return null;
+        }
+
+        return string.Join(",", _hardware.Gpus.Select(g => ((int)System.Math.Round(System.Math.Max(1.0, g.TotalGb))).ToString()));
     }
 
     [RelayCommand]

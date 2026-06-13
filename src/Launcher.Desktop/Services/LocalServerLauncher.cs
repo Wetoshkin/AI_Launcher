@@ -43,7 +43,9 @@ public sealed class LocalServerLauncher
         int port,
         int contextTokens,
         Action<string>? log,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool antiLoop = true,
+        string? tensorSplit = null)
     {
         Stop();
 
@@ -66,14 +68,28 @@ public sealed class LocalServerLauncher
             RedirectStandardError = true,
             WorkingDirectory = Path.GetDirectoryName(runtimeExe),
         };
-        foreach (var arg in new[]
-                 {
-                     "-m", modelPath,
-                     "--alias", modelId,
-                     "--ctx-size", contextTokens.ToString(),
-                     "--port", port.ToString(),
-                     "--host", "127.0.0.1",
-                 })
+        var args = new System.Collections.Generic.List<string>
+        {
+            "-m", modelPath,
+            "--alias", modelId,
+            "--ctx-size", contextTokens.ToString(),
+            "--port", port.ToString(),
+            "--host", "127.0.0.1",
+        };
+        if (antiLoop)
+        {
+            // DRY — лучший безопасный приём против зацикливания (см. ресёрч).
+            args.Add("--dry-multiplier");
+            args.Add("0.8");
+        }
+        if (!string.IsNullOrWhiteSpace(tensorSplit))
+        {
+            // Распределение по нескольким видеокартам пропорционально VRAM.
+            args.Add("--tensor-split");
+            args.Add(tensorSplit!);
+        }
+
+        foreach (var arg in args)
         {
             psi.ArgumentList.Add(arg);
         }
