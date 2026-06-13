@@ -2,12 +2,15 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Launcher.Desktop.Controls.HelpHint"
              VerticalAlignment="Center">
-  <Border x:Name="Badge" Width="18" Height="18" CornerRadius="9"
+  <Button x:Name="Badge" Width="19" Height="19" CornerRadius="10" Padding="0"
           Background="{DynamicResource AccentSoftBrush}"
-          BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-          Cursor="Help">
+          BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
+          Cursor="Help" VerticalAlignment="Center" ToolTip.Tip="Нажмите для подсказки">
     <TextBlock Text="?" FontSize="12" FontWeight="Bold"
-               Foreground="#8C4508"
+               Foreground="{DynamicResource AccentBrush}"
                HorizontalAlignment="Center" VerticalAlignment="Center"/>
-  </Border>
+    <Button.Flyout>
+      <Flyout Placement="Bottom"/>
+    </Button.Flyout>
+  </Button>
 </UserControl>

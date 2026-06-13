@@ -8,7 +8,17 @@ namespace Launcher.Desktop.ViewModels.Pages;
 /// </summary>
 public sealed record ResponseStyle(string Name, string Args)
 {
-    public override string ToString() => Name;
+    public override string ToString() => Display;
+
+    /// <summary>Имя с указанием температуры — чтобы было видно, что зашито в пресет.</summary>
+    public string Display
+    {
+        get
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(Args, @"--temp\s+([0-9.]+)");
+            return m.Success ? $"{Name} · t={m.Groups[1].Value}" : $"{Name} · t≈0.8 (по умолчанию)";
+        }
+    }
 
     public static IReadOnlyList<ResponseStyle> All { get; } = new[]
     {

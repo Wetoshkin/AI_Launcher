@@ -14,9 +14,9 @@ public sealed record KvCacheMode(string Name, string? Args, double Factor)
     public static IReadOnlyList<KvCacheMode> All { get; } = new[]
     {
         new KvCacheMode("Полный (f16) — макс. точность", null, 1.0),
-        new KvCacheMode("Половина (q8_0) — рекомендуется",
+        new KvCacheMode("Половина (q8_0, вкл. Flash Attention) — рекомендуется",
             "--cache-type-k q8_0 --cache-type-v q8_0", 0.5),
-        new KvCacheMode("Четверть (q4_0) — максимум контекста",
+        new KvCacheMode("Четверть (q4_0, вкл. Flash Attention) — максимум контекста",
             "--cache-type-k q4_0 --cache-type-v q4_0", 0.25),
     };
 
