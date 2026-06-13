@@ -29,6 +29,11 @@ public static class LocalizationStrings
         ["home.runtimes.desc"] = "Установить движок llama.cpp под ваше железо.",
         ["home.hw.title"] = "Ваше железо",
         ["home.mem.title"] = "Как модель ложится в память",
+        ["onboard.title"] = "Начните за 3 шага",
+        ["onboard.step1"] = "1. Установите движок (llama.cpp) под ваше железо.",
+        ["onboard.step2"] = "2. Скачайте модель GGUF или укажите свою.",
+        ["onboard.step3"] = "3. Запустите модель во вкладке «Чат» и общайтесь.",
+        ["onboard.cta"] = "Установить движок",
 
         ["settings.title"] = "Настройки",
         ["settings.subtitle"] = "Внешний вид, язык и проверка совместимости настроек.",
@@ -102,6 +107,11 @@ public static class LocalizationStrings
         ["home.runtimes.desc"] = "Install a llama.cpp engine for your hardware.",
         ["home.hw.title"] = "Your hardware",
         ["home.mem.title"] = "How the model fits in memory",
+        ["onboard.title"] = "Get started in 3 steps",
+        ["onboard.step1"] = "1. Install an engine (llama.cpp) for your hardware.",
+        ["onboard.step2"] = "2. Download a GGUF model or pick your own.",
+        ["onboard.step3"] = "3. Run the model on the Chat tab and start chatting.",
+        ["onboard.cta"] = "Install engine",
 
         ["settings.title"] = "Settings",
         ["settings.subtitle"] = "Appearance, language and settings compatibility checks.",

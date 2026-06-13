@@ -45,7 +45,8 @@ public sealed class LocalServerLauncher
         Action<string>? log,
         CancellationToken cancellationToken,
         bool antiLoop = true,
-        string? tensorSplit = null)
+        string? tensorSplit = null,
+        string? extraArgs = null)
     {
         Stop();
 
@@ -88,6 +89,14 @@ public sealed class LocalServerLauncher
             args.Add("--tensor-split");
             args.Add(tensorSplit!);
         }
+        if (!string.IsNullOrWhiteSpace(extraArgs))
+        {
+            // Режим Эксперт: произвольные дополнительные флаги llama-server.
+            foreach (var token in SplitArgs(extraArgs!))
+            {
+                args.Add(token);
+            }
+        }
 
         foreach (var arg in args)
         {
@@ -119,6 +128,40 @@ public sealed class LocalServerLauncher
 
         return new LocalServerStartResult(ready.IsReady, baseUrl, modelId,
             ready.IsReady ? "Сервер готов." : "Сервер не ответил вовремя: " + ready.Message);
+    }
+
+    /// <summary>Разбивает строку аргументов на токены с учётом кавычек.</summary>
+    public static System.Collections.Generic.IReadOnlyList<string> SplitArgs(string input)
+    {
+        var result = new System.Collections.Generic.List<string>();
+        var current = new System.Text.StringBuilder();
+        var inQuotes = false;
+        foreach (var ch in input)
+        {
+            if (ch == '"')
+            {
+                inQuotes = !inQuotes;
+            }
+            else if (char.IsWhiteSpace(ch) && !inQuotes)
+            {
+                if (current.Length > 0)
+                {
+                    result.Add(current.ToString());
+                    current.Clear();
+                }
+            }
+            else
+            {
+                current.Append(ch);
+            }
+        }
+
+        if (current.Length > 0)
+        {
+            result.Add(current.ToString());
+        }
+
+        return result;
     }
 
     public void Stop()

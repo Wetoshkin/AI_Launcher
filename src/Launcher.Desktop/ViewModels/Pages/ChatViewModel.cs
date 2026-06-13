@@ -35,6 +35,9 @@ public sealed partial class ChatViewModel : ViewModelBase
     [ObservableProperty]
     private LaunchPreset _selectedPreset = LaunchPreset.Default;
 
+    [ObservableProperty]
+    private string _expertArgs = string.Empty;
+
     public IReadOnlyList<LaunchPreset> Presets => LaunchPreset.All;
 
     [ObservableProperty]
@@ -232,7 +235,8 @@ public sealed partial class ChatViewModel : ViewModelBase
                 log: AppendServerLog,
                 CancellationToken.None,
                 antiLoop: true,
-                tensorSplit: ComputeTensorSplit());
+                tensorSplit: ComputeTensorSplit(),
+                extraArgs: string.IsNullOrWhiteSpace(ExpertArgs) ? null : ExpertArgs.Trim());
 
             IsServerRunning = _serverLauncher.IsRunning;
 

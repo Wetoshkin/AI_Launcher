@@ -39,6 +39,19 @@
         </Panel>
       </Border>
 
+      <!-- Онбординг (первый запуск) -->
+      <Border IsVisible="{Binding ShowOnboarding}" CornerRadius="16" Padding="20"
+              Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1">
+        <StackPanel Spacing="9">
+          <TextBlock Text="{l:T onboard.title}" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"/>
+          <TextBlock Text="{l:T onboard.step1}" FontSize="13.5"/>
+          <TextBlock Text="{l:T onboard.step2}" FontSize="13.5"/>
+          <TextBlock Text="{l:T onboard.step3}" FontSize="13.5"/>
+          <Button Content="{l:T onboard.cta}" Classes="primary" HorizontalAlignment="Left"
+                  Command="{Binding OpenRuntimesCommand}" Margin="0,4,0,0"/>
+        </StackPanel>
+      </Border>
+
       <!-- Основные действия -->
       <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
         <Button Grid.Column="0" Classes="action actionPrimary" Command="{Binding OpenLocalChatCommand}">
