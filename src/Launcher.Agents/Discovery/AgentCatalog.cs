@@ -22,7 +22,8 @@ public sealed record AgentInfo(
     AgentInstallMethod Install,
     string? Package,
     string DocsUrl,
-    string Note);
+    string Note,
+    string? InstallExtraArgs = null);
 
 /// <summary>Единый каталог поддерживаемых кодинг-агентов.</summary>
 public static class AgentCatalog
@@ -60,8 +61,9 @@ public static class AgentCatalog
             "Это расширение для VS Code / JetBrains — работает внутри редактора, не из терминала."),
 
         AgentKind.Pi => new(kind, "Pi", "pi",
-            AgentInstallMethod.Manual, null, "https://github.com/badlogic/pi-mono",
-            "Уточните способ установки на странице проекта."),
+            AgentInstallMethod.Npm, "@earendil-works/pi-coding-agent", "https://pi.dev/docs/latest",
+            "Кодинг-агент Pi. Ставится через npm (нужен Node.js). После запуска выберите модель командой /model → local.",
+            InstallExtraArgs: "--ignore-scripts"),
 
         AgentKind.Claw => new(kind, "Claw", "claw",
             AgentInstallMethod.Manual, null, "https://github.com",

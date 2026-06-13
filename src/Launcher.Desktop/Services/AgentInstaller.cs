@@ -24,10 +24,11 @@ public static class AgentInstaller
                 $"{info.Display} ставится вручную — открыл инструкцию в браузере. {info.Note}");
         }
 
+        var extra = string.IsNullOrWhiteSpace(info.InstallExtraArgs) ? string.Empty : info.InstallExtraArgs + " ";
         var command = info.Install switch
         {
-            AgentInstallMethod.Npm => $"npm install -g {info.Package}",
-            AgentInstallMethod.Pip => $"python -m pip install -U {info.Package}",
+            AgentInstallMethod.Npm => $"npm install -g {extra}{info.Package}",
+            AgentInstallMethod.Pip => $"python -m pip install -U {extra}{info.Package}",
             _ => null,
         };
 

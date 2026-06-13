@@ -21,8 +21,49 @@ public sealed class AgentProjectConfigWriter
             AgentKind.Kilo => await WriteKiloAsync(request, cancellationToken),
             AgentKind.OpenCode => await WriteOpenCodeAsync(request, cancellationToken),
             AgentKind.Crush => await WriteCrushAsync(request, cancellationToken),
+            AgentKind.Pi => await WritePiAsync(request, cancellationToken),
             _ => new AgentProjectConfigResult(false, null, $"Для {request.Agent} проектный конфиг пока не требуется.")
         };
+    }
+
+    private static async Task<AgentProjectConfigResult> WritePiAsync(
+        AgentLaunchRequest request,
+        CancellationToken cancellationToken)
+    {
+        LocalOpenAiCommandRequestValidator.Validate(request);
+
+        var dir = Path.Combine(request.ProjectPath, ".pi", "extensions");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, "al-launcher.ts");
+
+        var modelId = StripLocalProviderPrefix(request.ProviderModel);
+        var baseUrl = request.BaseUrl.Replace("\"", "\\\"");
+        var safeModel = modelId.Replace("\"", "\\\"");
+
+        var extension =
+            "import type { ExtensionAPI } from \"@earendil-works/pi-coding-agent\";\n\n" +
+            "// Сгенерировано AI Launcher Studio: локальный OpenAI-совместимый провайдер.\n" +
+            "export default function (pi: ExtensionAPI) {\n" +
+            "  pi.registerProvider(\"local\", {\n" +
+            $"    baseUrl: \"{baseUrl}\",\n" +
+            "    apiKey: \"local\",\n" +
+            "    api: \"openai-completions\",\n" +
+            "    models: [\n" +
+            "      {\n" +
+            $"        id: \"{safeModel}\",\n" +
+            $"        name: \"{safeModel}\",\n" +
+            "        reasoning: false,\n" +
+            "        input: [\"text\"],\n" +
+            "        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },\n" +
+            "        contextWindow: 128000,\n" +
+            "        maxTokens: 4096\n" +
+            "      }\n" +
+            "    ]\n" +
+            "  });\n" +
+            "}\n";
+
+        await File.WriteAllTextAsync(path, extension, cancellationToken);
+        return new AgentProjectConfigResult(true, path, ".pi/extensions/al-launcher.ts создан (провайдер «local»).");
     }
 
     private static async Task<AgentProjectConfigResult> WriteCrushAsync(
