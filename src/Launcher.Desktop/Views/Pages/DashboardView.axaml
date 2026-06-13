@@ -25,7 +25,7 @@
   </UserControl.Styles>
 
   <ScrollViewer>
-    <StackPanel Margin="40,32" Spacing="22" VerticalAlignment="Top" MaxWidth="960" HorizontalAlignment="Left">
+    <StackPanel Margin="40,32" Spacing="22" VerticalAlignment="Top">
 
       <!-- Hero -->
       <Border CornerRadius="20" ClipToBounds="True" Height="172" BoxShadow="0 10 30 0 #2A000000">

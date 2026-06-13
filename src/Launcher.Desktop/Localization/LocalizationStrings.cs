@@ -25,8 +25,8 @@ public static class LocalizationStrings
         ["home.online.desc"] = "Подключитесь к облачной модели (OpenAI, Anthropic и др.) по API-ключу.",
         ["home.models.title"] = "Модели",
         ["home.models.desc"] = "Скачать или выбрать GGUF-модель.",
-        ["home.runtimes.title"] = "Среды (runtime)",
-        ["home.runtimes.desc"] = "Установить движок llama.cpp под ваше железо.",
+        ["home.runtimes.title"] = "Среды (движок)",
+        ["home.runtimes.desc"] = "Установить движок (llama.cpp) под вашу видеокарту.",
         ["home.hw.title"] = "Ваше железо",
         ["home.mem.title"] = "Как модель ложится в память",
         ["onboard.title"] = "Начните за 3 шага",
@@ -81,7 +81,7 @@ public static class LocalizationStrings
         ["agents.installed"] = "Установленные агенты",
         ["agents.check"] = "Проверить агенты",
         ["agents.launch"] = "Запустить агента в проекте",
-        ["runtimes.title"] = "Среды (runtime)",
+        ["runtimes.title"] = "Среды (движок)",
         ["runtimes.engine"] = "Движок",
     };
 

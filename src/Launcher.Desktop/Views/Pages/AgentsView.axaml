@@ -70,15 +70,20 @@
           <StackPanel Spacing="13">
             <TextBlock Text="4. Параметры запуска" FontSize="16" FontWeight="Bold"/>
 
-            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="9" ColumnSpacing="12">
-              <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="11" ColumnSpacing="12">
+              <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Top" Margin="0,6,0,0">
                 <TextBlock Text="Размер контекста" VerticalAlignment="Center"/>
                 <ctrl:HelpHint Title="Контекст"
-                               Text="Сколько токенов «помнит» модель. Кодинг-агенты шлют большой системный промпт и куски файлов — при маленьком контексте модель начинает «компактить» историю и не успевает ответить. Для агентов берите 32K и больше."/>
+                               Text="Сколько токенов «помнит» модель. Кодинг-агенты шлют большой системный промпт и куски файлов — при маленьком контексте модель начинает «компактить» историю и не успевает ответить. По умолчанию подставляется родной контекст модели; для агентов 32K — хороший старт. Больше родного ставить можно, только если хватает видеопамяти."/>
               </StackPanel>
               <StackPanel Grid.Row="0" Grid.Column="1" Spacing="3">
-                <ComboBox MinWidth="240" HorizontalAlignment="Left" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}"/>
-                <TextBlock Text="{Binding SelectedPreset.Hint}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <NumericUpDown Width="160" Minimum="512" Maximum="1048576" Increment="2048"
+                                 Value="{Binding ContextTokens}" FormatString="0"/>
+                  <ComboBox MinWidth="220" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}"
+                            VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="{Binding ContextHint}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
               </StackPanel>
 
               <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -89,9 +94,23 @@
               <ComboBox Grid.Row="1" Grid.Column="1" MinWidth="280" HorizontalAlignment="Left"
                         ItemsSource="{Binding KvCacheModes}" SelectedItem="{Binding SelectedKvCache}"/>
 
-              <TextBlock Grid.Row="2" Grid.Column="0" Text="Стиль ответов" VerticalAlignment="Center"/>
+              <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Text="Стиль ответов" VerticalAlignment="Center"/>
+                <ctrl:HelpHint Title="Стиль ответов = сэмплинг (в т.ч. температура)"
+                               Text="Это пресеты параметров генерации. Температура: «Сбалансированный» — по умолчанию модели (~0.8); «Точный (код)» — 0.6 (меньше фантазии, стабильнее код); «Творческий» — 1.0 + XTC (разнообразнее). Ниже можно задать температуру вручную — она переопределит пресет."/>
+              </StackPanel>
               <ComboBox Grid.Row="2" Grid.Column="1" MinWidth="200" HorizontalAlignment="Left"
                         ItemsSource="{Binding Styles}" SelectedItem="{Binding SelectedStyle}"/>
+
+              <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Text="Температура" VerticalAlignment="Center"/>
+                <ctrl:HelpHint Title="Температура"
+                               Text="Насколько «случайны» ответы: ниже (0.2–0.6) — точнее и стабильнее (хорошо для кода), выше (0.8–1.2) — разнообразнее и креативнее. 0 = взять из выбранного стиля."/>
+              </StackPanel>
+              <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <NumericUpDown Width="130" Minimum="0" Maximum="2" Increment="0.1" Value="{Binding Temperature}" FormatString="0.0"/>
+                <TextBlock Text="0 = как в стиле" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource InkSoftBrush}"/>
+              </StackPanel>
             </Grid>
 
             <!-- Прогноз памяти -->
@@ -103,14 +122,14 @@
                 <ItemsControl ItemsSource="{Binding GpuFill}" IsVisible="{Binding HasGpuFill}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:GpuFillRow">
-                      <Grid ColumnDefinitions="160,*,Auto" Margin="0,0,0,7" ColumnSpacing="10">
+                      <Grid ColumnDefinitions="150,*,140" Margin="0,0,0,7" ColumnSpacing="10">
                         <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center" FontSize="12.5"
                                    TextTrimming="CharacterEllipsis"/>
                         <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Percent}" Height="10"
                                      VerticalAlignment="Center"
                                      Foreground="{Binding Level, Converter={x:Static conv:FitConverters.LevelToBrush}}"/>
                         <TextBlock Grid.Column="2" Text="{Binding Text}" VerticalAlignment="Center" FontSize="12"
-                                   Foreground="{DynamicResource InkSoftBrush}"/>
+                                   Foreground="{DynamicResource InkSoftBrush}" TextAlignment="Right"/>
                       </Grid>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
@@ -130,15 +149,14 @@
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <CheckBox Content="Размышления (reasoning)" IsChecked="{Binding Reasoning}" VerticalAlignment="Center"/>
-                <TextBlock Text="Глубина" VerticalAlignment="Center"/>
-                <ComboBox MinWidth="150" SelectedIndex="{Binding ReasoningDepthIndex}" IsEnabled="{Binding Reasoning}">
+                <TextBlock Text="Бюджет размышлений" VerticalAlignment="Center"/>
+                <ComboBox MinWidth="160" SelectedIndex="{Binding ReasoningDepthIndex}" IsEnabled="{Binding Reasoning}">
                   <ComboBoxItem><TextBlock Text="Без лимита"/></ComboBoxItem>
-                  <ComboBoxItem><TextBlock Text="Средне"/></ComboBoxItem>
-                  <ComboBoxItem><TextBlock Text="Кратко"/></ComboBoxItem>
+                  <ComboBoxItem><TextBlock Text="Средне (~2K)"/></ComboBoxItem>
+                  <ComboBoxItem><TextBlock Text="Кратко (~512)"/></ComboBoxItem>
                 </ComboBox>
-                <ctrl:HelpHint HelpId="reasoning"/>
-                <ctrl:HelpHint Title="MTP / спекулятивная генерация"
-                               Text="Multi-Token Prediction (MTP) и спекулятивное декодирование ускоряют генерацию. Авто-определения для GGUF нет: если модель поддерживает draft-модель, задайте её в «своих аргументах» (--model-draft …). Для большинства моделей не требуется."/>
+                <ctrl:HelpHint Title="Размышления (reasoning)"
+                               Text="Работает только на моделях с поддержкой рассуждений (DeepSeek-R1, QwQ, Qwen3-thinking и т.п.). На обычных моделях галочка ничего не даст. «Бюджет» — лимит токенов на размышление: «Без лимита» — думает сколько нужно, «Кратко» — экономит время и память."/>
               </StackPanel>
             </StackPanel>
 
@@ -146,27 +164,58 @@
             <StackPanel Spacing="10">
               <CheckBox Content="Экспертные параметры запуска" IsChecked="{Binding ShowExpert}" FontWeight="SemiBold"/>
               <StackPanel Spacing="10" IsVisible="{Binding ShowExpert}" Margin="2,0,0,0">
-                <WrapPanel Orientation="Horizontal">
-                  <CheckBox Content="Flash Attention" IsChecked="{Binding FlashAttention}" Margin="0,0,18,6"/>
-                  <CheckBox Content="Держать в ОЗУ (mlock)" IsChecked="{Binding KeepInRam}" Margin="0,0,18,6"/>
-                  <CheckBox Content="Без mmap" IsChecked="{Binding NoMmap}" Margin="0,0,18,6"/>
-                  <CheckBox Content="Сплит по строкам (мульти-GPU)" IsChecked="{Binding SplitModeRow}" Margin="0,0,18,6"/>
-                  <CheckBox Content="Подробный лог" IsChecked="{Binding VerboseLog}" Margin="0,0,18,6"/>
-                </WrapPanel>
+                <StackPanel Spacing="4">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <CheckBox Content="Flash Attention" IsChecked="{Binding FlashAttention}"/>
+                    <ctrl:HelpHint Title="Flash Attention"
+                                   Text="Ускоряет внимание и экономит память. Нужен для сжатого KV-кэша (включается автоматически). На старых GPU может не работать — тогда отключите."/>
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <CheckBox Content="Держать в ОЗУ (mlock)" IsChecked="{Binding KeepInRam}"/>
+                    <ctrl:HelpHint Title="mlock"
+                                   Text="Запрещает выгрузку модели из памяти в файл подкачки — стабильнее скорость, но занимает ОЗУ жёстко."/>
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <CheckBox Content="Без mmap" IsChecked="{Binding NoMmap}"/>
+                    <ctrl:HelpHint Title="no-mmap"
+                                   Text="Грузит модель в память целиком, а не через отображение файла. Иногда быстрее на медленных дисках, но дольше стартует."/>
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <CheckBox Content="Сплит по строкам (мульти-GPU)" IsChecked="{Binding SplitModeRow}"/>
+                    <ctrl:HelpHint Title="split-mode row"
+                                   Text="Другой способ деления модели между видеокартами (по строкам тензоров). Иногда быстрее на 2+ GPU. По умолчанию llama.cpp делит по слоям."/>
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <CheckBox Content="Подробный лог" IsChecked="{Binding VerboseLog}"/>
+                    <ctrl:HelpHint Title="verbose"
+                                   Text="Больше деталей в консоли сервера — полезно при диагностике ошибок запуска."/>
+                  </StackPanel>
+                </StackPanel>
+
+                <StackPanel Spacing="5">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Черновая модель (MTP / спекулятивная генерация)" VerticalAlignment="Center" FontSize="12.5"/>
+                    <ctrl:HelpHint Title="MTP / спекулятивная генерация"
+                                   Text="Ускоряет генерацию: маленькая «черновая» модель предлагает токены, основная их проверяет. Авто-определения MTP в GGUF нет. Укажите путь к маленькой GGUF той же архитектуры — приложение добавит --model-draft. Для большинства задач не требуется."/>
+                  </StackPanel>
+                  <TextBox Text="{Binding DraftModelPath}" PlaceholderText="путь к маленькой .gguf (необязательно)" AcceptsReturn="False"/>
+                </StackPanel>
+
                 <StackPanel Spacing="5">
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="Свои аргументы llama-server" VerticalAlignment="Center" FontSize="12.5"/>
                     <ctrl:HelpHint Title="Дополнительные аргументы"
-                                   Text="Полный контроль для профи: --temp 0.6 --top-k 20; --xtc-probability 0.5; --model-draft путь (спекулятивная генерация). Анти-зацикливание (DRY) уже включено."/>
+                                   Text="Полный контроль для профи: --temp 0.6 --top-k 20; --xtc-probability 0.5; --top-p 0.95. Анти-зацикливание (DRY) уже включено."/>
                   </StackPanel>
-                  <TextBox Text="{Binding ExpertArgs}" PlaceholderText="--temp 0.6 --top-k 20 --xtc-probability 0.5" AcceptsReturn="False"/>
+                  <TextBox Text="{Binding ExpertArgs}" PlaceholderText="--top-k 20 --top-p 0.95" AcceptsReturn="False"/>
                 </StackPanel>
               </StackPanel>
             </StackPanel>
 
             <!-- Движок и порт + лог-стрим -->
-            <Expander Header="Движок, порт, лог-стрим">
-              <StackPanel Spacing="9" Margin="0,8,0,0">
+            <StackPanel Spacing="10">
+              <CheckBox Content="Движок, порт, лог-стрим" IsChecked="{Binding ShowEngine}" FontWeight="SemiBold"/>
+              <StackPanel Spacing="9" IsVisible="{Binding ShowEngine}" Margin="2,0,0,0">
                 <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" RowSpacing="8" ColumnSpacing="10">
                   <TextBlock Grid.Row="0" Grid.Column="0" Text="{l:T chat.engine}" VerticalAlignment="Center"/>
                   <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding RuntimeExe}" PlaceholderText="llama-server.exe (из вкладки «Среды»)"/>
@@ -180,7 +229,17 @@
                 </StackPanel>
                 <TextBlock Text="{Binding LogStreamStatus}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
               </StackPanel>
-            </Expander>
+            </StackPanel>
+
+            <!-- Итоговая команда запуска (обновляется в реальном времени) -->
+            <StackPanel Spacing="5">
+              <TextBlock Text="Команда запуска (что выполнит приложение):" FontSize="12.5" FontWeight="SemiBold"/>
+              <Border CornerRadius="8" Padding="10" Background="{DynamicResource SurfaceAltBrush}"
+                      BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                <SelectableTextBlock Text="{Binding CommandPreview}" FontFamily="Cascadia Code,Consolas,monospace"
+                                     FontSize="11.5" TextWrapping="Wrap" Foreground="{DynamicResource InkBrush}"/>
+              </Border>
+            </StackPanel>
           </StackPanel>
         </Border>
 

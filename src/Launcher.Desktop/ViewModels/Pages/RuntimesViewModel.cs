@@ -55,10 +55,11 @@ public sealed partial class RuntimesViewModel : ViewModelBase
     public IReadOnlyList<RuntimeReleaseProfile> Profiles { get; } =
         new[] { RuntimeReleaseProfile.Vulkan, RuntimeReleaseProfile.Cuda, RuntimeReleaseProfile.Cpu, RuntimeReleaseProfile.Rocm };
 
-    public string Title => "Среды (runtime)";
+    public string Title => "Среды (движок)";
     public string Description =>
-        "Движок llama.cpp выполняет модель. Скачайте сборку под ваше железо. " +
-        "llama.cpp работает в 2–3 раза быстрее Ollama при той же модели.";
+        "«Движок» — это программа llama.cpp (её сервер llama-server), которая запускает GGUF-модель " +
+        "на вашем ПК. Нужно один раз скачать готовую сборку под вашу видеокарту: CUDA — для NVIDIA, " +
+        "Vulkan — для Intel/AMD, CPU — без видеокарты. llama.cpp работает в 2–3 раза быстрее Ollama при той же модели.";
 
     public RuntimesViewModel()
         : this(BuildDefaultCatalog(), new RuntimeReleaseDownloadService(BuildDownloadHttp()), new RuntimePackageInstaller())

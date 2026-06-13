@@ -9,6 +9,7 @@ public sealed class LaunchProfile
     public string Agent { get; set; } = "OpenCode";
     public string ProjectFolder { get; set; } = string.Empty;
     public string Style { get; set; } = string.Empty;
+    public double Temperature { get; set; }
     public bool MoeAuto { get; set; } = true;
     public int MoeCpuLayers { get; set; }
     public bool Reasoning { get; set; }

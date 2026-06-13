@@ -1,5 +1,6 @@
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+using Launcher.Runtimes.LlamaCpp;
 
 namespace Launcher.Desktop.Converters;
 
@@ -9,6 +10,17 @@ public static class FitConverters
     /// <summary>Зелёный, если модель запущена, иначе серый.</summary>
     public static readonly FuncValueConverter<bool, IBrush> RunningToBrush =
         new(running => new SolidColorBrush(Color.Parse(running ? "#2E9E5B" : "#8A8A90")));
+
+    /// <summary>Понятная новичку подпись типа сборки движка.</summary>
+    public static readonly FuncValueConverter<RuntimeReleaseProfile, string> ProfileLabel =
+        new(p => p switch
+        {
+            RuntimeReleaseProfile.Cuda => "NVIDIA — CUDA (для GeForce / RTX)",
+            RuntimeReleaseProfile.Vulkan => "Intel / AMD — Vulkan",
+            RuntimeReleaseProfile.Cpu => "Без видеокарты — CPU",
+            RuntimeReleaseProfile.Rocm => "AMD на Linux — ROCm",
+            _ => p.ToString()
+        });
 
     public static readonly FuncValueConverter<int, IBrush> LevelToBrush =
         new(level => new SolidColorBrush(Color.Parse(level switch
