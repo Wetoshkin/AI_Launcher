@@ -2,7 +2,7 @@
 ; Per-user install (no admin), Start Menu + Desktop shortcuts, clean uninstaller.
 
 #define MyAppName "AI Launcher Studio"
-#define MyAppVersion "1.0.3"
+#define MyAppVersion "1.0.4"
 #define MyAppPublisher "Wetoshkin"
 #define MyAppURL "https://github.com/Wetoshkin/AI_Launcher"
 #define MyAppExeName "Launcher.Desktop.exe"
@@ -26,6 +26,10 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+; Авто-обновление из приложения: закрыть запущенный экземпляр и снова запустить его.
+AppMutex=AILauncherStudio_SingleInstance
+CloseApplications=yes
+RestartApplications=yes
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 

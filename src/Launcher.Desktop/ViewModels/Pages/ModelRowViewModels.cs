@@ -36,6 +36,9 @@ public sealed partial class HfModelRow : ObservableObject
     private bool _isBusy;
 
     [ObservableProperty]
+    private double _downloadProgress;
+
+    [ObservableProperty]
     private string _downloadStatus = string.Empty;
 
     public HfModelRow(string id, string stats, string quants, bool hasGguf)

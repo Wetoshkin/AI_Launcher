@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Launcher.Desktop.Localization;
 using Launcher.Desktop.Navigation;
+using Launcher.Desktop.Services;
 using Launcher.Desktop.ViewModels.Pages;
 using Launcher.Runtimes.Hardware;
 
@@ -14,7 +15,6 @@ namespace Launcher.Desktop.ViewModels;
 public sealed partial class ShellViewModel : ViewModelBase
 {
     private readonly DashboardViewModel _dashboard;
-    private readonly ChatViewModel _chat = new();
     private readonly ModelsViewModel _models = new();
     private readonly RuntimesViewModel _runtimes = new();
     private readonly AgentsViewModel _agents = new();
@@ -29,9 +29,10 @@ public sealed partial class ShellViewModel : ViewModelBase
     [ObservableProperty]
     private string _hardwareSummary = "…";
 
+    private SystemHardware? _hardware;
+
     public IReadOnlyList<NavigationItem> NavigationItems { get; }
 
-    public ChatViewModel Chat => _chat;
     public ModelsViewModel Models => _models;
     public RuntimesViewModel Runtimes => _runtimes;
     public AgentsViewModel Agents => _agents;
@@ -45,7 +46,6 @@ public sealed partial class ShellViewModel : ViewModelBase
         NavigationItems = new List<NavigationItem>
         {
             new("home", "🏠", _dashboard),
-            new("chat", "💬", _chat),
             new("models", "📦", _models),
             new("agents", "🤖", _agents),
             new("runtimes", "⚙", _runtimes),
@@ -55,26 +55,37 @@ public sealed partial class ShellViewModel : ViewModelBase
         _selectedItem = NavigationItems[0];
         _currentPage = _selectedItem.Page;
 
-        // Выбор локальной модели в «Моделях» открывает её в «Чате».
+        // Применяем сохранённую настройку учёта встройки до загрузки железа.
+        GpuSettings.Instance.UseIntegratedGpu = UiPreferences.Load().UseIntegratedGpu;
+        GpuSettings.Instance.Changed += (_, _) =>
+        {
+            if (_hardware is not null)
+            {
+                HardwareSummary = BuildHardwareSummary(_hardware);
+            }
+        };
+
+        // Выбор локальной модели в «Моделях» открывает её во вкладке «Агенты».
         _models.UseLocalModel = path =>
         {
-            _chat.LocalModelPath = path;
-            SelectByKey("chat");
+            _agents.LocalModelPath = path;
+            SelectByKey("agents");
         };
     }
 
     public async Task LoadHardwareAsync(IHardwareProbe probe, CancellationToken cancellationToken = default)
     {
         var hardware = await probe.GetHardwareAsync(cancellationToken);
+        _hardware = hardware;
         _dashboard.ApplyHardware(hardware);
         _runtimes.ApplyHardware(hardware);
-        _chat.ApplyHardware(hardware);
+        _agents.ApplyHardware(hardware);
         _models.ApplyHardware(hardware);
 
         HardwareSummary = BuildHardwareSummary(hardware);
     }
 
-    private static string BuildHardwareSummary(Launcher.Runtimes.Hardware.SystemHardware hw)
+    private static string BuildHardwareSummary(SystemHardware hw)
     {
         var ram = $"ОЗУ: {hw.RamTotalGb:0.0} ГБ";
         if (!hw.HasGpu)
@@ -82,19 +93,28 @@ public sealed partial class ShellViewModel : ViewModelBase
             return $"CPU (без видеокарты)\n{ram}";
         }
 
-        // Самые мощные карты — первыми (по объёму видеопамяти).
-        var top = hw.Gpus
+        var useIntegrated = GpuSettings.Instance.UseIntegratedGpu;
+
+        // Все карты, самые мощные — первыми; встройку помечаем отдельно.
+        var lines = hw.Gpus
             .OrderByDescending(g => g.TotalGb)
-            .Take(2)
-            .Select(g => $"{ShortGpuName(g.Name)} · {g.TotalGb:0.0} ГБ")
+            .Select(g =>
+            {
+                if (GpuClassifier.IsIntegrated(g))
+                {
+                    var tag = useIntegrated ? " · встройка (вкл.)" : " · встройка (не исп.)";
+                    return $"{ShortGpuName(g.Name)} · {g.TotalGb:0.0} ГБ{tag}";
+                }
+
+                return $"{ShortGpuName(g.Name)} · {g.TotalGb:0.0} ГБ";
+            })
             .ToList();
 
-        if (hw.Gpus.Count > 2)
-        {
-            top.Add($"…и ещё {hw.Gpus.Count - 2}");
-        }
+        var vram = GpuClassifier.UsableVramGb(hw, useIntegrated);
+        lines.Add($"Видеопамять для LLM: {vram:0.0} ГБ");
+        lines.Add(ram);
 
-        return string.Join("\n", top) + "\n" + ram;
+        return string.Join("\n", lines);
     }
 
     private static string ShortGpuName(string name) => name

@@ -1,29 +1,10 @@
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Launcher.Desktop.ViewModels.Pages;
-using Launcher.Online;
 
 namespace Launcher.Desktop.Tests.Pages;
 
 public class ChatFeaturesTests
 {
-    private sealed class CapturingClient : IChatClient
-    {
-        public IReadOnlyList<ChatMessage>? Captured { get; private set; }
-
-        public async IAsyncEnumerable<string> StreamAsync(
-            ChatEndpoint endpoint, IReadOnlyList<ChatMessage> messages,
-            [EnumeratorCancellation] CancellationToken cancellationToken)
-        {
-            Captured = messages;
-            await Task.Yield();
-            yield return "ok";
-        }
-    }
-
     [Theory]
     [InlineData("Qwen3-30B-A3B-Q4_K_M.gguf", true)]
     [InlineData("Mixtral-8x7B-Instruct-Q4_K_M.gguf", true)]
@@ -32,21 +13,7 @@ public class ChatFeaturesTests
     [InlineData("llama-3.1-8b-q4_k_m.gguf", false)]
     public void Detects_moe_models_by_name(string file, bool expected)
     {
-        Assert.Equal(expected, ChatViewModel.IsLikelyMoE(file));
-    }
-
-    [Fact]
-    public async Task System_prompt_is_prepended_to_request()
-    {
-        var client = new CapturingClient();
-        var vm = new ChatViewModel(client) { SystemPrompt = "Будь краток.", Input = "привет" };
-
-        await vm.SendCommand.ExecuteAsync(null);
-
-        Assert.NotNull(client.Captured);
-        Assert.Equal("system", client.Captured![0].Role);
-        Assert.Equal("Будь краток.", client.Captured[0].Content);
-        Assert.Contains(client.Captured, m => m.Role == "user" && m.Content == "привет");
+        Assert.Equal(expected, AgentsViewModel.IsLikelyMoE(file));
     }
 
     [Fact]

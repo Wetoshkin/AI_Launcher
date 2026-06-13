@@ -8,7 +8,7 @@ public class PageViewModelTests
     public void Dashboard_has_title() => Assert.Equal("Главная", new DashboardViewModel().Title);
 
     [Fact]
-    public void Chat_has_title() => Assert.Equal("Чат", new ChatViewModel().Title);
+    public void Agents_has_title() => Assert.Equal("Агенты", new AgentsViewModel().Title);
 
     [Fact]
     public void Models_has_title() => Assert.Equal("Модели", new ModelsViewModel().Title);

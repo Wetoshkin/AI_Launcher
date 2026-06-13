@@ -25,10 +25,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private bool _autoStart;
 
     [ObservableProperty]
+    private bool _useIntegratedGpu;
+
+    [ObservableProperty]
     private string _updateStatus = string.Empty;
 
     [ObservableProperty]
     private bool _isCheckingUpdate;
+
+    [ObservableProperty]
+    private bool _canInstallUpdate;
+
+    [ObservableProperty]
+    private bool _isInstallingUpdate;
+
+    private System.Uri? _installerUrl;
 
     public string Title => Loc.Instance["settings.title"];
     public string AppVersion => "AI Launcher Studio " + AppInfo.Version;
@@ -42,6 +53,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Loc.Instance.Language = LanguageValues[_languageIndex];
         ThemeService.Apply(ThemeValues[_themeIndex]);
         _autoStart = AutoStartService.IsEnabled();
+        _useIntegratedGpu = _prefs.UseIntegratedGpu;
+        GpuSettings.Instance.UseIntegratedGpu = _prefs.UseIntegratedGpu;
         _initializing = false;
     }
 
@@ -82,19 +95,65 @@ public sealed partial class SettingsViewModel : ViewModelBase
         AutoStartService.SetEnabled(value);
     }
 
+    partial void OnUseIntegratedGpuChanged(bool value)
+    {
+        if (_initializing)
+        {
+            return;
+        }
+
+        GpuSettings.Instance.UseIntegratedGpu = value;
+        _prefs.UseIntegratedGpu = value;
+        _prefs.Save();
+    }
+
     [RelayCommand]
     private async Task CheckUpdatesAsync()
     {
         IsCheckingUpdate = true;
         UpdateStatus = "…";
+        CanInstallUpdate = false;
+        _installerUrl = null;
         try
         {
             var result = await new AppUpdateService().CheckAsync(CancellationToken.None);
             UpdateStatus = result.Message;
+            _installerUrl = result.InstallerUrl;
+            CanInstallUpdate = result.HasUpdate && result.InstallerUrl is not null;
         }
         finally
         {
             IsCheckingUpdate = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallUpdateAsync()
+    {
+        if (_installerUrl is null || IsInstallingUpdate)
+        {
+            return;
+        }
+
+        IsInstallingUpdate = true;
+        try
+        {
+            var service = new AppUpdateService();
+            var progress = new System.Progress<double>(p =>
+                UpdateStatus = $"Скачиваю обновление… {p * 100:0}%");
+
+            var installerPath = await service.DownloadInstallerAsync(_installerUrl, progress, CancellationToken.None);
+
+            UpdateStatus = "Запускаю установку. Приложение закроется и автоматически откроется обновлённым.";
+            AppUpdateService.LaunchInstaller(installerPath);
+            // Выйти по-настоящему, чтобы установщик мог заменить файлы (иначе процесс держит exe).
+            await Task.Delay(1500);
+            App.ForceExit();
+        }
+        catch (System.Exception ex)
+        {
+            UpdateStatus = "Не удалось обновиться автоматически: " + ex.Message + " Скачайте установщик вручную: " + AppInfo.ReleasesUrl;
+            IsInstallingUpdate = false;
         }
     }
 }

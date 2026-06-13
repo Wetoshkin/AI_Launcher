@@ -9,6 +9,7 @@ public sealed class UiPreferences
 {
     public string Theme { get; set; } = "Light";   // Light | Dark | System
     public string Language { get; set; } = "ru";    // ru | en
+    public bool UseIntegratedGpu { get; set; }       // учитывать встройку под LLM (по умолчанию нет)
 
     private static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

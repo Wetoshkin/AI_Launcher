@@ -39,6 +39,11 @@
         <StackPanel Spacing="12">
           <TextBlock Text="{l:T settings.system}" FontSize="17" FontWeight="Bold"/>
           <CheckBox Content="{l:T settings.autostart}" IsChecked="{Binding AutoStart}"/>
+          <StackPanel Spacing="2">
+            <CheckBox Content="Использовать встроенную видеокарту для LLM" IsChecked="{Binding UseIntegratedGpu}"/>
+            <TextBlock Text="По умолчанию выключено: встройка слабее и нужна Windows для отрисовки. Включите, только если у вас нет дискретной видеокарты или хотите добавить её память в расчёт."
+                       FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap" Margin="28,0,0,0"/>
+          </StackPanel>
         </StackPanel>
       </Border>
 
@@ -48,8 +53,10 @@
           <TextBlock Text="{l:T settings.updates.title}" FontSize="17" FontWeight="Bold"/>
           <StackPanel Orientation="Horizontal" Spacing="14">
             <TextBlock Text="{Binding AppVersion}" VerticalAlignment="Center" Foreground="{DynamicResource InkSoftBrush}"/>
-            <Button Content="{l:T settings.updates.check}" Classes="primary" Command="{Binding CheckUpdatesCommand}"
+            <Button Content="{l:T settings.updates.check}" Command="{Binding CheckUpdatesCommand}"
                     IsEnabled="{Binding !IsCheckingUpdate}"/>
+            <Button Content="⬇ Обновить сейчас" Classes="primary" Command="{Binding InstallUpdateCommand}"
+                    IsVisible="{Binding CanInstallUpdate}" IsEnabled="{Binding !IsInstallingUpdate}"/>
           </StackPanel>
           <TextBlock Text="{Binding UpdateStatus}" FontSize="12.5" Foreground="{DynamicResource InkSoftBrush}"
                      TextWrapping="Wrap" IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
