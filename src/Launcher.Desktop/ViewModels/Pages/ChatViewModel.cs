@@ -155,6 +155,16 @@ public sealed partial class ChatViewModel : ViewModelBase
     private string _serverLog = string.Empty;
 
     private readonly System.Collections.Generic.Queue<string> _logLines = new();
+    private readonly LogStreamServer _logStream = new();
+
+    [ObservableProperty]
+    private bool _logStreamEnabled;
+
+    [ObservableProperty]
+    private int _logStreamPort = 8770;
+
+    [ObservableProperty]
+    private string _logStreamStatus = "Лог-стрим выключен.";
 
     [ObservableProperty]
     private bool _isServerStarting;
@@ -390,6 +400,7 @@ public sealed partial class ChatViewModel : ViewModelBase
                 extraArgs: ComposeServerArgs());
 
             IsServerRunning = _serverLauncher.IsRunning;
+            _logStream.SetModel(result.Model);
 
             if (result.Ready)
             {
@@ -423,6 +434,7 @@ public sealed partial class ChatViewModel : ViewModelBase
     /// <summary>Дописывает строку лога сервера (с маршалингом в UI-поток, с ограничением размера).</summary>
     private void AppendServerLog(string line)
     {
+        _logStream.Append(line);
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             _logLines.Enqueue(line);
@@ -440,6 +452,46 @@ public sealed partial class ChatViewModel : ViewModelBase
     {
         _logLines.Clear();
         ServerLog = string.Empty;
+    }
+
+    partial void OnLogStreamEnabledChanged(bool value)
+    {
+        if (value)
+        {
+            if (_logStream.Start(LogStreamPort))
+            {
+                LogStreamStatus = $"Лог-стрим работает: {_logStream.Url} (откройте в браузере с любого устройства этого ПК)";
+            }
+            else
+            {
+                LogStreamStatus = "Не удалось запустить лог-стрим (порт занят?). Смените порт.";
+                _logStreamEnabled = false;
+                OnPropertyChanged(nameof(LogStreamEnabled));
+            }
+        }
+        else
+        {
+            _logStream.Stop();
+            LogStreamStatus = "Лог-стрим выключен.";
+        }
+    }
+
+    [RelayCommand]
+    private void OpenLogStream()
+    {
+        if (!_logStream.IsRunning)
+        {
+            return;
+        }
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_logStream.Url) { UseShellExecute = true });
+        }
+        catch
+        {
+            // браузер не открылся
+        }
     }
 
     /// <summary>Tensor-split пропорционально VRAM при двух+ видеокартах (например 3090+3060 → 24,12).</summary>

@@ -34,6 +34,14 @@
         </StackPanel>
       </Border>
 
+      <!-- Система -->
+      <Border Classes="card">
+        <StackPanel Spacing="12">
+          <TextBlock Text="{l:T settings.system}" FontSize="17" FontWeight="Bold"/>
+          <CheckBox Content="{l:T settings.autostart}" IsChecked="{Binding AutoStart}"/>
+        </StackPanel>
+      </Border>
+
       <!-- Обновления -->
       <Border Classes="card">
         <StackPanel Spacing="12">

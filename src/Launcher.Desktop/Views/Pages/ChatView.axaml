@@ -86,6 +86,19 @@
               </StackPanel>
             </Expander>
 
+            <!-- Лог-стрим в браузере -->
+            <StackPanel Spacing="6">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <CheckBox Content="Лог-стрим в браузере" IsChecked="{Binding LogStreamEnabled}" VerticalAlignment="Center"/>
+                <TextBlock Text="Порт" VerticalAlignment="Center"/>
+                <TextBox Width="78" Text="{Binding LogStreamPort}"/>
+                <Button Content="Открыть в браузере" Command="{Binding OpenLogStreamCommand}" IsEnabled="{Binding LogStreamEnabled}"/>
+                <ctrl:HelpHint Title="Лог-стрим"
+                               Text="Запускает локальную веб-страницу с логами llama-server. Откройте показанный адрес в браузере (или с другого устройства этого ПК) и смотрите логи в реальном времени. Также доступен HTTP API: /api/logs и /api/status."/>
+              </StackPanel>
+              <TextBlock Text="{Binding LogStreamStatus}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+            </StackPanel>
+
             <!-- Лог-консоль сервера -->
             <Expander Header="{l:T chat.log}" IsVisible="{Binding ServerLog, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
               <Grid RowDefinitions="Auto,*" Margin="0,8,0,0">

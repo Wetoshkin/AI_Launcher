@@ -27,6 +27,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private int _languageIndex;
 
     [ObservableProperty]
+    private bool _autoStart;
+
+    [ObservableProperty]
     private string _updateStatus = string.Empty;
 
     [ObservableProperty]
@@ -45,6 +48,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
         Loc.Instance.Language = LanguageValues[_languageIndex];
         ThemeService.Apply(ThemeValues[_themeIndex]);
+        _autoStart = AutoStartService.IsEnabled();
         _initializing = false;
 
         SampleFindings = BuildSampleFindings();
@@ -75,6 +79,16 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _prefs.Language = lang;
         _prefs.Save();
         OnPropertyChanged(nameof(Title));
+    }
+
+    partial void OnAutoStartChanged(bool value)
+    {
+        if (_initializing)
+        {
+            return;
+        }
+
+        AutoStartService.SetEnabled(value);
     }
 
     [RelayCommand]
