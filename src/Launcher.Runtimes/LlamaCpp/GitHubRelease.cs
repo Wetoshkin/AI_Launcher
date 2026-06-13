@@ -22,7 +22,8 @@ public sealed record RuntimeReleasePackage(
     Uri DownloadUrl,
     long SizeBytes,
     bool Prerelease,
-    RuntimeReleaseAssetSource Source = RuntimeReleaseAssetSource.Stable)
+    RuntimeReleaseAssetSource Source = RuntimeReleaseAssetSource.Stable,
+    Uri? CudartUrl = null)
 {
     public string SourceLabel => RuntimeReleaseAssetSources.ToLabel(Source);
 }

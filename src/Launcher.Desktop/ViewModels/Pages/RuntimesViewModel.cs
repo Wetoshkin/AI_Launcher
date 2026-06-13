@@ -8,12 +8,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Launcher.Desktop.Services;
 using Launcher.Runtimes.Hardware;
 using Launcher.Runtimes.LlamaCpp;
 
 namespace Launcher.Desktop.ViewModels.Pages;
 
-public sealed record RuntimeReleaseRow(string Title, string Subtitle, RuntimeReleasePackage Package);
+public sealed record RuntimeReleaseRow(string Title, string Subtitle, RuntimeReleasePackage Package, bool IsRecommended = false);
+
+public sealed record InstalledRuntimeRow(string Name, string FolderPath, string ExePath, string SizeText, bool IsActive);
 
 public sealed partial class RuntimesViewModel : ViewModelBase
 {
@@ -37,7 +40,17 @@ public sealed partial class RuntimesViewModel : ViewModelBase
     [ObservableProperty]
     private string _runtimePath = string.Empty;
 
+    [ObservableProperty]
+    private bool _hasReleases;
+
+    [ObservableProperty]
+    private bool _hasInstalled;
+
+    [ObservableProperty]
+    private string _installedStatus = string.Empty;
+
     public ObservableCollection<RuntimeReleaseRow> Releases { get; } = new();
+    public ObservableCollection<InstalledRuntimeRow> Installed { get; } = new();
 
     public IReadOnlyList<RuntimeReleaseProfile> Profiles { get; } =
         new[] { RuntimeReleaseProfile.Vulkan, RuntimeReleaseProfile.Cuda, RuntimeReleaseProfile.Cpu, RuntimeReleaseProfile.Rocm };
@@ -65,6 +78,86 @@ public sealed partial class RuntimesViewModel : ViewModelBase
         _catalog = catalog;
         _downloader = downloader;
         _installer = installer;
+        RefreshInstalled();
+    }
+
+    private static string RuntimeRoot => Path.Combine(AppDataRoot, "runtimes");
+
+    /// <summary>Сканирует уже установленные движки и показывает их с возможностью удаления.</summary>
+    [RelayCommand]
+    private void RefreshInstalled()
+    {
+        Installed.Clear();
+        var active = LocalServerLauncher.FindInstalledRuntime();
+
+        try
+        {
+            if (!Directory.Exists(RuntimeRoot))
+            {
+                HasInstalled = false;
+                InstalledStatus = "Пока ничего не установлено. Найдите и установите сборку ниже.";
+                return;
+            }
+
+            foreach (var dir in Directory.EnumerateDirectories(RuntimeRoot))
+            {
+                var exe = Directory.EnumerateFiles(dir, "llama-server.exe", SearchOption.AllDirectories)
+                    .FirstOrDefault();
+                if (exe is null)
+                {
+                    continue;
+                }
+
+                long size = 0;
+                try
+                {
+                    size = Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories)
+                        .Sum(f => new FileInfo(f).Length);
+                }
+                catch
+                {
+                    // размер не критичен
+                }
+
+                Installed.Add(new InstalledRuntimeRow(
+                    Path.GetFileName(dir),
+                    dir,
+                    exe,
+                    $"{size / 1024.0 / 1024.0:0} МБ",
+                    IsActive: string.Equals(exe, active, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            HasInstalled = Installed.Count > 0;
+            InstalledStatus = Installed.Count == 0
+                ? "Пока ничего не установлено. Найдите и установите сборку ниже."
+                : $"Установлено движков: {Installed.Count}. «✓ активный» — тот, что используется в Чате (самый свежий).";
+        }
+        catch (Exception ex)
+        {
+            InstalledStatus = "Не удалось прочитать список: " + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void DeleteRuntime(InstalledRuntimeRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.Delete(row.FolderPath, recursive: true);
+            InstalledStatus = $"Движок «{row.Name}» удалён.";
+        }
+        catch (Exception ex)
+        {
+            InstalledStatus = $"Не удалось удалить «{row.Name}»: {ex.Message}. " +
+                "Возможно, сервер ещё запущен — остановите его в Чате и попробуйте снова.";
+        }
+
+        RefreshInstalled();
     }
 
     private static IRuntimeReleaseCatalog BuildDefaultCatalog()
@@ -124,7 +217,7 @@ public sealed partial class RuntimesViewModel : ViewModelBase
             var shown = 0;
             foreach (var pkg in packages)
             {
-                if (shown++ >= 15)
+                if (shown >= 15)
                 {
                     break;
                 }
@@ -133,12 +226,15 @@ public sealed partial class RuntimesViewModel : ViewModelBase
                 Releases.Add(new RuntimeReleaseRow(
                     pkg.AssetName,
                     $"{pkg.TagName} · {sizeMb}",
-                    pkg));
+                    pkg,
+                    IsRecommended: shown == 0));
+                shown++;
             }
 
+            HasReleases = Releases.Count > 0;
             Status = Releases.Count == 0
                 ? "Под этот движок сборок не найдено. Попробуйте другой профиль."
-                : $"Найдено сборок: {Releases.Count}. Нажмите «Скачать и установить» у подходящей.";
+                : "Это просто разные версии одного движка. Новичку проще всего нажать «Установить рекомендованную» — это самая свежая сборка (отмечена ⭐).";
         }
         catch (Exception ex)
         {
@@ -149,6 +245,10 @@ public sealed partial class RuntimesViewModel : ViewModelBase
             IsBusy = false;
         }
     }
+
+    [RelayCommand]
+    private Task InstallRecommendedAsync() =>
+        Releases.Count > 0 ? DownloadAndInstallAsync(Releases[0]) : Task.CompletedTask;
 
     [RelayCommand]
     private async Task DownloadAndInstallAsync(RuntimeReleaseRow? row)
@@ -179,7 +279,15 @@ public sealed partial class RuntimesViewModel : ViewModelBase
             if (install.Installed && !string.IsNullOrWhiteSpace(install.ExecutablePath))
             {
                 RuntimePath = install.ExecutablePath!;
-                Status = $"Готово! llama-server установлен: {install.ExecutablePath}";
+
+                if (row.Package.CudartUrl is not null)
+                {
+                    Status = "Докачиваем библиотеки CUDA (нужны для NVIDIA)…";
+                    await BundleCudartAsync(row.Package.CudartUrl, Path.GetDirectoryName(install.ExecutablePath!)!);
+                }
+
+                Status = $"Готово! Движок установлен: {install.ExecutablePath}. Перейдите в «Чат» → «Локальный сервер».";
+                RefreshInstalled();
             }
             else
             {
@@ -193,6 +301,41 @@ public sealed partial class RuntimesViewModel : ViewModelBase
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    /// <summary>Докачивает CUDA-библиотеки (cudart) и кладёт их DLL рядом с llama-server.exe.</summary>
+    private static async Task BundleCudartAsync(Uri url, string installDir)
+    {
+        try
+        {
+            using var http = BuildDownloadHttp();
+            var tmp = Path.Combine(Path.GetTempPath(), "cudart-" + Guid.NewGuid().ToString("N") + ".zip");
+            var bytes = await http.GetByteArrayAsync(url);
+            await File.WriteAllBytesAsync(tmp, bytes);
+
+            using (var zip = System.IO.Compression.ZipFile.OpenRead(tmp))
+            {
+                foreach (var entry in zip.Entries)
+                {
+                    if (entry.Name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var dest = Path.Combine(installDir, entry.Name);
+                        if (!File.Exists(dest))
+                        {
+                            await using var src = entry.Open();
+                            await using var dst = File.Create(dest);
+                            await src.CopyToAsync(dst);
+                        }
+                    }
+                }
+            }
+
+            File.Delete(tmp);
+        }
+        catch
+        {
+            // докачка cudart — best-effort; без неё CUDA может не запуститься, но установка состоялась
         }
     }
 }

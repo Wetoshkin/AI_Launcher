@@ -1,14 +1,9 @@
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Launcher.Desktop.Localization;
 using Launcher.Desktop.Services;
-using Launcher.Core.Scenarios;
-using Launcher.Runtimes.Compatibility;
-using Launcher.Runtimes.LlamaCpp;
-using Launcher.Runtimes.Memory;
 
 namespace Launcher.Desktop.ViewModels.Pages;
 
@@ -38,8 +33,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public string Title => Loc.Instance["settings.title"];
     public string AppVersion => "AI Launcher Studio " + AppInfo.Version;
 
-    public IReadOnlyList<ConflictFinding> SampleFindings { get; }
-
     public SettingsViewModel()
     {
         _prefs = UiPreferences.Load();
@@ -50,8 +43,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
         ThemeService.Apply(ThemeValues[_themeIndex]);
         _autoStart = AutoStartService.IsEnabled();
         _initializing = false;
-
-        SampleFindings = BuildSampleFindings();
     }
 
     partial void OnThemeIndexChanged(int value)
@@ -105,26 +96,5 @@ public sealed partial class SettingsViewModel : ViewModelBase
         {
             IsCheckingUpdate = false;
         }
-    }
-
-    private static IReadOnlyList<ConflictFinding> BuildSampleFindings()
-    {
-        var caps = new LlamaServerCapabilities(
-            new HashSet<string>(), new HashSet<string>(), new HashSet<string>(),
-            SupportsTurboQuant: false, SupportsMtp: true);
-
-        var input = new ConflictCheckInput(
-            RuntimeKind: RuntimeKind.LlamaCpp,
-            Capabilities: caps,
-            Backend: RuntimeBackend.Vulkan,
-            HasNvidiaGpu: false,
-            Model: new ModelFacts("Qwen2.5 7B", HasMtpHead: false, NativeContextTokens: 32768),
-            ContextTokens: 65536,
-            KvCache: KvCacheProfile.Symmetric("q8_0"),
-            MtpEnabled: true,
-            SpeculativeEnabled: false,
-            MemoryPlan: null);
-
-        return SettingsConflictEngine.Check(input);
     }
 }

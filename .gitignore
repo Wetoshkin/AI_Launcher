@@ -38,3 +38,4 @@ coverage/
 
 # Local agent worktrees
 .worktrees/
+installer/Output/
