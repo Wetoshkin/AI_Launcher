@@ -28,7 +28,11 @@ public sealed class LogStreamServer
 
     public bool IsRunning { get; private set; }
     public int Port { get; private set; }
-    public string Url => $"http://127.0.0.1:{Port}/";
+
+    /// <summary>Случайный токен сессии в пути — знания порта недостаточно для доступа к логам.</summary>
+    public string Token { get; private set; } = string.Empty;
+
+    public string Url => $"http://127.0.0.1:{Port}/{Token}/";
 
     public void SetModel(string model) => _model = model;
 
@@ -40,6 +44,8 @@ public sealed class LogStreamServer
             _listener = new TcpListener(IPAddress.Loopback, port);
             _listener.Start();
             Port = port;
+            Token = System.Convert.ToHexString(
+                System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
             IsRunning = true;
             _cts = new CancellationTokenSource();
             _ = AcceptLoopAsync(_listener, _cts.Token);
@@ -107,21 +113,45 @@ public sealed class LogStreamServer
                     return;
                 }
 
-                // пропускаем заголовки
+                // читаем заголовки, перехватываем Host
+                var host = string.Empty;
                 string? header;
                 while (!string.IsNullOrEmpty(header = await reader.ReadLineAsync()))
                 {
+                    if (header.StartsWith("Host:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        host = header[5..].Trim();
+                    }
                 }
 
                 var parts = requestLine.Split(' ');
                 var path = parts.Length > 1 ? parts[1] : "/";
 
-                var (contentType, body) = Route(path);
+                string status;
+                string contentType;
+                string body;
+
+                if (!IsAllowedHost(host))
+                {
+                    // защита от DNS-rebinding: принимаем только loopback-хост
+                    (status, contentType, body) = ("403 Forbidden", "text/plain", "forbidden");
+                }
+                else if (!TryStripToken(path, out var subPath))
+                {
+                    // без верного токена сессии доступа нет
+                    (status, contentType, body) = ("404 Not Found", "text/plain", "not found");
+                }
+                else
+                {
+                    (contentType, body) = Route(subPath);
+                    status = "200 OK";
+                }
+
                 var bytes = Encoding.UTF8.GetBytes(body);
-                var head = "HTTP/1.1 200 OK\r\n" +
+                var head = $"HTTP/1.1 {status}\r\n" +
                            $"Content-Type: {contentType}; charset=utf-8\r\n" +
                            $"Content-Length: {bytes.Length}\r\n" +
-                           "Access-Control-Allow-Origin: *\r\n" +
+                           "X-Content-Type-Options: nosniff\r\n" +
                            "Connection: close\r\n\r\n";
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(head));
                 await stream.WriteAsync(bytes);
@@ -132,6 +162,35 @@ public sealed class LogStreamServer
         {
             // соединение закрыто/ошибка — игнорируем
         }
+    }
+
+    private bool IsAllowedHost(string host) =>
+        host.Equals($"127.0.0.1:{Port}", StringComparison.OrdinalIgnoreCase)
+        || host.Equals($"localhost:{Port}", StringComparison.OrdinalIgnoreCase)
+        || host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase)
+        || host.Equals("localhost", StringComparison.OrdinalIgnoreCase);
+
+    private bool TryStripToken(string path, out string subPath)
+    {
+        subPath = "/";
+        var prefix = "/" + Token;
+        if (Token.Length == 0)
+        {
+            return false;
+        }
+
+        if (path == prefix)
+        {
+            return true;
+        }
+
+        if (path.StartsWith(prefix + "/", StringComparison.Ordinal))
+        {
+            subPath = path[prefix.Length..];
+            return true;
+        }
+
+        return false;
     }
 
     private (string contentType, string body) Route(string path)
@@ -210,7 +269,7 @@ public sealed class LogStreamServer
           let since=0; const log=document.getElementById('log'); const st=document.getElementById('st');
           async function tick(){
             try{
-              const r=await fetch('/api/logs?since='+since); const d=await r.json();
+              const r=await fetch('api/logs?since='+since); const d=await r.json();
               since=d.next;
               if(d.lines.length){ log.textContent+=d.lines.join('\n')+'\n'; window.scrollTo(0,document.body.scrollHeight); }
               st.textContent='подключено · строк: '+since;
