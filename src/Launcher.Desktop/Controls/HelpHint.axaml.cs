@@ -90,7 +90,36 @@ public partial class HelpHint : UserControl
             });
         }
 
-        ToolTip.SetTip(this, panel);
-        ToolTip.SetShowDelay(this, 200);
+        // Показываем по клику через Flyout (надёжнее и заметнее, чем hover-подсказка).
+        if (Badge?.Flyout is Flyout flyout)
+        {
+            panel.Margin = new Thickness(4);
+            flyout.Content = panel;
+        }
+
+        // Дублируем как hover-подсказку.
+        ToolTip.SetTip(this, BuildTooltipCopy(title, body, riskText, riskBrush));
+        ToolTip.SetShowDelay(this, 300);
+    }
+
+    private static Control BuildTooltipCopy(string? title, string? body, string? riskText, IBrush? riskBrush)
+    {
+        var panel = new StackPanel { Spacing = 4, MaxWidth = 340 };
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            panel.Children.Add(new TextBlock { Text = title, FontWeight = FontWeight.Bold });
+        }
+
+        if (!string.IsNullOrWhiteSpace(body))
+        {
+            panel.Children.Add(new TextBlock { Text = body, TextWrapping = TextWrapping.Wrap, Foreground = InkSoftBrush });
+        }
+
+        if (riskText is not null)
+        {
+            panel.Children.Add(new TextBlock { Text = riskText, TextWrapping = TextWrapping.Wrap, FontWeight = FontWeight.SemiBold, Foreground = riskBrush });
+        }
+
+        return panel;
     }
 }

@@ -997,6 +997,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
             AgentKind.Kilo => new KiloCommandBuilder(),
             AgentKind.Claw => new ClawCommandBuilder(),
             AgentKind.Aider => new AiderCommandBuilder(),
+            AgentKind.Pi => new PiCommandBuilder(),
             _ => new OpenCodeCommandBuilder(),
         };
         return builder.Build(request);

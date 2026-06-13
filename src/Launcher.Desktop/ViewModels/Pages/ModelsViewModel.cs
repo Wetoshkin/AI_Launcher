@@ -33,6 +33,9 @@ public sealed partial class ModelsViewModel : ViewModelBase
     private string _localStatus = "Укажите папку с моделями и нажмите «Сканировать».";
 
     [ObservableProperty]
+    private int _localSortIndex;
+
+    [ObservableProperty]
     private string _searchQuery = "qwen";
 
     [ObservableProperty]
@@ -40,6 +43,15 @@ public sealed partial class ModelsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isSearching;
+
+    [ObservableProperty]
+    private int _searchSortIndex; // 0 скачивания, 1 лайки, 2 свежие, 3 размер
+
+    [ObservableProperty]
+    private bool _filterTools;
+
+    [ObservableProperty]
+    private bool _filterVision;
 
     public ObservableCollection<LocalModelRow> LocalModels { get; } = new();
     public ObservableCollection<HfModelRow> SearchResults { get; } = new();
@@ -111,18 +123,11 @@ public sealed partial class ModelsViewModel : ViewModelBase
 
     private void RecomputeLocalFit()
     {
-        if (LocalModels.Count == 0)
+        foreach (var m in LocalModels)
         {
-            return;
-        }
-
-        var snapshot = LocalModels.ToList();
-        LocalModels.Clear();
-        foreach (var m in snapshot)
-        {
-            var sizeGb = ParseGb(m.Size);
-            var (fit, level) = ModelFit.Describe(sizeGb, _vramGb, _ramGb);
-            LocalModels.Add(m with { Fit = fit, FitLevel = level });
+            var (fit, level) = ModelFit.Describe(m.SizeGb, _vramGb, _ramGb);
+            m.Fit = fit;
+            m.FitLevel = level;
         }
     }
 
@@ -164,17 +169,82 @@ public sealed partial class ModelsViewModel : ViewModelBase
                     m.Quant ?? "—",
                     $"{m.SizeGb:0.0} ГБ",
                     m.Path,
+                    m.SizeGb,
                     fit,
                     level));
             }
 
             LocalStatus = found.Count == 0
                 ? "GGUF-модели не найдены. Скачайте модель ниже на Hugging Face."
-                : $"Найдено моделей: {found.Count}. Нажмите «Использовать», чтобы открыть модель в Чате.";
+                : $"Найдено моделей: {found.Count}. Читаю контекст и возможности…";
+
+            _ = EnrichLocalModelsAsync();
         }
         catch (Exception ex)
         {
             LocalStatus = "Не удалось просканировать папку: " + ex.Message;
+        }
+    }
+
+    /// <summary>Дочитывает контекст и возможности (tools/vision/reasoning) из GGUF в фоне.</summary>
+    private async Task EnrichLocalModelsAsync()
+    {
+        var rows = LocalModels.ToList();
+        using var gate = new SemaphoreSlim(3);
+
+        var tasks = rows.Select(async row =>
+        {
+            await gate.WaitAsync();
+            try
+            {
+                var info = await Task.Run(() => ModelInfoStore.Get(row.Path));
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    row.ContextValue = info.Context;
+                    row.Context = info.Context > 0 ? $"контекст {info.Context / 1024}K" : string.Empty;
+                    row.Caps = new ModelCapabilities(info.Tools, info.Vision, info.Reasoning).Badges;
+                });
+            }
+            catch
+            {
+                // пропускаем нечитаемую модель
+            }
+            finally
+            {
+                gate.Release();
+            }
+        });
+
+        await Task.WhenAll(tasks);
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            ApplyLocalSort();
+            LocalStatus = $"Найдено моделей: {LocalModels.Count}. Нажмите «Использовать», чтобы открыть модель в Агентах.";
+        });
+    }
+
+    partial void OnLocalSortIndexChanged(int value) => ApplyLocalSort();
+
+    private void ApplyLocalSort()
+    {
+        if (LocalModels.Count == 0)
+        {
+            return;
+        }
+
+        IEnumerable<LocalModelRow> sorted = LocalSortIndex switch
+        {
+            1 => LocalModels.OrderByDescending(r => r.SizeGb),
+            2 => LocalModels.OrderByDescending(r => r.ContextValue),
+            _ => LocalModels.OrderBy(r => r.FileName, StringComparer.OrdinalIgnoreCase),
+        };
+
+        var list = sorted.ToList();
+        LocalModels.Clear();
+        foreach (var r in list)
+        {
+            LocalModels.Add(r);
         }
     }
 
@@ -187,13 +257,58 @@ public sealed partial class ModelsViewModel : ViewModelBase
         }
 
         UseLocalModel?.Invoke(row.Path);
-        LocalStatus = $"Модель «{row.FileName}» открыта в Чате. Перейдите на вкладку 💬 и запустите сервер.";
+        LocalStatus = $"Модель «{row.FileName}» открыта в Агентах. Перейдите на вкладку 🤖 и нажмите «Старт».";
     }
 
     private bool CanSearch => !IsSearching && !string.IsNullOrWhiteSpace(SearchQuery);
 
     partial void OnIsSearchingChanged(bool value) => SearchHuggingFaceCommand.NotifyCanExecuteChanged();
     partial void OnSearchQueryChanged(string value) => SearchHuggingFaceCommand.NotifyCanExecuteChanged();
+
+    partial void OnSearchSortIndexChanged(int value)
+    {
+        if (SearchSortIndex == 3)
+        {
+            ApplySearchSort(); // размер — пересортировка без нового запроса
+        }
+        else if (!string.IsNullOrWhiteSpace(SearchQuery) && !IsSearching)
+        {
+            _ = SearchHuggingFaceAsync();
+        }
+    }
+
+    partial void OnFilterToolsChanged(bool value) => ApplySearchFilter();
+    partial void OnFilterVisionChanged(bool value) => ApplySearchFilter();
+
+    private void ApplySearchFilter()
+    {
+        foreach (var row in SearchResults)
+        {
+            row.Visible = (!FilterTools || row.HasTools) && (!FilterVision || row.HasVision);
+        }
+    }
+
+    private void ApplySearchSort()
+    {
+        if (SearchSortIndex != 3 || SearchResults.Count == 0)
+        {
+            return;
+        }
+
+        var sorted = SearchResults.OrderByDescending(r => r.SizeBytes).ToList();
+        SearchResults.Clear();
+        foreach (var r in sorted)
+        {
+            SearchResults.Add(r);
+        }
+    }
+
+    private HuggingFaceSort CurrentSort => SearchSortIndex switch
+    {
+        1 => HuggingFaceSort.Likes,
+        2 => HuggingFaceSort.LastModified,
+        _ => HuggingFaceSort.Downloads, // 0 и 3 (размер) — берём по скачиваниям, размер сортируем после загрузки
+    };
 
     [RelayCommand(CanExecute = nameof(CanSearch))]
     private async Task SearchHuggingFaceAsync()
@@ -204,20 +319,28 @@ public sealed partial class ModelsViewModel : ViewModelBase
 
         try
         {
-            var request = new HuggingFaceModelSearchRequest(SearchQuery.Trim(), HuggingFaceSort.Downloads, Limit: 20);
+            var request = new HuggingFaceModelSearchRequest(SearchQuery.Trim(), CurrentSort, Limit: 20);
             var results = await _hfClient.SearchAsync(request, CancellationToken.None);
 
             var rows = new List<HfModelRow>();
             foreach (var r in results)
             {
+                var caps = ModelCapabilityDetector.Detect(r.Id, null, false, r.Tags);
                 var row = new HfModelRow(
                     r.Id,
                     $"↓ {r.Downloads:N0}   ♥ {r.Likes:N0}",
                     DescribeQuants(r.SiblingFiles ?? Array.Empty<string>()),
-                    r.IsRuntimeCompatible);
+                    r.IsRuntimeCompatible)
+                {
+                    Caps = caps.Badges,
+                    HasTools = caps.Tools,
+                    HasVision = caps.Vision,
+                };
                 rows.Add(row);
                 SearchResults.Add(row);
             }
+
+            ApplySearchFilter();
 
             SearchStatus = results.Count == 0
                 ? "Ничего не найдено. Попробуйте другой запрос."
@@ -261,8 +384,13 @@ public sealed partial class ModelsViewModel : ViewModelBase
                     row.RecommendedQuant = option.Quant ?? option.Label;
                     row.Fit = $"{fit}  ·  квант {row.RecommendedQuant}";
                     row.FitLevel = level;
+                    row.SizeBytes = option.TotalSizeBytes ?? 0;
                     row.CanDownload = true;
                 });
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch
             {
@@ -281,7 +409,10 @@ public sealed partial class ModelsViewModel : ViewModelBase
         await Task.WhenAll(tasks);
 
         await Dispatcher.UIThread.InvokeAsync(() =>
-            SearchStatus = SearchResults.Count == 0 ? SearchStatus : $"Найдено: {SearchResults.Count}. Зелёный бейдж — модель поместится в видеопамять.");
+        {
+            ApplySearchSort();
+            SearchStatus = SearchResults.Count == 0 ? SearchStatus : $"Найдено: {SearchResults.Count}. Зелёный бейдж — модель поместится в видеопамять.";
+        });
     }
 
     [RelayCommand]
@@ -447,12 +578,6 @@ public sealed partial class ModelsViewModel : ViewModelBase
 
         // На крайний случай — самый маленький.
         return options.OrderBy(Gb).First();
-    }
-
-    private static double ParseGb(string size)
-    {
-        var digits = new string(size.Where(c => char.IsDigit(c) || c == '.' || c == ',').ToArray()).Replace(',', '.');
-        return double.TryParse(digits, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0;
     }
 
     private static string DescribeQuants(IReadOnlyList<string> files)
