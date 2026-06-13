@@ -79,6 +79,23 @@ public sealed class HuggingFaceModelClient(HttpClient httpClient)
         [property: JsonPropertyName("size")] long? Size,
         [property: JsonPropertyName("lfs")] ApiLfs? Lfs);
 
+    /// <summary>Загружает README модели (markdown). Возвращает null, если недоступен.</summary>
+    public async Task<string?> GetReadmeAsync(string repoId, CancellationToken cancellationToken)
+    {
+        var escaped = string.Join("/", repoId
+            .Split('/', StringSplitOptions.RemoveEmptyEntries)
+            .Select(Uri.EscapeDataString));
+
+        try
+        {
+            return await httpClient.GetStringAsync($"/{escaped}/raw/main/README.md", cancellationToken);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static string SortName(HuggingFaceSort sort) => sort switch
     {
         HuggingFaceSort.Downloads => "downloads",
