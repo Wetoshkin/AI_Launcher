@@ -1,17 +1,11 @@
+using System.Linq;
 using Launcher.Core.Scenarios;
 
 namespace Launcher.Agents.Discovery;
 
 public sealed class AgentCliCatalogService(IExecutableResolver resolver)
 {
-    private static readonly AgentKind[] SupportedAgents =
-    [
-        AgentKind.OpenCode,
-        AgentKind.Kilo,
-        AgentKind.Claw,
-        AgentKind.Aider,
-        AgentKind.Pi
-    ];
+    private static readonly AgentKind[] SupportedAgents = AgentCatalog.Supported.ToArray();
 
     public async Task<IReadOnlyList<AgentCliStatus>> CheckAsync(CancellationToken cancellationToken)
     {
@@ -35,13 +29,5 @@ public sealed class AgentCliCatalogService(IExecutableResolver resolver)
         return new AgentCliStatus(agent, executable, path is not null, path, version);
     }
 
-    public static string ExecutableName(AgentKind agent) => agent switch
-    {
-        AgentKind.OpenCode => "opencode",
-        AgentKind.Kilo => "kilo",
-        AgentKind.Claw => "claw",
-        AgentKind.Aider => "aider",
-        AgentKind.Pi => "pi",
-        _ => throw new ArgumentOutOfRangeException(nameof(agent), agent, "Agent does not have a CLI executable.")
-    };
+    public static string ExecutableName(AgentKind agent) => AgentCatalog.Get(agent).Executable;
 }

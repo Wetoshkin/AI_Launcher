@@ -20,8 +20,42 @@ public sealed class AgentProjectConfigWriter
         {
             AgentKind.Kilo => await WriteKiloAsync(request, cancellationToken),
             AgentKind.OpenCode => await WriteOpenCodeAsync(request, cancellationToken),
+            AgentKind.Crush => await WriteCrushAsync(request, cancellationToken),
             _ => new AgentProjectConfigResult(false, null, $"Для {request.Agent} проектный конфиг пока не требуется.")
         };
+    }
+
+    private static async Task<AgentProjectConfigResult> WriteCrushAsync(
+        AgentLaunchRequest request,
+        CancellationToken cancellationToken)
+    {
+        LocalOpenAiCommandRequestValidator.Validate(request);
+
+        var path = Path.Combine(request.ProjectPath, "crush.json");
+        var modelId = StripLocalProviderPrefix(request.ProviderModel);
+        var root = new JsonObject
+        {
+            ["$schema"] = "https://charm.land/crush.json",
+            ["providers"] = new JsonObject
+            {
+                ["local"] = new JsonObject
+                {
+                    ["type"] = "openai",
+                    ["base_url"] = request.BaseUrl,
+                    ["api_key"] = "local",
+                    ["models"] = new JsonArray
+                    {
+                        new JsonObject
+                        {
+                            ["id"] = modelId,
+                            ["name"] = modelId
+                        }
+                    }
+                }
+            }
+        };
+        await File.WriteAllTextAsync(path, root.ToJsonString(JsonOptions), cancellationToken);
+        return new AgentProjectConfigResult(true, path, "crush.json обновлён.");
     }
 
     private static async Task<AgentProjectConfigResult> WriteKiloAsync(
