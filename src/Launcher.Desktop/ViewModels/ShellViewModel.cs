@@ -71,6 +71,14 @@ public sealed partial class ShellViewModel : ViewModelBase
             _agents.LocalModelPath = path;
             SelectByKey("agents");
         };
+
+        // Быстрый повтор последнего запуска с Главной.
+        _dashboard.RequestQuickLaunch = profile =>
+        {
+            _agents.ApplyProfile(profile);
+            SelectByKey("agents");
+            _agents.PrepareAndLaunchCommand.Execute(null);
+        };
     }
 
     public async Task LoadHardwareAsync(IHardwareProbe probe, CancellationToken cancellationToken = default)
@@ -141,6 +149,10 @@ public sealed partial class ShellViewModel : ViewModelBase
         if (value is not null)
         {
             CurrentPage = value.Page;
+            if (string.Equals(value.Key, "home", System.StringComparison.OrdinalIgnoreCase))
+            {
+                _dashboard.LoadQuickLaunch();
+            }
         }
     }
 

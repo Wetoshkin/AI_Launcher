@@ -181,5 +181,47 @@ public sealed class LocalServerLauncher
 
         _process?.Dispose();
         _process = null;
+
+        // Подчищаем «осиротевшие» серверы инференса (например, после перезапуска приложения).
+        KillStrayInferenceServers();
+    }
+
+    /// <summary>
+    /// Убивает оставшиеся процессы локального инференса по имени — на случай, если они
+    /// не были отслежены (повторный запуск, падение приложения и т.п.).
+    /// </summary>
+    public static void KillStrayInferenceServers()
+    {
+        // ollama сознательно не трогаем: это отдельная служба, которую приложение не запускает.
+        string[] names = { "llama-server", "llama-cli", "llama-bench" };
+        foreach (var name in names)
+        {
+            Process[] procs;
+            try
+            {
+                procs = Process.GetProcessesByName(name);
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (var proc in procs)
+            {
+                try
+                {
+                    proc.Kill(entireProcessTree: true);
+                    proc.WaitForExit(3000);
+                }
+                catch
+                {
+                    // нет прав/уже завершён
+                }
+                finally
+                {
+                    proc.Dispose();
+                }
+            }
+        }
     }
 }

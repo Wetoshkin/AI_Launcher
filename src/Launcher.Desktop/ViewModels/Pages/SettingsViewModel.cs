@@ -107,6 +107,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
         _prefs.Save();
     }
 
+    public string RepoUrl => $"https://github.com/{AppInfo.RepoOwner}/{AppInfo.RepoName}";
+
+    [RelayCommand]
+    private void OpenRepo()
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(RepoUrl) { UseShellExecute = true });
+        }
+        catch
+        {
+            // браузер не открылся
+        }
+    }
+
     [RelayCommand]
     private async Task CheckUpdatesAsync()
     {

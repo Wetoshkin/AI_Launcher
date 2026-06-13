@@ -1,22 +1,24 @@
 using System;
-using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Launcher.Desktop.Services;
 using Launcher.Runtimes.Hardware;
-using Launcher.Runtimes.Memory;
 
 namespace Launcher.Desktop.ViewModels.Pages;
 
 public sealed partial class DashboardViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private string _hardwareSummary = "Определение железа…";
+    private bool _hasQuickLaunch;
 
     [ObservableProperty]
-    private DeviceMemoryPlan? _memoryPlan;
+    private string _quickLaunchSummary = string.Empty;
 
-    /// <summary>Колбэк навигации: оболочка подставляет переход на вкладку по названию.</summary>
+    /// <summary>Колбэк навигации: оболочка подставляет переход на вкладку по ключу.</summary>
     public Action<string>? RequestNavigate { get; set; }
+
+    /// <summary>Колбэк быстрого повтора последнего запуска (оболочка применяет профиль и стартует).</summary>
+    public Action<LaunchProfile>? RequestQuickLaunch { get; set; }
 
     /// <summary>Показывать онбординг, если ещё не установлен ни один runtime.</summary>
     public bool ShowOnboarding => Services.LocalServerLauncher.FindInstalledRuntime() is null;
@@ -24,15 +26,39 @@ public sealed partial class DashboardViewModel : ViewModelBase
     public string Title => "Главная";
     public string Description => "Нажмите пару кнопок и начните общаться с нейросетью — локально на своём ПК или онлайн.";
 
-    public string SampleCaption =>
-        "Пример раскладки: модель 7B в кванте Q4_K_M при контексте 8K токенов. " +
-        "На шаге запуска диаграмма пересчитается под вашу модель и настройки.";
+    public DashboardViewModel()
+    {
+        LoadQuickLaunch();
+    }
+
+    /// <summary>Перечитывает сохранённый профиль (например, после возврата на Главную).</summary>
+    public void LoadQuickLaunch()
+    {
+        var last = UiPreferences.Load().LastLaunch;
+        if (last is { HasValue: true })
+        {
+            HasQuickLaunch = true;
+            QuickLaunchSummary = last.Summary;
+        }
+        else
+        {
+            HasQuickLaunch = false;
+            QuickLaunchSummary = string.Empty;
+        }
+    }
 
     [RelayCommand]
-    private void OpenLocalChat() => RequestNavigate?.Invoke("chat");
+    private void QuickLaunch()
+    {
+        var last = UiPreferences.Load().LastLaunch;
+        if (last is { HasValue: true })
+        {
+            RequestQuickLaunch?.Invoke(last);
+        }
+    }
 
     [RelayCommand]
-    private void OpenOnlineChat() => RequestNavigate?.Invoke("chat");
+    private void OpenAgents() => RequestNavigate?.Invoke("agents");
 
     [RelayCommand]
     private void OpenModels() => RequestNavigate?.Invoke("models");
@@ -40,23 +66,8 @@ public sealed partial class DashboardViewModel : ViewModelBase
     [RelayCommand]
     private void OpenRuntimes() => RequestNavigate?.Invoke("runtimes");
 
-    /// <summary>Применяет реальное железо: краткая сводка + диаграмма для модели-примера.</summary>
+    /// <summary>Железо показывается в боковой панели; здесь оно не дублируется.</summary>
     public void ApplyHardware(SystemHardware hardware)
     {
-        HardwareSummary = BuildSummary(hardware);
-
-        var sampleModel = new ModelMemorySpec(SizeGb: 4.7, ParametersBillion: 7, NativeContextTokens: 32768);
-        var estimate = MemoryEstimator.Estimate(sampleModel, contextTokens: 8192, KvCacheProfile.Symmetric("q8_0"));
-        MemoryPlan = DeviceMemoryPlanner.Plan(estimate, hardware);
-    }
-
-    private static string BuildSummary(SystemHardware hardware)
-    {
-        var gpu = hardware.HasGpu
-            ? string.Join(", ", hardware.Gpus.Select(g => $"{g.Name} ({g.TotalGb:0.0} ГБ)"))
-            : "видеокарта не найдена — будет работать на CPU";
-
-        return $"{hardware.CpuName}\n{gpu}\nОЗУ: {hardware.RamTotalGb:0.0} ГБ " +
-               $"(свободно {hardware.RamFreeGb:0.0} ГБ)";
     }
 }

@@ -6,24 +6,22 @@ namespace Launcher.Desktop.Tests.Pages;
 public class LaunchPresetTests
 {
     [Fact]
-    public void Has_three_presets_ordered_by_context()
+    public void Presets_are_ordered_by_context()
     {
         var presets = LaunchPreset.All;
-        Assert.Equal(3, presets.Count);
-        Assert.Equal(new[] { 2048, 4096, 8192 }, presets.Select(p => p.ContextTokens).ToArray());
+        Assert.Equal(new[] { 8192, 16384, 32768, 65536, 131072 }, presets.Select(p => p.ContextTokens).ToArray());
     }
 
     [Fact]
-    public void Default_is_balanced()
+    public void Default_is_32k_for_agents()
     {
-        Assert.Equal("Сбалансированно", LaunchPreset.Default.Name);
-        Assert.Equal(4096, LaunchPreset.Default.ContextTokens);
+        Assert.Equal(32768, LaunchPreset.Default.ContextTokens);
     }
 
     [Fact]
-    public void Agents_use_balanced_preset_by_default()
+    public void Agents_use_32k_preset_by_default()
     {
         var vm = new AgentsViewModel();
-        Assert.Equal(4096, vm.SelectedPreset.ContextTokens);
+        Assert.Equal(32768, vm.SelectedPreset.ContextTokens);
     }
 }
