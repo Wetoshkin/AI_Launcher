@@ -39,12 +39,14 @@ public sealed class AgentProjectConfigWriter
         var modelId = StripLocalProviderPrefix(request.ProviderModel);
         var baseUrl = request.BaseUrl.Replace("\"", "\\\"");
         var safeModel = modelId.Replace("\"", "\\\"");
+        var ctx = request.ContextTokens > 0 ? request.ContextTokens : 32768;
 
         var extension =
             "import type { ExtensionAPI } from \"@earendil-works/pi-coding-agent\";\n\n" +
             "// Сгенерировано AI Launcher Studio: локальный OpenAI-совместимый провайдер.\n" +
-            "export default function (pi: ExtensionAPI) {\n" +
+            "export default async function (pi: ExtensionAPI) {\n" +
             "  pi.registerProvider(\"local\", {\n" +
+            "    name: \"Local (AI Launcher)\",\n" +
             $"    baseUrl: \"{baseUrl}\",\n" +
             "    apiKey: \"local\",\n" +
             "    api: \"openai-completions\",\n" +
@@ -55,15 +57,22 @@ public sealed class AgentProjectConfigWriter
             "        reasoning: false,\n" +
             "        input: [\"text\"],\n" +
             "        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },\n" +
-            "        contextWindow: 128000,\n" +
+            $"        contextWindow: {ctx},\n" +
             "        maxTokens: 4096\n" +
             "      }\n" +
             "    ]\n" +
+            "  });\n\n" +
+            "  // Автовыбор нашей локальной модели при старте сессии.\n" +
+            "  pi.on(\"session_start\", async (_event, ctx) => {\n" +
+            $"    const model = ctx.modelRegistry.find(\"local\", \"{safeModel}\");\n" +
+            "    if (model) {\n" +
+            "      await pi.setModel(model);\n" +
+            "    }\n" +
             "  });\n" +
             "}\n";
 
         await File.WriteAllTextAsync(path, extension, cancellationToken);
-        return new AgentProjectConfigResult(true, path, ".pi/extensions/al-launcher.ts создан (провайдер «local»).");
+        return new AgentProjectConfigResult(true, path, ".pi/extensions/al-launcher.ts создан (провайдер «local» + автовыбор модели).");
     }
 
     private static async Task<AgentProjectConfigResult> WriteCrushAsync(
