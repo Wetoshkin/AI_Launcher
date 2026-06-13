@@ -44,15 +44,33 @@
             </Grid>
             <TextBlock Text="{Binding ServerStatus}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
 
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <TextBlock Text="Стиль ответов" VerticalAlignment="Center"/>
-              <ComboBox MinWidth="170" ItemsSource="{Binding Styles}" SelectedItem="{Binding SelectedStyle}"/>
-              <CheckBox Content="Экономить память" IsChecked="{Binding SaveMemory}" VerticalAlignment="Center"/>
-              <ctrl:HelpHint Title="Экономия памяти"
-                             Text="Квантование KV-кэша до q8_0 + Flash Attention режет память вдвое — больше контекст или модель. Если на вашем GPU не заработает (упадёт при старте), выключите."/>
-              <CheckBox Content="MoE на CPU" IsChecked="{Binding MoeOffload}" VerticalAlignment="Center"/>
-              <ctrl:HelpHint Title="MoE: эксперты на CPU"
-                             Text="Для моделей-смесей экспертов (Qwen3 MoE, Mixtral, GLM и т.п.) держит веса экспертов в обычной RAM, а не в VRAM — большая MoE-модель влезает на видеокарту меньшего объёма. Включается автоматически, если имя файла похоже на MoE."/>
+            <StackPanel Spacing="9">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="Стиль ответов" VerticalAlignment="Center"/>
+                <ComboBox MinWidth="170" ItemsSource="{Binding Styles}" SelectedItem="{Binding SelectedStyle}"/>
+                <CheckBox Content="Экономить память" IsChecked="{Binding SaveMemory}" VerticalAlignment="Center"/>
+                <ctrl:HelpHint Title="Экономия памяти"
+                               Text="Квантование KV-кэша до q8_0 + Flash Attention режет память вдвое — больше контекст или модель. Если на вашем GPU не заработает (упадёт при старте), выключите."/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="MoE-эксперты на CPU" VerticalAlignment="Center"/>
+                <CheckBox Content="Авто" IsChecked="{Binding MoeAuto}" VerticalAlignment="Center"/>
+                <Slider Width="170" Minimum="0" Maximum="{Binding MoeMaxLayers}" Value="{Binding MoeCpuLayers}"
+                        IsEnabled="{Binding !MoeAuto}" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding MoeCpuLayers}" VerticalAlignment="Center" MinWidth="26"/>
+                <TextBlock Text="слоёв" VerticalAlignment="Center" Foreground="{DynamicResource InkSoftBrush}"/>
+                <ctrl:HelpHint HelpId="ncmoe"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <CheckBox Content="Размышления (reasoning)" IsChecked="{Binding Reasoning}" VerticalAlignment="Center"/>
+                <TextBlock Text="Глубина" VerticalAlignment="Center"/>
+                <ComboBox MinWidth="150" SelectedIndex="{Binding ReasoningDepthIndex}" IsEnabled="{Binding Reasoning}">
+                  <ComboBoxItem><TextBlock Text="Без лимита"/></ComboBoxItem>
+                  <ComboBoxItem><TextBlock Text="Средне"/></ComboBoxItem>
+                  <ComboBoxItem><TextBlock Text="Кратко"/></ComboBoxItem>
+                </ComboBox>
+                <ctrl:HelpHint HelpId="reasoning"/>
+              </StackPanel>
             </StackPanel>
 
             <!-- Эксперт: произвольные аргументы -->
@@ -129,7 +147,13 @@
                       Margin="0,0,0,10" Padding="14,11" CornerRadius="14" MaxWidth="660"
                       HorizontalAlignment="{Binding IsUser, Converter={x:Static conv:ChatConverters.Alignment}}"
                       BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                <SelectableTextBlock Text="{Binding Content}" TextWrapping="Wrap"/>
+                <StackPanel Spacing="6">
+                  <Expander Header="🧠 Размышления" IsVisible="{Binding HasReasoning}" Padding="0">
+                    <SelectableTextBlock Text="{Binding Reasoning}" TextWrapping="Wrap" FontSize="12.5"
+                                         Foreground="{DynamicResource InkSoftBrush}" Margin="0,6,0,0"/>
+                  </Expander>
+                  <SelectableTextBlock Text="{Binding Display}" TextWrapping="Wrap"/>
+                </StackPanel>
               </Border>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
