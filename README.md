@@ -1,55 +1,109 @@
+<div align="center">
+
+<img src="docs/images/app-icon.png" width="120" alt="AI Launcher Studio"/>
+
 # AI Launcher Studio
 
-[Русский](README_ru.md)
+**Запусти нейросеть в пару кликов — локально на своём ПК или онлайн.**
+Понятно новичку, мощно для профи.
 
-**AI Launcher Studio** is a Windows desktop app that launches AI in a couple of clicks — locally on your PC or online through a provider. Designed to be clear for beginners while giving pros full control.
+[![Release](https://img.shields.io/github/v/release/Wetoshkin/AI_Launcher?label=релиз)](https://github.com/Wetoshkin/AI_Launcher/releases)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+![Platform](https://img.shields.io/badge/Windows-10%2F11-0078D6)
+![.NET](https://img.shields.io/badge/.NET-8-512BD4)
 
-Built with .NET 8 and Avalonia UI 12.
+[English version](README_en.md)
 
-## Install
+<img src="docs/images/screenshot-home.png" width="85%" alt="Главный экран"/>
 
-Download the installer from [Releases](https://github.com/Wetoshkin/AI_Launcher/releases) — `AI-Launcher-Studio-Setup-*.exe` (no admin rights, no separate .NET needed), or the portable zip.
+</div>
 
-## Features
+---
 
-- **Local AI** — runs `llama-server` with your GGUF model and chats with it in a built-in chat. Works on CPU and Intel/AMD GPUs (Vulkan), not only NVIDIA.
-- **Online AI** — built-in chat to OpenAI, OpenRouter, Anthropic (Claude), or a custom endpoint. Hiddify proxy support for blocked providers.
-- **Memory diagram** — visualizes how a model loads across one/two GPUs and system RAM, and warns if it does not fit.
-- **Settings conflict engine** — explains in plain language when settings are incompatible (e.g. MTP without a matching model, TurboQuant without the right build, context above native) and how to fix them.
-- **Help on every parameter** — a "?" icon with a clear "what / why / what it affects" explanation.
-- **Models** — local GGUF catalog and Hugging Face search highlighting dynamic quants (UD-Q4_K_XL, etc.).
-- **Runtimes** — recommends a backend for your hardware and really downloads and installs a llama.cpp build from GitHub.
-- **Agents** — launch coding agents (OpenCode, Kilo, Claw, Aider) on a local or online model.
-- **Anti-looping** — DRY sampler on by default (the best fix for model repetition); multi-GPU via tensor-split.
-- **Expert mode** — free-form llama-server arguments for full control; server log console.
-- **Appearance** — light and dark themes, Russian and English, in-app update check.
+## ⚡ Что это
 
-## Run From Source
+**AI Launcher Studio** — десктопное приложение для Windows, которое убирает всю боль запуска локальных и онлайн нейросетей. Без терминала, без возни с Python и флагами. Нажал пару кнопок — и общаешься с моделью: на своём железе (бесплатно и приватно) или через облачного провайдера.
 
-```powershell
-dotnet run --project src\Launcher.Desktop\Launcher.Desktop.csproj
+При этом под капотом — все передовые возможности: реальная установка движков `llama.cpp`, наглядная диаграмма памяти, движок проверки конфликтов настроек, анти-зацикливание, мульти-GPU, MoE, reasoning-модели и режим Эксперт с полным контролем.
+
+## 📦 Установка
+
+Скачайте из раздела **[Releases](https://github.com/Wetoshkin/AI_Launcher/releases)**:
+
+- **`AI-Launcher-Studio-Setup-*.exe`** — установщик (без прав администратора, ставит ярлыки, есть удаление). Просто запустите.
+- **`AI-Launcher-Studio-portable-*.zip`** — портативная версия (распакуйте и запустите `Launcher.Desktop.exe`).
+
+Отдельно ставить .NET **не нужно** — всё внутри.
+
+## ✨ Возможности
+
+### 💻 Локальная нейросеть на своём ПК
+Установите движок `llama.cpp` под ваше железо (CPU / Vulkan / CUDA / ROCm — приложение само рекомендует), выберите GGUF-модель и запустите. Встроенный чат отвечает потоком в реальном времени. Работает и на видеокартах Intel/AMD, а не только NVIDIA.
+
+### ☁️ Онлайн нейросеть
+Встроенный чат к **OpenAI**, **OpenRouter**, **Anthropic (Claude)** или своему адресу — по API-ключу. Есть поддержка прокси **Hiddify** для заблокированных провайдеров.
+
+<div align="center"><img src="docs/images/screenshot-chat.png" width="85%" alt="Чат"/></div>
+
+### 🧠 Диаграмма памяти
+Наглядно показывает, **как модель ложится в память** одной или двух видеокарт и системную RAM, и предупреждает, если не помещается — ещё до запуска.
+
+### ⚠️ Проверка конфликтов настроек + подсказки
+Движок объясняет простым языком, если настройки несовместимы (MTP без подходящей модели, TurboQuant без нужной сборки, контекст больше нативного, нехватка памяти) — и как это исправить. У **каждого** параметра есть иконка «?» с понятным объяснением: что это, зачем и на что влияет.
+
+<div align="center"><img src="docs/images/screenshot-settings.png" width="85%" alt="Настройки"/></div>
+
+### 📦 Модели и 🤖 Среды
+Локальный каталог GGUF и живой поиск на **Hugging Face** с подсветкой динамических квантов (UD-Q4_K_XL). Реальное **скачивание и установка** сборок `llama.cpp` прямо из приложения.
+
+<div align="center"><img src="docs/images/screenshot-runtimes.png" width="85%" alt="Среды (runtime)"/></div>
+
+### 🤖 Кодинг-агенты
+Запуск агентов (**OpenCode, Kilo, Claw, Aider**) на локальной или онлайн модели прямо в вашем проекте.
+
+## 🚀 Особенности (то, чего нет у большинства лаунчеров)
+
+- **🚫 Анти-зацикливание** — DRY-сэмплер включён по умолчанию (лучший приём против повторов модели; обычный «штраф за повторы» иногда наоборот усиливает циклы).
+- **🎮 Мульти-GPU** — `tensor-split` пропорционально VRAM для конфигов вроде RTX 3090 + RTX 3060.
+- **🧩 MoE на CPU** — авто-определяет модели-смеси экспертов (Qwen3 MoE, Mixtral, GLM) и ползунком разгружает экспертов в RAM, чтобы большие MoE влезали в VRAM. Авто-расчёт + ручная настройка.
+- **💭 Reasoning-модели** — режим размышлений с бюджетом; блок `<think>` сворачивается в отдельную секцию, ответ остаётся чистым.
+- **🎨 Стиль ответов** — Точный (код) / Сбалансированный / Творческий одним кликом.
+- **🌗 Светлая и тёмная темы**, **🌍 русский и английский** языки, **🔄 проверка обновлений**.
+- **🛠 Режим Эксперт** — поле произвольных аргументов `llama-server` + лог-консоль сервера.
+
+<div align="center"><img src="docs/images/screenshot-home-dark.png" width="85%" alt="Тёмная тема"/></div>
+
+## 🏁 Быстрый старт
+
+1. **Среды** → «Найти сборки» → «Скачать и установить» рекомендованную (для Intel/AMD — Vulkan, для NVIDIA — CUDA).
+2. **Модели** → найдите модель на Hugging Face или укажите папку с готовыми `.gguf`.
+3. **Чат** → раздел «Локальный сервер» → выберите модель → «Запустить». Когда статус «готов» — пишите сообщения.
+
+Либо сразу **Чат** → выберите онлайн-провайдера, введите API-ключ и общайтесь.
+
+## 🧱 Архитектура
+
+```text
+src/Launcher.Core      сценарии, профили, настройки, decoding-пресеты, подсказки параметров
+src/Launcher.Runtimes  llama.cpp runtime, порты, процессы, железо/VRAM, движок конфликтов, диаграмма памяти
+src/Launcher.Models    локальный каталог GGUF и поиск/скачивание на Hugging Face
+src/Launcher.Agents    запуск и определение кодинг-агентов
+src/Launcher.Online    онлайн-провайдеры и стриминговый чат (OpenAI-совместимый и Anthropic)
+src/Launcher.Desktop   интерфейс на Avalonia (Главная / Чат / Модели / Агенты / Среды / Настройки)
+tests/                 200+ unit-тестов по слоям
 ```
 
-## Build And Test
+Технологии: **.NET 8**, **Avalonia UI 12**, шрифт **Manrope**.
+
+## 🔧 Сборка из исходников
 
 ```powershell
 dotnet restore .\AI-Launcher-Studio.sln
-dotnet build .\AI-Launcher-Studio.sln --no-restore
-dotnet test .\AI-Launcher-Studio.sln --no-build
+dotnet build   .\AI-Launcher-Studio.sln --no-restore
+dotnet test    .\AI-Launcher-Studio.sln --no-build
+dotnet run --project src\Launcher.Desktop\Launcher.Desktop.csproj
 ```
 
-## Architecture
+## 📄 Лицензия
 
-```text
-src\Launcher.Core      scenarios, profiles, settings, decoding presets, parameter help
-src\Launcher.Runtimes  llama.cpp runtime, ports, processes, hardware/VRAM, conflict engine, memory diagram
-src\Launcher.Models    local GGUF catalog and Hugging Face search/downloads
-src\Launcher.Agents    coding agent launch and discovery
-src\Launcher.Online    online providers and streaming chat (OpenAI-compatible and Anthropic)
-src\Launcher.Desktop   Avalonia UI (Home/Chat/Models/Agents/Runtimes/Settings pages)
-tests\                 unit tests per layer
-```
-
-## License
-
-MIT. See `LICENSE`.
+[MIT](LICENSE) © Wetoshkin
