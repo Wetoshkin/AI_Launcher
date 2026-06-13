@@ -44,6 +44,17 @@
             </Grid>
             <TextBlock Text="{Binding ServerStatus}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
 
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <TextBlock Text="Стиль ответов" VerticalAlignment="Center"/>
+              <ComboBox MinWidth="170" ItemsSource="{Binding Styles}" SelectedItem="{Binding SelectedStyle}"/>
+              <CheckBox Content="Экономить память" IsChecked="{Binding SaveMemory}" VerticalAlignment="Center"/>
+              <ctrl:HelpHint Title="Экономия памяти"
+                             Text="Квантование KV-кэша до q8_0 + Flash Attention режет память вдвое — больше контекст или модель. Если на вашем GPU не заработает (упадёт при старте), выключите."/>
+              <CheckBox Content="MoE на CPU" IsChecked="{Binding MoeOffload}" VerticalAlignment="Center"/>
+              <ctrl:HelpHint Title="MoE: эксперты на CPU"
+                             Text="Для моделей-смесей экспертов (Qwen3 MoE, Mixtral, GLM и т.п.) держит веса экспертов в обычной RAM, а не в VRAM — большая MoE-модель влезает на видеокарту меньшего объёма. Включается автоматически, если имя файла похоже на MoE."/>
+            </StackPanel>
+
             <!-- Эксперт: произвольные аргументы -->
             <Expander Header="Эксперт: дополнительные аргументы">
               <StackPanel Spacing="8" Margin="0,8,0,0">
@@ -99,6 +110,11 @@
             </Grid>
           </StackPanel>
         </Expander>
+        <StackPanel Spacing="4">
+          <TextBlock Text="Системный промпт (поведение ассистента)" FontSize="12.5"/>
+          <TextBox Text="{Binding SystemPrompt}" AcceptsReturn="True" MaxHeight="64" TextWrapping="Wrap"
+                   PlaceholderText="Напр.: Ты лаконичный помощник по коду. Отвечай по-русски."/>
+        </StackPanel>
         <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}"/>
       </StackPanel>
     </Border>
