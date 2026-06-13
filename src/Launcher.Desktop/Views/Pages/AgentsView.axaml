@@ -158,6 +158,18 @@
               </StackPanel>
             </StackPanel>
 
+            <!-- Рекомендации автора модели (с HF) -->
+            <Border CornerRadius="9" Padding="12,10" Background="{DynamicResource AccentSoftBrush}"
+                    IsVisible="{Binding HasRecommended}">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Автор модели рекомендует параметры:" FontSize="12.5" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AccentBrush}"/>
+                <SelectableTextBlock Text="{Binding RecommendedArgs}" FontFamily="Cascadia Code,Consolas,monospace"
+                                     FontSize="11.5" TextWrapping="Wrap"/>
+                <Button Content="Применить рекомендации" Command="{Binding ApplyRecommendedCommand}" HorizontalAlignment="Left"/>
+              </StackPanel>
+            </Border>
+
             <!-- Эксперт -->
             <StackPanel Spacing="10">
               <CheckBox Content="Экспертные параметры запуска" IsChecked="{Binding ShowExpert}" FontWeight="SemiBold"/>

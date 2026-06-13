@@ -461,7 +461,7 @@ public sealed partial class ModelsViewModel : ViewModelBase
             // Каждая загрузка идёт в своей задаче и обновляет только свою строку —
             // поэтому несколько моделей качаются параллельно, не мешая друг другу.
             var request = new HuggingFaceModelDownloadRequest(row.Id, option, ModelsFolder);
-            await _downloadService.DownloadAsync(request, CancellationToken.None, p =>
+            var result = await _downloadService.DownloadAsync(request, CancellationToken.None, p =>
             {
                 if (p.IsSkipped)
                 {
@@ -501,6 +501,16 @@ public sealed partial class ModelsViewModel : ViewModelBase
 
             row.DownloadProgress = 100;
             row.DownloadStatus = "Готово ✓ — модель добавлена в папку.";
+
+            // Подтянуть рекомендованные автором параметры с HF и сохранить рядом с моделью.
+            var savedGguf = result.DownloadedFiles.Concat(result.SkippedFiles)
+                .FirstOrDefault(p => p.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase)
+                    && !System.IO.Path.GetFileName(p).Contains("mmproj", StringComparison.OrdinalIgnoreCase));
+            if (savedGguf is not null)
+            {
+                _ = FetchRecommendedArgsAsync(row.Id, savedGguf);
+            }
+
             Scan();
         }
         catch (Exception ex)
@@ -510,6 +520,24 @@ public sealed partial class ModelsViewModel : ViewModelBase
         finally
         {
             row.IsBusy = false;
+        }
+    }
+
+    /// <summary>Скачивает README модели, извлекает рекомендованные параметры и кладёт их рядом с .gguf.</summary>
+    private async Task FetchRecommendedArgsAsync(string repoId, string modelPath)
+    {
+        try
+        {
+            var readme = await _hfClient.GetReadmeAsync(repoId, CancellationToken.None);
+            var args = HfReadmeParser.ExtractRecommendedArgs(readme);
+            if (!string.IsNullOrWhiteSpace(args))
+            {
+                ModelInfoStore.SaveRecommendedArgs(modelPath, args!);
+            }
+        }
+        catch
+        {
+            // best-effort
         }
     }
 

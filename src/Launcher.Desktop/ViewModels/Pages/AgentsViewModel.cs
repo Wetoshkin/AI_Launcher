@@ -111,6 +111,12 @@ public sealed partial class AgentsViewModel : ViewModelBase
     private string _expertArgs = string.Empty;
 
     [ObservableProperty]
+    private string _recommendedArgs = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasRecommended;
+
+    [ObservableProperty]
     private string _serverStatus = "Модель не запущена.";
 
     [ObservableProperty]
@@ -348,7 +354,29 @@ public sealed partial class AgentsViewModel : ViewModelBase
     {
         RecomputeMoe();
         LoadNativeContext(value);
+        LoadRecommendedArgs(value);
         UpdateDerived();
+    }
+
+    private void LoadRecommendedArgs(string path)
+    {
+        var rec = string.IsNullOrWhiteSpace(path) ? null : ModelInfoStore.GetRecommendedArgs(path);
+        RecommendedArgs = rec ?? string.Empty;
+        HasRecommended = !string.IsNullOrWhiteSpace(rec);
+    }
+
+    [RelayCommand]
+    private void ApplyRecommended()
+    {
+        if (!HasRecommended)
+        {
+            return;
+        }
+
+        ShowExpert = true;
+        ExpertArgs = string.IsNullOrWhiteSpace(ExpertArgs)
+            ? RecommendedArgs
+            : ExpertArgs.Trim() + " " + RecommendedArgs;
     }
 
     partial void OnMoeAutoChanged(bool value) => RecomputeMoe();
