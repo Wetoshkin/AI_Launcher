@@ -42,6 +42,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
     private readonly Queue<string> _logLines = new();
     private readonly LogStreamServer _logStream = new();
     private SystemHardware? _hardware;
+    private Process? _agentProcess;
 
     // ───────────────────────── Модель и параметры запуска ─────────────────────────
 
@@ -184,6 +185,9 @@ public sealed partial class AgentsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isModelRunning;
+
+    [ObservableProperty]
+    private bool _isAgentRunning;
 
     [ObservableProperty]
     private string _connectionHint =
@@ -785,7 +789,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
                 RunningModel.Instance.Set(result.BaseUrl, result.Model);
                 BumpRecentModel(LocalModelPath);
                 RefreshLocalModels();
-                ServerStatus = "✓ Модель запущена и готова. Теперь запустите агента ниже.";
+                ServerStatus = "✓ Модель запущена и готова (сервер работает).";
             }
             else
             {
@@ -1054,7 +1058,23 @@ public sealed partial class AgentsViewModel : ViewModelBase
 
             try
             {
-                Process.Start(psi);
+                var proc = Process.Start(psi);
+                if (proc is not null)
+                {
+                    proc.EnableRaisingEvents = true;
+                    proc.Exited += (_, _) => Dispatcher.UIThread.Post(() =>
+                    {
+                        if (ReferenceEquals(_agentProcess, proc))
+                        {
+                            IsAgentRunning = false;
+                            _agentProcess = null;
+                            Status = $"Агент «{SelectedAgent}» завершён.";
+                        }
+                    });
+                    _agentProcess = proc;
+                    IsAgentRunning = true;
+                }
+
                 SaveLastLaunch();
                 Status = $"Конфиг: {config.Message} Запущен агент «{SelectedAgent}» в новом окне.";
             }
@@ -1073,6 +1093,33 @@ public sealed partial class AgentsViewModel : ViewModelBase
         {
             Status = "Ошибка подготовки запуска: " + ex.Message;
         }
+    }
+
+    [RelayCommand]
+    private void StopAgent()
+    {
+        var proc = _agentProcess;
+        if (proc is null)
+        {
+            IsAgentRunning = false;
+            return;
+        }
+
+        try
+        {
+            if (!proc.HasExited)
+            {
+                proc.Kill(entireProcessTree: true);
+            }
+        }
+        catch
+        {
+            // уже завершился
+        }
+
+        _agentProcess = null;
+        IsAgentRunning = false;
+        Status = $"Агент «{SelectedAgent}» остановлен.";
     }
 
     private static Launcher.Core.LaunchPlans.LaunchPlan BuildPlan(AgentLaunchRequest request)
