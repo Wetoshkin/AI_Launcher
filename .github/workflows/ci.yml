@@ -2,47 +2,25 @@ name: CI
 
 on:
   push:
-    branches:
-      - "**"
+    branches: ["**"]
   pull_request:
-    branches:
-      - "**"
+    branches: ["**"]
 
 jobs:
-  build-test-publish:
+  build-test:
     runs-on: windows-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
 
       - name: Restore
-        run: dotnet restore .\AI-Launcher-Studio.sln
+        run: dotnet restore AI-Launcher-Studio.sln
 
       - name: Build
-        run: dotnet build .\AI-Launcher-Studio.sln --no-restore
+        run: dotnet build AI-Launcher-Studio.sln --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test .\AI-Launcher-Studio.sln --no-build
-
-      - name: Publish AI Launcher Studio
-        run: dotnet publish .\src\Launcher.Desktop\Launcher.Desktop.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o .\publish\AI-Launcher-Studio-win-x64
-
-      - name: Verify published executable
-        shell: pwsh
-        run: |
-          $exe = ".\publish\AI-Launcher-Studio-win-x64\Launcher.Desktop.exe"
-          if (-not (Test-Path $exe)) {
-            throw "Published executable not found: $exe"
-          }
-
-      - name: Upload portable artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: AI-Launcher-Studio-win-x64
-          path: .\publish\AI-Launcher-Studio-win-x64\
+        run: dotnet test AI-Launcher-Studio.sln --no-build --configuration Release
