@@ -23,6 +23,29 @@ public sealed partial class ChatViewModel : ViewModelBase
     /// <summary>Запоминает железо для подсказок по мульти-GPU при запуске.</summary>
     public void ApplyHardware(SystemHardware hardware) => _hardware = hardware;
 
+    partial void OnLocalModelPathChanged(string value)
+    {
+        // Авто-определение MoE по имени файла — предложить разгрузку экспертов на CPU.
+        MoeOffload = IsLikelyMoE(value);
+    }
+
+    /// <summary>Эвристика: похоже ли имя GGUF на модель-смесь экспертов (MoE).</summary>
+    public static bool IsLikelyMoE(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        var name = System.IO.Path.GetFileName(path).ToLowerInvariant();
+        string[] markers =
+        {
+            "moe", "mixtral", "8x7b", "8x22b", "qwen3-next", "-a3b", "-a13b", "-a22b",
+            "a3b", "a13b", "a22b", "30b-a", "235b-a", "glm-4.5", "glm-4.6", "glm-5", "scout", "maverick",
+        };
+        return markers.Any(m => name.Contains(m));
+    }
+
     [ObservableProperty]
     private string _runtimeExe = LocalServerLauncher.FindInstalledRuntime() ?? string.Empty;
 
@@ -37,6 +60,20 @@ public sealed partial class ChatViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _expertArgs = string.Empty;
+
+    [ObservableProperty]
+    private string _systemPrompt = string.Empty;
+
+    [ObservableProperty]
+    private ResponseStyle _selectedStyle = ResponseStyle.All[0];
+
+    [ObservableProperty]
+    private bool _saveMemory;
+
+    [ObservableProperty]
+    private bool _moeOffload;
+
+    public IReadOnlyList<ResponseStyle> Styles => ResponseStyle.All;
 
     public IReadOnlyList<LaunchPreset> Presets => LaunchPreset.All;
 
@@ -194,8 +231,45 @@ public sealed partial class ChatViewModel : ViewModelBase
         }
     }
 
-    private IReadOnlyList<ChatMessage> BuildRequestMessages() =>
-        Messages.Select(m => new ChatMessage(m.Role, m.Content)).ToList();
+    private IReadOnlyList<ChatMessage> BuildRequestMessages()
+    {
+        var list = new List<ChatMessage>();
+        if (!string.IsNullOrWhiteSpace(SystemPrompt))
+        {
+            list.Add(new ChatMessage("system", SystemPrompt.Trim()));
+        }
+
+        list.AddRange(Messages.Select(m => new ChatMessage(m.Role, m.Content)));
+        return list;
+    }
+
+    /// <summary>Собирает дополнительные аргументы сервера: стиль + экономия памяти + ручные (Эксперт).</summary>
+    private string? ComposeServerArgs()
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(SelectedStyle.Args))
+        {
+            parts.Add(SelectedStyle.Args);
+        }
+
+        if (SaveMemory)
+        {
+            parts.Add("--cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on");
+        }
+
+        if (MoeOffload)
+        {
+            // MoE: держать веса экспертов на CPU — большие MoE-модели влезают в VRAM.
+            parts.Add("--cpu-moe");
+        }
+
+        if (!string.IsNullOrWhiteSpace(ExpertArgs))
+        {
+            parts.Add(ExpertArgs.Trim());
+        }
+
+        return parts.Count == 0 ? null : string.Join(" ", parts);
+    }
 
     [RelayCommand]
     private async Task BrowseModelAsync()
@@ -236,7 +310,7 @@ public sealed partial class ChatViewModel : ViewModelBase
                 CancellationToken.None,
                 antiLoop: true,
                 tensorSplit: ComputeTensorSplit(),
-                extraArgs: string.IsNullOrWhiteSpace(ExpertArgs) ? null : ExpertArgs.Trim());
+                extraArgs: ComposeServerArgs());
 
             IsServerRunning = _serverLauncher.IsRunning;
 
