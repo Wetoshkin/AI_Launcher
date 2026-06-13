@@ -1014,7 +1014,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
         try
         {
             // Конфиг пишем сразу — он пригодится даже если агент не установлен.
-            var request = new AgentLaunchRequest(SelectedAgent, ProjectFolder.Trim(), Model.Trim(), BaseUrl.Trim());
+            var request = new AgentLaunchRequest(SelectedAgent, ProjectFolder.Trim(), Model.Trim(), BaseUrl.Trim(), ContextTokens);
             var config = await new AgentProjectConfigWriter().WriteAsync(request, CancellationToken.None);
 
             // Локальный адрес, но сервер не поднят — стартуем его автоматически.
@@ -1037,7 +1037,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
                 }
 
                 // Адрес/модель обновились — перезапишем конфиг под запущенный сервер.
-                request = new AgentLaunchRequest(SelectedAgent, ProjectFolder.Trim(), Model.Trim(), BaseUrl.Trim());
+                request = new AgentLaunchRequest(SelectedAgent, ProjectFolder.Trim(), Model.Trim(), BaseUrl.Trim(), ContextTokens);
                 config = await new AgentProjectConfigWriter().WriteAsync(request, CancellationToken.None);
             }
 

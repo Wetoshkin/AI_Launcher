@@ -6,4 +6,5 @@ public sealed record AgentLaunchRequest(
     AgentKind Agent,
     string ProjectPath,
     string ProviderModel,
-    string BaseUrl);
+    string BaseUrl,
+    int ContextTokens = 32768);
