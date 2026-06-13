@@ -21,13 +21,73 @@ public sealed partial class ChatViewModel : ViewModelBase
     private SystemHardware? _hardware;
 
     /// <summary>Запоминает железо для подсказок по мульти-GPU при запуске.</summary>
-    public void ApplyHardware(SystemHardware hardware) => _hardware = hardware;
-
-    partial void OnLocalModelPathChanged(string value)
+    public void ApplyHardware(SystemHardware hardware)
     {
-        // Авто-определение MoE по имени файла — предложить разгрузку экспертов на CPU.
-        MoeOffload = IsLikelyMoE(value);
+        _hardware = hardware;
+        RecomputeMoe();
     }
+
+    partial void OnLocalModelPathChanged(string value) => RecomputeMoe();
+
+    partial void OnMoeAutoChanged(bool value) => RecomputeMoe();
+
+    private void RecomputeMoe()
+    {
+        if (MoeAuto)
+        {
+            MoeCpuLayers = ComputeAutoMoeLayers();
+        }
+    }
+
+    /// <summary>
+    /// Авто-расчёт числа MoE-слоёв на CPU: ноль если модель влезает в VRAM,
+    /// иначе столько слоёв экспертов, чтобы поместиться. Эвристика по размеру файла и VRAM.
+    /// </summary>
+    private int ComputeAutoMoeLayers()
+    {
+        if (!IsLikelyMoE(LocalModelPath))
+        {
+            return 0;
+        }
+
+        var vramGb = _hardware?.Gpus.Sum(g => g.TotalGb) ?? 0.0;
+        if (vramGb <= 0)
+        {
+            return 0; // только CPU — разгружать нечего
+        }
+
+        double modelGb = 0;
+        try
+        {
+            if (System.IO.File.Exists(LocalModelPath))
+            {
+                modelGb = new System.IO.FileInfo(LocalModelPath).Length / 1024.0 / 1024.0 / 1024.0;
+            }
+        }
+        catch
+        {
+            // нет доступа к файлу — оставим 0
+        }
+
+        if (modelGb <= 0)
+        {
+            return 0;
+        }
+
+        var layers = modelGb < 8 ? 32 : modelGb < 20 ? 40 : modelGb < 50 ? 60 : 80;
+        var expertsGb = modelGb * 0.85;
+        var perLayer = expertsGb / layers;
+        var overflow = System.Math.Max(0.0, (modelGb + 2.0) - vramGb * 0.9);
+        var n = perLayer <= 0 ? 0 : (int)System.Math.Ceiling(overflow / perLayer);
+        return System.Math.Clamp(n, 0, layers);
+    }
+
+    private int ReasoningBudget() => ReasoningDepthIndex switch
+    {
+        1 => 2048,
+        2 => 512,
+        _ => -1,
+    };
 
     /// <summary>Эвристика: похоже ли имя GGUF на модель-смесь экспертов (MoE).</summary>
     public static bool IsLikelyMoE(string path)
@@ -71,7 +131,18 @@ public sealed partial class ChatViewModel : ViewModelBase
     private bool _saveMemory;
 
     [ObservableProperty]
-    private bool _moeOffload;
+    private bool _moeAuto = true;
+
+    [ObservableProperty]
+    private int _moeCpuLayers;
+
+    [ObservableProperty]
+    private bool _reasoning;
+
+    [ObservableProperty]
+    private int _reasoningDepthIndex;
+
+    public int MoeMaxLayers => 80;
 
     public IReadOnlyList<ResponseStyle> Styles => ResponseStyle.All;
 
@@ -257,10 +328,16 @@ public sealed partial class ChatViewModel : ViewModelBase
             parts.Add("--cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on");
         }
 
-        if (MoeOffload)
+        if (MoeCpuLayers > 0)
         {
-            // MoE: держать веса экспертов на CPU — большие MoE-модели влезают в VRAM.
-            parts.Add("--cpu-moe");
+            // MoE: держать экспертов первых N слоёв на CPU — большие MoE влезают в VRAM.
+            parts.Add($"--n-cpu-moe {MoeCpuLayers}");
+        }
+
+        if (Reasoning)
+        {
+            // Reasoning-модели: включить размышления с бюджетом; think-теги остаются в тексте.
+            parts.Add($"--reasoning on --reasoning-format deepseek-legacy --reasoning-budget {ReasoningBudget()}");
         }
 
         if (!string.IsNullOrWhiteSpace(ExpertArgs))
