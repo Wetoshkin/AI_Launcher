@@ -89,13 +89,44 @@ public sealed class AgentCommandBuilderTests
         Assert.Contains(@"D:\AI\Projects\App", plan.Arguments);
     }
 
+    [Fact]
+    public void CrushCommandRunsInProjectViaConfig()
+    {
+        var plan = new CrushCommandBuilder().Build(new AgentLaunchRequest(
+            AgentKind.Crush,
+            @"D:\AI\Projects\App",
+            "local/Qwen3-Coder-Q4_K_M",
+            "http://127.0.0.1:8080/v1"));
+
+        Assert.Equal("crush", plan.Executable);
+        Assert.Equal("http://127.0.0.1:8080/v1", plan.Environment["OPENAI_API_BASE"]);
+    }
+
+    [Fact]
+    public void GooseCommandStartsSessionWithProviderEnv()
+    {
+        var plan = new GooseCommandBuilder().Build(new AgentLaunchRequest(
+            AgentKind.Goose,
+            @"D:\AI\Projects\App",
+            "local/Qwen3-Coder-Q4_K_M",
+            "http://127.0.0.1:8080/v1"));
+
+        Assert.Equal("goose", plan.Executable);
+        Assert.Contains("session", plan.Arguments);
+        Assert.Equal("openai", plan.Environment["GOOSE_PROVIDER"]);
+        Assert.Equal("Qwen3-Coder-Q4_K_M", plan.Environment["GOOSE_MODEL"]);
+    }
+
     public static TheoryData<IAgentCommandBuilder, AgentKind> LocalOpenAiBuilders()
     {
         return new TheoryData<IAgentCommandBuilder, AgentKind>
         {
             { new OpenCodeCommandBuilder(), AgentKind.OpenCode },
             { new KiloCommandBuilder(), AgentKind.Kilo },
-            { new AiderCommandBuilder(), AgentKind.Aider }
+            { new AiderCommandBuilder(), AgentKind.Aider },
+            { new CrushCommandBuilder(), AgentKind.Crush },
+            { new GooseCommandBuilder(), AgentKind.Goose },
+            { new PiCommandBuilder(), AgentKind.Pi }
         };
     }
 

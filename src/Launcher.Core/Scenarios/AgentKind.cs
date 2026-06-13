@@ -7,5 +7,7 @@ public enum AgentKind
     Kilo,
     Claw,
     Aider,
-    Pi
+    Pi,
+    Crush,
+    Goose
 }

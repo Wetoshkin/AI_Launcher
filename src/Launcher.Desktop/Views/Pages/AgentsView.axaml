@@ -77,10 +77,23 @@
             <ItemsControl ItemsSource="{Binding Agents}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:AgentStatusRow">
-                  <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="{Binding Status}" FontSize="12.5" FontWeight="SemiBold"/>
-                  </Grid>
+                  <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                          BorderThickness="1" CornerRadius="9" Padding="11,8" Margin="0,0,0,6">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                      <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontSize="12.5" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding Note}" FontSize="11" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Text="{Binding Status}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                      <Button Grid.Column="2" Content="Установить" Classes="primary" VerticalAlignment="Center"
+                              IsVisible="{Binding ShowInstall}"
+                              Command="{Binding $parent[ItemsControl].((vm:AgentsViewModel)DataContext).InstallAgentCommand}"
+                              CommandParameter="{Binding}"/>
+                      <Button Grid.Column="3" Content="Сайт" VerticalAlignment="Center"
+                              Command="{Binding $parent[ItemsControl].((vm:AgentsViewModel)DataContext).OpenAgentDocsCommand}"
+                              CommandParameter="{Binding}"/>
+                    </Grid>
+                  </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -300,7 +313,7 @@
             <TextBlock Text="Здесь появятся логи запуска модели. Нажмите «Только сервер» или «Старт» — и сразу увидите, что стартовало и без ошибок ли."
                        FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource InkSoftBrush}"
                        IsVisible="{Binding ServerLog, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ScrollViewer x:Name="ConsoleScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
               <SelectableTextBlock Text="{Binding ServerLog}" FontFamily="Cascadia Code,Consolas,monospace"
                                    FontSize="11.5" Foreground="{DynamicResource InkBrush}"/>
             </ScrollViewer>

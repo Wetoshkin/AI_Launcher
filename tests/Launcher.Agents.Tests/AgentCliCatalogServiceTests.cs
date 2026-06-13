@@ -12,15 +12,15 @@ public sealed class AgentCliCatalogServiceTests
             new Dictionary<string, string?>
             {
                 ["opencode"] = @"C:\tools\opencode.cmd",
-                ["kilo"] = null,
-                ["claw"] = @"C:\tools\claw.exe",
+                ["crush"] = null,
                 ["aider"] = null,
+                ["goose"] = null,
+                ["kilo"] = null,
                 ["pi"] = null
             },
             new Dictionary<string, string>
             {
-                ["opencode"] = "opencode 1.2.3",
-                ["claw"] = "claw 0.9.0"
+                ["opencode"] = "opencode 1.2.3"
             });
         var catalog = new AgentCliCatalogService(resolver);
 
@@ -35,15 +35,16 @@ public sealed class AgentCliCatalogServiceTests
                 Assert.Equal(@"C:\tools\opencode.cmd", status.ExecutablePath);
                 Assert.Equal("opencode 1.2.3", status.VersionText);
             },
+            status => Assert.Equal(AgentKind.Crush, status.Agent),
             status =>
             {
-                Assert.Equal(AgentKind.Kilo, status.Agent);
+                Assert.Equal(AgentKind.Aider, status.Agent);
                 Assert.False(status.IsInstalled);
-                Assert.Equal("kilo", status.ExecutableName);
+                Assert.Equal("aider", status.ExecutableName);
                 Assert.Equal("не найден", status.StatusText);
             },
-            status => Assert.Equal(AgentKind.Claw, status.Agent),
-            status => Assert.Equal(AgentKind.Aider, status.Agent),
+            status => Assert.Equal(AgentKind.Goose, status.Agent),
+            status => Assert.Equal(AgentKind.Kilo, status.Agent),
             status => Assert.Equal(AgentKind.Pi, status.Agent));
     }
 

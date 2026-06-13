@@ -17,7 +17,14 @@ using Launcher.Runtimes.Hardware;
 
 namespace Launcher.Desktop.ViewModels.Pages;
 
-public sealed record AgentStatusRow(string Name, string Status, bool Installed);
+public sealed record AgentStatusRow(
+    string Name,
+    string Status,
+    bool Installed,
+    AgentKind Kind,
+    bool ShowInstall,
+    string DocsUrl,
+    string Note);
 
 /// <summary>Строка прогноза: сколько памяти займёт модель на конкретной карте (или в ОЗУ).</summary>
 public sealed record GpuFillRow(string Name, string Text, double Percent, int Level);
@@ -903,17 +910,68 @@ public sealed partial class AgentsViewModel : ViewModelBase
             var statuses = await _catalog.CheckAsync(CancellationToken.None);
             foreach (var s in statuses)
             {
+                var info = AgentCatalog.Get(s.Agent);
                 Agents.Add(new AgentStatusRow(
-                    $"{s.Agent} ({s.ExecutableName})",
+                    $"{info.Display} ({s.ExecutableName})",
                     s.IsInstalled ? $"✓ {s.StatusText}" : "✗ не установлен",
-                    s.IsInstalled));
+                    s.IsInstalled,
+                    s.Agent,
+                    ShowInstall: !s.IsInstalled,
+                    info.DocsUrl,
+                    info.Note));
             }
 
-            Status = "Готово. Не установленный агент можно поставить через npm/pipx — см. его документацию.";
+            Status = "Готово. Рядом с неустановленными — кнопка «Установить».";
         }
         catch (Exception ex)
         {
             Status = "Не удалось проверить агенты: " + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallAgentAsync(AgentStatusRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        var info = AgentCatalog.Get(row.Kind);
+        Status = $"Устанавливаю {info.Display}…";
+        ServerStatus = $"Установка {info.Display}…";
+
+        var result = await AgentInstaller.InstallAsync(info, AppendServerLog, CancellationToken.None);
+        Status = result.Message;
+
+        if (result.Started && !result.Manual)
+        {
+            await CheckAgentsAsync();
+            // Если агент появился — выбираем его, чтобы можно было сразу запускать.
+            var nowInstalled = Agents.FirstOrDefault(a => a.Kind == row.Kind && a.Installed);
+            if (nowInstalled is not null)
+            {
+                SelectedAgent = row.Kind;
+                Status = $"{info.Display} установлен и выбран. Можно нажимать «Старт».";
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void OpenAgentDocs(AgentStatusRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(row.DocsUrl) { UseShellExecute = true });
+        }
+        catch
+        {
+            // браузер не открылся
         }
     }
 
@@ -1026,6 +1084,8 @@ public sealed partial class AgentsViewModel : ViewModelBase
             AgentKind.Claw => new ClawCommandBuilder(),
             AgentKind.Aider => new AiderCommandBuilder(),
             AgentKind.Pi => new PiCommandBuilder(),
+            AgentKind.Crush => new CrushCommandBuilder(),
+            AgentKind.Goose => new GooseCommandBuilder(),
             _ => new OpenCodeCommandBuilder(),
         };
         return builder.Build(request);

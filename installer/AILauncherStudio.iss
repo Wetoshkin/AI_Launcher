@@ -2,7 +2,7 @@
 ; Per-user install (no admin), Start Menu + Desktop shortcuts, clean uninstaller.
 
 #define MyAppName "AI Launcher Studio"
-#define MyAppVersion "1.0.8"
+#define MyAppVersion "1.0.9"
 #define MyAppPublisher "Wetoshkin"
 #define MyAppURL "https://github.com/Wetoshkin/AI_Launcher"
 #define MyAppExeName "Launcher.Desktop.exe"
