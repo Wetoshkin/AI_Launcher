@@ -18,6 +18,9 @@ public sealed partial class DashboardViewModel : ViewModelBase
     /// <summary>Колбэк навигации: оболочка подставляет переход на вкладку по названию.</summary>
     public Action<string>? RequestNavigate { get; set; }
 
+    /// <summary>Показывать онбординг, если ещё не установлен ни один runtime.</summary>
+    public bool ShowOnboarding => Services.LocalServerLauncher.FindInstalledRuntime() is null;
+
     public string Title => "Главная";
     public string Description => "Нажмите пару кнопок и начните общаться с нейросетью — локально на своём ПК или онлайн.";
 

@@ -44,6 +44,19 @@
             </Grid>
             <TextBlock Text="{Binding ServerStatus}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
 
+            <!-- Эксперт: произвольные аргументы -->
+            <Expander Header="Эксперт: дополнительные аргументы">
+              <StackPanel Spacing="8" Margin="0,8,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="Аргументы llama-server" VerticalAlignment="Center"/>
+                  <ctrl:HelpHint Title="Дополнительные аргументы"
+                                 Text="Полный контроль для профи. Примеры: --temp 0.6 --top-k 20 --top-p 0.95 (точный код); --xtc-probability 0.5 (разнообразие); --flash-attn on; --cache-type-k q8_0 (экономия памяти); --split-mode row. Анти-зацикливание (DRY) уже включено. У каждого параметра есть подсказка на вкладке Настройки."/>
+                </StackPanel>
+                <TextBox Text="{Binding ExpertArgs}" PlaceholderText="--temp 0.6 --top-k 20 --xtc-probability 0.5"
+                         AcceptsReturn="False"/>
+              </StackPanel>
+            </Expander>
+
             <!-- Лог-консоль сервера -->
             <Expander Header="{l:T chat.log}" IsVisible="{Binding ServerLog, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
               <Grid RowDefinitions="Auto,*" Margin="0,8,0,0">
