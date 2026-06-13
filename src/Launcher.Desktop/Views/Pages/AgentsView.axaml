@@ -283,7 +283,9 @@
             </Grid>
             <StackPanel Orientation="Horizontal" Spacing="10">
               <Button Content="🚀 Старт — запустить модель и агента" Classes="primary" FontSize="14"
-                      Command="{Binding PrepareAndLaunchCommand}"/>
+                      Command="{Binding PrepareAndLaunchCommand}" IsVisible="{Binding !IsAgentRunning}"/>
+              <Button Content="■ Остановить агента" Classes="primary" FontSize="14"
+                      Command="{Binding StopAgentCommand}" IsVisible="{Binding IsAgentRunning}"/>
               <Button Content="Только сервер" Command="{Binding StartServerCommand}"
                       IsEnabled="{Binding !IsServerStarting}" IsVisible="{Binding !IsServerRunning}"/>
               <Button Content="■ Остановить сервер" Command="{Binding StopServerCommand}"
@@ -315,7 +317,8 @@
                        IsVisible="{Binding ServerLog, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
             <ScrollViewer x:Name="ConsoleScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
               <SelectableTextBlock Text="{Binding ServerLog}" FontFamily="Cascadia Code,Consolas,monospace"
-                                   FontSize="11.5" Foreground="{DynamicResource InkBrush}"/>
+                                   FontSize="11.5" Foreground="{DynamicResource InkBrush}"
+                                   Margin="0,0,0,16"/>
             </ScrollViewer>
           </Grid>
         </Border>
