@@ -2,6 +2,10 @@ using Launcher.Core.LaunchPlans;
 
 namespace Launcher.Agents.Commands;
 
+/// <summary>
+/// Pi запускается в папке проекта и сам подхватывает расширение из .pi/extensions/
+/// (его пишет AgentProjectConfigWriter), где зарегистрирован локальный OpenAI-провайдер.
+/// </summary>
 public sealed class PiCommandBuilder : IAgentCommandBuilder
 {
     public LaunchPlan Build(AgentLaunchRequest request)
@@ -10,11 +14,7 @@ public sealed class PiCommandBuilder : IAgentCommandBuilder
 
         return new LaunchPlan(
             "pi",
-            new[] { "--model", request.ProviderModel, request.ProjectPath },
-            new Dictionary<string, string>
-            {
-                ["OPENAI_BASE_URL"] = request.BaseUrl,
-                ["OPENAI_API_KEY"] = "local"
-            });
+            System.Array.Empty<string>(),
+            new Dictionary<string, string>());
     }
 }
