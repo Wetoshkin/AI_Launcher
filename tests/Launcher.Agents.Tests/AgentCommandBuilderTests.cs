@@ -117,6 +117,21 @@ public sealed class AgentCommandBuilderTests
         Assert.Equal("Qwen3-Coder-Q4_K_M", plan.Environment["GOOSE_MODEL"]);
     }
 
+    [Fact]
+    public void ClaudeCodeUsesAnthropicEnvWithBareBaseUrl()
+    {
+        var plan = new ClaudeCodeCommandBuilder().Build(new AgentLaunchRequest(
+            AgentKind.ClaudeCode,
+            @"D:\AI\Projects\App",
+            "local/Qwen3-Coder-Q4_K_M",
+            "http://127.0.0.1:8080/v1"));
+
+        Assert.Equal("claude", plan.Executable);
+        Assert.Equal("http://127.0.0.1:8080", plan.Environment["ANTHROPIC_BASE_URL"]);
+        Assert.Equal("local", plan.Environment["ANTHROPIC_AUTH_TOKEN"]);
+        Assert.Equal("Qwen3-Coder-Q4_K_M", plan.Environment["ANTHROPIC_DEFAULT_SONNET_MODEL"]);
+    }
+
     public static TheoryData<IAgentCommandBuilder, AgentKind> LocalOpenAiBuilders()
     {
         return new TheoryData<IAgentCommandBuilder, AgentKind>

@@ -31,6 +31,7 @@ public static class AgentCatalog
     public static IReadOnlyList<AgentKind> Supported { get; } = new[]
     {
         AgentKind.OpenCode,
+        AgentKind.ClaudeCode,
         AgentKind.Crush,
         AgentKind.Aider,
         AgentKind.Goose,
@@ -43,6 +44,10 @@ public static class AgentCatalog
         AgentKind.OpenCode => new(kind, "OpenCode", "opencode",
             AgentInstallMethod.Npm, "opencode-ai", "https://opencode.ai",
             "Терминальный кодинг-агент. Ставится через npm (нужен Node.js)."),
+
+        AgentKind.ClaudeCode => new(kind, "Claude Code", "claude",
+            AgentInstallMethod.Npm, "@anthropic-ai/claude-code", "https://docs.anthropic.com/en/docs/claude-code",
+            "Официальный CLI от Anthropic. Работает с локальной моделью напрямую через Anthropic Messages API движка llama.cpp (нужен свежий движок из вкладки «Среды»)."),
 
         AgentKind.Crush => new(kind, "Crush", "crush",
             AgentInstallMethod.Npm, "@charmland/crush", "https://github.com/charmbracelet/crush",

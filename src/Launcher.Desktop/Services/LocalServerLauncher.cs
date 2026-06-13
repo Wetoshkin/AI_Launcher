@@ -76,6 +76,9 @@ public sealed class LocalServerLauncher
             "--ctx-size", contextTokens.ToString(),
             "--port", port.ToString(),
             "--host", "127.0.0.1",
+            // Jinja-шаблон чата обязателен для корректных tool-calls у агентов
+            // (иначе в вывод лезут токены вроде <unused24>).
+            "--jinja",
         };
         if (antiLoop)
         {

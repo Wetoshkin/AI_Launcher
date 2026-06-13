@@ -9,5 +9,6 @@ public enum AgentKind
     Aider,
     Pi,
     Crush,
-    Goose
+    Goose,
+    ClaudeCode
 }

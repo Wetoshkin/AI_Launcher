@@ -12,6 +12,7 @@ public sealed class AgentCliCatalogServiceTests
             new Dictionary<string, string?>
             {
                 ["opencode"] = @"C:\tools\opencode.cmd",
+                ["claude"] = null,
                 ["crush"] = null,
                 ["aider"] = null,
                 ["goose"] = null,
@@ -35,6 +36,7 @@ public sealed class AgentCliCatalogServiceTests
                 Assert.Equal(@"C:\tools\opencode.cmd", status.ExecutablePath);
                 Assert.Equal("opencode 1.2.3", status.VersionText);
             },
+            status => Assert.Equal(AgentKind.ClaudeCode, status.Agent),
             status => Assert.Equal(AgentKind.Crush, status.Agent),
             status =>
             {
