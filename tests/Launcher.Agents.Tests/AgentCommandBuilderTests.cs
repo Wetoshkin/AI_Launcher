@@ -127,9 +127,14 @@ public sealed class AgentCommandBuilderTests
             "http://127.0.0.1:8080/v1"));
 
         Assert.Equal("claude", plan.Executable);
+        Assert.Contains("--dangerously-skip-permissions", plan.Arguments);
         Assert.Equal("http://127.0.0.1:8080", plan.Environment["ANTHROPIC_BASE_URL"]);
         Assert.Equal("local", plan.Environment["ANTHROPIC_AUTH_TOKEN"]);
-        Assert.Equal("Qwen3-Coder-Q4_K_M", plan.Environment["ANTHROPIC_DEFAULT_SONNET_MODEL"]);
+        // Claude Code-у подсовываем настоящий ID Opus 4.8, чтобы CLI считала это флагманской моделью.
+        Assert.Equal("claude-opus-4-8", plan.Environment["ANTHROPIC_DEFAULT_OPUS_MODEL"]);
+        Assert.Equal("claude-opus-4-8", plan.Environment["ANTHROPIC_DEFAULT_SONNET_MODEL"]);
+        Assert.Equal("claude-opus-4-8", plan.Environment["ANTHROPIC_DEFAULT_HAIKU_MODEL"]);
+        Assert.Equal("claude-opus-4-8", plan.Environment["ANTHROPIC_MODEL"]);
     }
 
     public static TheoryData<IAgentCommandBuilder, AgentKind> LocalOpenAiBuilders()
