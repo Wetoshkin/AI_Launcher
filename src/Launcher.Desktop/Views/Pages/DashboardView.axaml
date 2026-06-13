@@ -52,23 +52,28 @@
         </StackPanel>
       </Border>
 
-      <!-- Основные действия -->
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
-        <Button Grid.Column="0" Classes="action actionPrimary" Command="{Binding OpenLocalChatCommand}">
-          <StackPanel Spacing="8">
-            <TextBlock Text="💻" FontSize="26"/>
-            <TextBlock Text="{l:T home.local.title}" FontSize="18" FontWeight="Bold"/>
-            <TextBlock Text="{l:T home.local.desc}" FontSize="13" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+      <!-- Быстрый повтор последнего запуска -->
+      <Border IsVisible="{Binding HasQuickLaunch}" Classes="card">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+            <TextBlock Text="⚡ Повторить последний запуск" FontSize="16" FontWeight="Bold"/>
+            <TextBlock Text="{Binding QuickLaunchSummary}" FontSize="13" Foreground="{DynamicResource InkSoftBrush}"
+                       TextWrapping="Wrap"/>
           </StackPanel>
-        </Button>
-        <Button Grid.Column="1" Classes="action" Command="{Binding OpenOnlineChatCommand}">
-          <StackPanel Spacing="8">
-            <TextBlock Text="☁️" FontSize="26"/>
-            <TextBlock Text="{l:T home.online.title}" FontSize="18" FontWeight="Bold"/>
-            <TextBlock Text="{l:T home.online.desc}" FontSize="13" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
-          </StackPanel>
-        </Button>
-      </Grid>
+          <Button Grid.Column="1" Content="Запустить" Classes="primary" VerticalAlignment="Center"
+                  Command="{Binding QuickLaunchCommand}"/>
+        </Grid>
+      </Border>
+
+      <!-- Основное действие -->
+      <Button Classes="action actionPrimary" Command="{Binding OpenAgentsCommand}">
+        <StackPanel Spacing="8">
+          <TextBlock Text="🚀" FontSize="26"/>
+          <TextBlock Text="Запустить модель и агента" FontSize="18" FontWeight="Bold"/>
+          <TextBlock Text="Выберите модель, папку проекта и агента — и начните работу." FontSize="13"
+                     Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+        </StackPanel>
+      </Button>
 
       <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
         <Button Grid.Column="0" Classes="action" Command="{Binding OpenModelsCommand}">
@@ -91,22 +96,6 @@
         </Button>
       </Grid>
 
-      <Border Classes="card">
-        <StackPanel Spacing="8">
-          <TextBlock Text="{l:T home.hw.title}" FontSize="17" FontWeight="Bold"/>
-          <TextBlock Text="{Binding HardwareSummary}" FontSize="13" TextWrapping="Wrap"
-                     Foreground="{DynamicResource InkSoftBrush}"/>
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card">
-        <StackPanel Spacing="16">
-          <TextBlock Text="{l:T home.mem.title}" FontSize="17" FontWeight="Bold"/>
-          <TextBlock Text="{Binding SampleCaption}" FontSize="12.5" TextWrapping="Wrap"
-                     Foreground="{DynamicResource InkSoftBrush}"/>
-          <ctrl:HardwareMemoryView Plan="{Binding MemoryPlan}"/>
-        </StackPanel>
-      </Border>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

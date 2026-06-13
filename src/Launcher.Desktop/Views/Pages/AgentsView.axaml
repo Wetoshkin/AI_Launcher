@@ -6,47 +6,119 @@
              xmlns:conv="using:Launcher.Desktop.Converters"
              x:Class="Launcher.Desktop.Views.Pages.AgentsView"
              x:DataType="vm:AgentsViewModel">
-  <Grid ColumnDefinitions="*,14,380" Margin="28,24" Background="{DynamicResource PaperBrush}">
+  <Grid RowDefinitions="*,Auto" Margin="28,24,28,16" Background="{DynamicResource PaperBrush}">
 
-    <ScrollViewer Grid.Column="0">
-      <StackPanel Spacing="18" VerticalAlignment="Top">
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="16" VerticalAlignment="Top" Margin="0,0,16,0">
         <StackPanel Spacing="6">
           <TextBlock Text="{l:T agents.title}" FontSize="30" FontWeight="ExtraBold"/>
           <TextBlock Text="{Binding Description}" FontSize="13.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
         </StackPanel>
 
-        <!-- Шаг 1: модель и параметры запуска -->
+        <!-- 1. Модель -->
         <Border Classes="card">
-          <StackPanel Spacing="14">
-            <TextBlock Text="Шаг 1. Модель и параметры запуска" FontSize="17" FontWeight="Bold"/>
-            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="9" ColumnSpacing="10">
-              <TextBlock Grid.Row="0" Grid.Column="0" Text="{l:T chat.engine}" VerticalAlignment="Center"/>
-              <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding RuntimeExe}" PlaceholderText="llama-server.exe (ставится во вкладке «Среды»)"/>
-              <TextBlock Grid.Row="1" Grid.Column="0" Text="{l:T chat.model}" VerticalAlignment="Center"/>
-              <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <TextBox Grid.Column="0" Text="{Binding LocalModelPath}" PlaceholderText="путь к .gguf (или выберите во вкладке «Модели»)"/>
-                <Button Grid.Column="1" Content="{l:T common.browse}" Command="{Binding BrowseModelCommand}"/>
-              </Grid>
-              <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="{l:T chat.mode}" VerticalAlignment="Center"/>
-                <ComboBox MinWidth="150" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}"/>
-                <TextBlock Text="{l:T chat.port}" VerticalAlignment="Center"/>
-                <TextBox Width="78" Text="{Binding ServerPort}"/>
-                <Button Content="{l:T common.run}" Classes="primary" Command="{Binding StartServerCommand}"
-                        IsEnabled="{Binding !IsServerStarting}" IsVisible="{Binding !IsServerRunning}"/>
-                <Button Content="{l:T common.stop}" Classes="primary" Command="{Binding StopServerCommand}"
-                        IsVisible="{Binding IsServerRunning}"/>
+          <StackPanel Spacing="10">
+            <TextBlock Text="1. Модель" FontSize="16" FontWeight="Bold"/>
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+              <ComboBox Grid.Column="0" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding LocalModels}" SelectedItem="{Binding SelectedLocalModel}"
+                        PlaceholderText="выберите локальную модель (частые — выше)"/>
+              <Button Grid.Column="1" Content="Обновить" Command="{Binding RefreshLocalModelsCommand}"/>
+              <Button Grid.Column="2" Content="Файл…" Command="{Binding BrowseModelCommand}"/>
+            </Grid>
+            <TextBox Text="{Binding LocalModelPath}" PlaceholderText="путь к .gguf"
+                     Foreground="{DynamicResource InkSoftBrush}" FontSize="12"/>
+            <TextBlock Text="Список берётся из папки, указанной во вкладке «Модели». Самые часто запускаемые — наверху."
+                       FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Border>
+
+        <!-- 2. Папка проекта -->
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="2. Папка проекта" FontSize="16" FontWeight="Bold"/>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBox Grid.Column="0" Text="{Binding ProjectFolder}" PlaceholderText="папка, в которой будет работать агент"/>
+              <Button Grid.Column="1" Content="{l:T common.browse}" Command="{Binding BrowseProjectCommand}"/>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- 3. Агент -->
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="3. Агент" FontSize="16" FontWeight="Bold"/>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ComboBox MinWidth="180" ItemsSource="{Binding AgentKinds}" SelectedItem="{Binding SelectedAgent}"/>
+              <Button Content="{l:T agents.check}" Command="{Binding CheckAgentsCommand}"/>
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding Agents}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:AgentStatusRow">
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="12.5" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="{Binding Status}" FontSize="12.5" FontWeight="SemiBold"/>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- 4. Параметры запуска -->
+        <Border Classes="card">
+          <StackPanel Spacing="13">
+            <TextBlock Text="4. Параметры запуска" FontSize="16" FontWeight="Bold"/>
+
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="9" ColumnSpacing="12">
+              <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Text="Размер контекста" VerticalAlignment="Center"/>
+                <ctrl:HelpHint Title="Контекст"
+                               Text="Сколько токенов «помнит» модель. Кодинг-агенты шлют большой системный промпт и куски файлов — при маленьком контексте модель начинает «компактить» историю и не успевает ответить. Для агентов берите 32K и больше."/>
               </StackPanel>
+              <StackPanel Grid.Row="0" Grid.Column="1" Spacing="3">
+                <ComboBox MinWidth="240" HorizontalAlignment="Left" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}"/>
+                <TextBlock Text="{Binding SelectedPreset.Hint}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+              </StackPanel>
+
+              <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Text="KV-кэш (турбоквант)" VerticalAlignment="Center"/>
+                <ctrl:HelpHint Title="Сжатие KV-кэша"
+                               Text="Кэш контекста можно сжимать: q8_0 — вдвое меньше памяти почти без потери качества, q4_0 — вчетверо (максимум контекста в ту же видеопамять). Включает Flash Attention."/>
+              </StackPanel>
+              <ComboBox Grid.Row="1" Grid.Column="1" MinWidth="280" HorizontalAlignment="Left"
+                        ItemsSource="{Binding KvCacheModes}" SelectedItem="{Binding SelectedKvCache}"/>
+
+              <TextBlock Grid.Row="2" Grid.Column="0" Text="Стиль ответов" VerticalAlignment="Center"/>
+              <ComboBox Grid.Row="2" Grid.Column="1" MinWidth="200" HorizontalAlignment="Left"
+                        ItemsSource="{Binding Styles}" SelectedItem="{Binding SelectedStyle}"/>
             </Grid>
 
-            <StackPanel Spacing="9">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <TextBlock Text="Стиль ответов" VerticalAlignment="Center"/>
-                <ComboBox MinWidth="170" ItemsSource="{Binding Styles}" SelectedItem="{Binding SelectedStyle}"/>
-                <CheckBox Content="Экономить память" IsChecked="{Binding SaveMemory}" VerticalAlignment="Center"/>
-                <ctrl:HelpHint Title="Экономия памяти"
-                               Text="Квантование KV-кэша до q8_0 + Flash Attention режет память вдвое — больше контекст или модель. Если на вашем GPU не заработает (упадёт при старте), выключите."/>
+            <!-- Прогноз памяти -->
+            <Border CornerRadius="11" Padding="13" Background="{DynamicResource SurfaceAltBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+              <StackPanel Spacing="9">
+                <TextBlock Text="Прогноз: как модель и контекст лягут в память" FontSize="13.5" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding GpuFillSummary}" FontSize="12.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+                <ItemsControl ItemsSource="{Binding GpuFill}" IsVisible="{Binding HasGpuFill}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:GpuFillRow">
+                      <Grid ColumnDefinitions="160,*,Auto" Margin="0,0,0,7" ColumnSpacing="10">
+                        <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center" FontSize="12.5"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Percent}" Height="10"
+                                     VerticalAlignment="Center"
+                                     Foreground="{Binding Level, Converter={x:Static conv:FitConverters.LevelToBrush}}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding Text}" VerticalAlignment="Center" FontSize="12"
+                                   Foreground="{DynamicResource InkSoftBrush}"/>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
+            </Border>
+
+            <StackPanel Spacing="9">
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <TextBlock Text="MoE-эксперты на CPU" VerticalAlignment="Center"/>
                 <CheckBox Content="Авто" IsChecked="{Binding MoeAuto}" VerticalAlignment="Center"/>
@@ -65,37 +137,56 @@
                   <ComboBoxItem><TextBlock Text="Кратко"/></ComboBoxItem>
                 </ComboBox>
                 <ctrl:HelpHint HelpId="reasoning"/>
+                <ctrl:HelpHint Title="MTP / спекулятивная генерация"
+                               Text="Multi-Token Prediction (MTP) и спекулятивное декодирование ускоряют генерацию. Авто-определения для GGUF нет: если модель поддерживает draft-модель, задайте её в «своих аргументах» (--model-draft …). Для большинства моделей не требуется."/>
               </StackPanel>
             </StackPanel>
 
-            <Expander Header="Эксперт: дополнительные аргументы">
-              <StackPanel Spacing="8" Margin="0,8,0,0">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <TextBlock Text="Аргументы llama-server" VerticalAlignment="Center"/>
-                  <ctrl:HelpHint Title="Дополнительные аргументы"
-                                 Text="Полный контроль для профи. Примеры: --temp 0.6 --top-k 20 --top-p 0.95; --xtc-probability 0.5; --flash-attn on; --cache-type-k q8_0; --split-mode row. Анти-зацикливание (DRY) уже включено."/>
+            <!-- Эксперт -->
+            <StackPanel Spacing="10">
+              <CheckBox Content="Экспертные параметры запуска" IsChecked="{Binding ShowExpert}" FontWeight="SemiBold"/>
+              <StackPanel Spacing="10" IsVisible="{Binding ShowExpert}" Margin="2,0,0,0">
+                <WrapPanel Orientation="Horizontal">
+                  <CheckBox Content="Flash Attention" IsChecked="{Binding FlashAttention}" Margin="0,0,18,6"/>
+                  <CheckBox Content="Держать в ОЗУ (mlock)" IsChecked="{Binding KeepInRam}" Margin="0,0,18,6"/>
+                  <CheckBox Content="Без mmap" IsChecked="{Binding NoMmap}" Margin="0,0,18,6"/>
+                  <CheckBox Content="Сплит по строкам (мульти-GPU)" IsChecked="{Binding SplitModeRow}" Margin="0,0,18,6"/>
+                  <CheckBox Content="Подробный лог" IsChecked="{Binding VerboseLog}" Margin="0,0,18,6"/>
+                </WrapPanel>
+                <StackPanel Spacing="5">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Свои аргументы llama-server" VerticalAlignment="Center" FontSize="12.5"/>
+                    <ctrl:HelpHint Title="Дополнительные аргументы"
+                                   Text="Полный контроль для профи: --temp 0.6 --top-k 20; --xtc-probability 0.5; --model-draft путь (спекулятивная генерация). Анти-зацикливание (DRY) уже включено."/>
+                  </StackPanel>
+                  <TextBox Text="{Binding ExpertArgs}" PlaceholderText="--temp 0.6 --top-k 20 --xtc-probability 0.5" AcceptsReturn="False"/>
                 </StackPanel>
-                <TextBox Text="{Binding ExpertArgs}" PlaceholderText="--temp 0.6 --top-k 20 --xtc-probability 0.5" AcceptsReturn="False"/>
+              </StackPanel>
+            </StackPanel>
+
+            <!-- Движок и порт + лог-стрим -->
+            <Expander Header="Движок, порт, лог-стрим">
+              <StackPanel Spacing="9" Margin="0,8,0,0">
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" RowSpacing="8" ColumnSpacing="10">
+                  <TextBlock Grid.Row="0" Grid.Column="0" Text="{l:T chat.engine}" VerticalAlignment="Center"/>
+                  <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding RuntimeExe}" PlaceholderText="llama-server.exe (из вкладки «Среды»)"/>
+                  <TextBlock Grid.Row="1" Grid.Column="0" Text="{l:T chat.port}" VerticalAlignment="Center"/>
+                  <TextBox Grid.Row="1" Grid.Column="1" Width="100" HorizontalAlignment="Left" Text="{Binding ServerPort}"/>
+                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <CheckBox Content="Лог-стрим в браузере" IsChecked="{Binding LogStreamEnabled}" VerticalAlignment="Center"/>
+                  <TextBox Width="78" Text="{Binding LogStreamPort}"/>
+                  <Button Content="Открыть в браузере" Command="{Binding OpenLogStreamCommand}" IsEnabled="{Binding LogStreamEnabled}"/>
+                </StackPanel>
+                <TextBlock Text="{Binding LogStreamStatus}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
               </StackPanel>
             </Expander>
-
-            <StackPanel Spacing="6">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <CheckBox Content="Лог-стрим в браузере" IsChecked="{Binding LogStreamEnabled}" VerticalAlignment="Center"/>
-                <TextBlock Text="Порт" VerticalAlignment="Center"/>
-                <TextBox Width="78" Text="{Binding LogStreamPort}"/>
-                <Button Content="Открыть в браузере" Command="{Binding OpenLogStreamCommand}" IsEnabled="{Binding LogStreamEnabled}"/>
-              </StackPanel>
-              <TextBlock Text="{Binding LogStreamStatus}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
-            </StackPanel>
           </StackPanel>
         </Border>
 
-        <!-- Шаг 2: агент и проект -->
+        <!-- Подключение + Старт -->
         <Border Classes="card">
-          <StackPanel Spacing="14">
-            <TextBlock Text="Шаг 2. Агент и проект" FontSize="17" FontWeight="Bold"/>
-
+          <StackPanel Spacing="12">
             <Border CornerRadius="9" Padding="12,10" Background="{DynamicResource AccentSoftBrush}">
               <Grid ColumnDefinitions="Auto,*">
                 <Ellipse Grid.Column="0" Width="10" Height="10" VerticalAlignment="Top" Margin="0,4,8,0"
@@ -103,79 +194,49 @@
                 <TextBlock Grid.Column="1" Text="{Binding ConnectionHint}" FontSize="12.5" FontWeight="Medium" TextWrapping="Wrap"/>
               </Grid>
             </Border>
-
-            <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="9" ColumnSpacing="10">
-              <TextBlock Grid.Row="0" Grid.Column="0" Text="Проект" VerticalAlignment="Center"/>
-              <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <TextBox Grid.Column="0" Text="{Binding ProjectFolder}" PlaceholderText="папка проекта"/>
-                <Button Grid.Column="1" Content="{l:T common.browse}" Command="{Binding BrowseProjectCommand}"/>
-              </Grid>
-              <TextBlock Grid.Row="1" Grid.Column="0" Text="Агент" VerticalAlignment="Center"/>
-              <ComboBox Grid.Row="1" Grid.Column="1" MinWidth="180" HorizontalAlignment="Left"
-                        ItemsSource="{Binding AgentKinds}" SelectedItem="{Binding SelectedAgent}"/>
-              <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                <TextBlock Text="Адрес" VerticalAlignment="Center"/>
-                <ctrl:HelpHint Title="Источник модели"
-                               Text="После запуска модели выше адрес подставляется сам. Для онлайн-провайдера впишите его адрес вручную."/>
-              </StackPanel>
-              <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto,160" ColumnSpacing="8">
-                <TextBox Grid.Column="0" Text="{Binding BaseUrl}"/>
-                <TextBlock Grid.Column="1" Text="{l:T chat.model}" VerticalAlignment="Center"/>
-                <TextBox Grid.Column="2" Text="{Binding Model}"/>
-              </Grid>
-              <Button Grid.Row="3" Grid.Column="1" Content="Подготовить конфиг и запустить агента" Classes="primary"
-                      HorizontalAlignment="Left" Command="{Binding PrepareAndLaunchCommand}"/>
+            <Grid ColumnDefinitions="Auto,Auto,160" ColumnSpacing="8">
+              <TextBlock Grid.Column="0" Text="Адрес/модель" VerticalAlignment="Center" Foreground="{DynamicResource InkSoftBrush}" FontSize="12"/>
+              <TextBox Grid.Column="1" Width="240" Text="{Binding BaseUrl}"/>
+              <TextBox Grid.Column="2" Text="{Binding Model}"/>
             </Grid>
-          </StackPanel>
-        </Border>
-
-        <!-- Установленные агенты -->
-        <Border Classes="card">
-          <StackPanel Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <TextBlock Text="{l:T agents.installed}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
-              <Button Content="{l:T agents.check}" Command="{Binding CheckAgentsCommand}"/>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button Content="🚀 Старт — запустить модель и агента" Classes="primary" FontSize="14"
+                      Command="{Binding PrepareAndLaunchCommand}"/>
+              <Button Content="Только сервер" Command="{Binding StartServerCommand}"
+                      IsEnabled="{Binding !IsServerStarting}" IsVisible="{Binding !IsServerRunning}"/>
+              <Button Content="■ Остановить сервер" Command="{Binding StopServerCommand}"
+                      IsVisible="{Binding IsServerRunning}"/>
             </StackPanel>
             <TextBlock Text="{Binding Status}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
-            <ItemsControl ItemsSource="{Binding Agents}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:AgentStatusRow">
-                  <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}"
-                          BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,7">
-                    <Grid ColumnDefinitions="*,Auto">
-                      <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center"/>
-                      <TextBlock Grid.Column="1" Text="{Binding Status}" FontWeight="SemiBold"/>
-                    </Grid>
-                  </Border>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
           </StackPanel>
         </Border>
       </StackPanel>
     </ScrollViewer>
 
-    <!-- Консоль сервера: видна всегда, чтобы сразу замечать ошибки запуска -->
-    <Border Grid.Column="2" Classes="card" Padding="14">
-      <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
-        <TextBlock Grid.Row="0" Text="Консоль сервера" FontWeight="Bold" FontSize="15"/>
-        <TextBlock Grid.Row="1" Text="{Binding ServerStatus}" FontSize="12" TextWrapping="Wrap"
-                   Foreground="{DynamicResource InkSoftBrush}"/>
-        <Border Grid.Row="2" CornerRadius="8" Padding="10"
+    <!-- Консоль сервера: фиксирована снизу, всегда видна, со своим скроллом -->
+    <Border Grid.Row="1" Classes="card" Padding="12" Margin="0,12,0,0" Height="200">
+      <Grid RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+          <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+            <TextBlock Text="Консоль сервера" FontWeight="Bold" FontSize="15" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding ServerStatus}" FontSize="12" Foreground="{DynamicResource InkSoftBrush}"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+          </StackPanel>
+          <Button Grid.Column="1" Content="{l:T common.clear}" Command="{Binding ClearLogCommand}"
+                  IsVisible="{Binding ServerLog, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        </Grid>
+        <Border Grid.Row="1" CornerRadius="8" Padding="10"
                 Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
           <Grid>
-            <TextBlock Text="Здесь появятся логи запуска модели. Нажмите «Запустить» — и сразу увидите, что стартовало и без ошибок ли."
+            <TextBlock Text="Здесь появятся логи запуска модели. Нажмите «Только сервер» или «Старт» — и сразу увидите, что стартовало и без ошибок ли."
                        FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource InkSoftBrush}"
                        IsVisible="{Binding ServerLog, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
-            <ScrollViewer>
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
               <SelectableTextBlock Text="{Binding ServerLog}" FontFamily="Cascadia Code,Consolas,monospace"
                                    FontSize="11.5" Foreground="{DynamicResource InkBrush}"/>
             </ScrollViewer>
           </Grid>
         </Border>
-        <Button Grid.Row="3" Content="{l:T common.clear}" HorizontalAlignment="Right"
-                Command="{Binding ClearLogCommand}"
-                IsVisible="{Binding ServerLog, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
       </Grid>
     </Border>
   </Grid>

@@ -19,6 +19,7 @@ public partial class App : Application
     public static void ForceExit()
     {
         _reallyExit = true;
+        Services.LocalServerLauncher.KillStrayInferenceServers();
         if (Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.Shutdown();
@@ -92,6 +93,7 @@ public partial class App : Application
         quitItem.Click += (_, _) =>
         {
             _reallyExit = true;
+            Services.LocalServerLauncher.KillStrayInferenceServers();
             desktop.Shutdown();
         };
 

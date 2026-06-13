@@ -72,6 +72,21 @@ public sealed partial class ModelsViewModel : ViewModelBase
         _hfClient = hfClient;
         _downloadService = downloadService;
         GpuSettings.Instance.Changed += (_, _) => Dispatcher.UIThread.Post(RecomputeBudget);
+
+        // Запомненная папка с моделями — подставляем и сразу сканируем.
+        var saved = UiPreferences.Load().ModelsFolder;
+        if (!string.IsNullOrWhiteSpace(saved) && System.IO.Directory.Exists(saved))
+        {
+            _modelsFolder = saved;
+            Scan();
+        }
+    }
+
+    partial void OnModelsFolderChanged(string value)
+    {
+        var prefs = UiPreferences.Load();
+        prefs.ModelsFolder = value ?? string.Empty;
+        prefs.Save();
     }
 
     public void ApplyHardware(SystemHardware hardware)

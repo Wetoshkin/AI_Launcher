@@ -10,6 +10,9 @@ public sealed class UiPreferences
     public string Theme { get; set; } = "Light";   // Light | Dark | System
     public string Language { get; set; } = "ru";    // ru | en
     public bool UseIntegratedGpu { get; set; }       // учитывать встройку под LLM (по умолчанию нет)
+    public string ModelsFolder { get; set; } = string.Empty; // запомненная папка с GGUF-моделями
+    public System.Collections.Generic.List<string> RecentModels { get; set; } = new(); // частые модели (свежие первыми)
+    public LaunchProfile? LastLaunch { get; set; }   // последний запуск для быстрого повтора
 
     private static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
