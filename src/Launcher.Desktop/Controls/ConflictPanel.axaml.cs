@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Layout;
 using Avalonia.Media;
 using Launcher.Runtimes.Compatibility;
 
@@ -9,12 +8,13 @@ namespace Launcher.Desktop.Controls;
 
 /// <summary>
 /// Показывает находки <see cref="SettingsConflictEngine"/>: цвет по severity, заголовок,
-/// объяснение и предлагаемое исправление. Пусто — значит всё в порядке.
+/// объяснение и предлагаемое исправление. Пусто — значит всё в порядке. Тема-зависимая.
 /// </summary>
 public partial class ConflictPanel : UserControl
 {
-    private static readonly IBrush OkBrush = new SolidColorBrush(Color.Parse("#2E7D32"));
-    private static readonly IBrush InkSoftBrush = new SolidColorBrush(Color.Parse("#76614C"));
+    private static readonly Color ErrorColor = Color.Parse("#E5484D");
+    private static readonly Color WarnColor = Color.Parse("#E08600");
+    private static readonly Color OkColor = Color.Parse("#37A463");
 
     public static readonly StyledProperty<IReadOnlyList<ConflictFinding>?> FindingsProperty =
         AvaloniaProperty.Register<ConflictPanel, IReadOnlyList<ConflictFinding>?>(nameof(Findings));
@@ -28,6 +28,7 @@ public partial class ConflictPanel : UserControl
     public ConflictPanel()
     {
         InitializeComponent();
+        ActualThemeVariantChanged += (_, _) => Rebuild();
         Rebuild();
     }
 
@@ -40,10 +41,21 @@ public partial class ConflictPanel : UserControl
         }
     }
 
+    private IBrush Res(string key, string fallback)
+    {
+        if (this.TryFindResource(key, out var v) && v is IBrush b)
+        {
+            return b;
+        }
+
+        return new SolidColorBrush(Color.Parse(fallback));
+    }
+
     private void Rebuild()
     {
         Items.Children.Clear();
         var findings = Findings;
+        var inkSoft = Res("InkSoftBrush", "#6E6E73");
 
         if (findings is null || findings.Count == 0)
         {
@@ -51,27 +63,28 @@ public partial class ConflictPanel : UserControl
             {
                 Text = "✓ Конфликтов настроек нет — можно запускать.",
                 FontWeight = FontWeight.SemiBold,
-                Foreground = OkBrush,
+                Foreground = new SolidColorBrush(OkColor),
             });
             return;
         }
 
         foreach (var finding in findings)
         {
-            Items.Children.Add(BuildCard(finding));
+            Items.Children.Add(BuildCard(finding, inkSoft));
         }
     }
 
-    private static Control BuildCard(ConflictFinding finding)
+    private static Control BuildCard(ConflictFinding finding, IBrush inkSoft)
     {
-        var (accent, background, icon) = finding.Severity switch
+        var (accent, icon) = finding.Severity switch
         {
-            ConflictSeverity.Error => (Color.Parse("#D64B3F"), Color.Parse("#FCEBE9"), "⛔"),
-            ConflictSeverity.Warning => (Color.Parse("#B26A00"), Color.Parse("#FFF3DD"), "⚠"),
-            _ => (Color.Parse("#2E7D32"), Color.Parse("#EAF5EC"), "ℹ"),
+            ConflictSeverity.Error => (ErrorColor, "⛔"),
+            ConflictSeverity.Warning => (WarnColor, "⚠"),
+            _ => (OkColor, "ℹ"),
         };
+        var tint = Color.FromArgb(28, accent.R, accent.G, accent.B);
 
-        var content = new StackPanel { Spacing = 3 };
+        var content = new StackPanel { Spacing = 4 };
         content.Children.Add(new TextBlock
         {
             Text = $"{icon}  {finding.Title}",
@@ -89,16 +102,16 @@ public partial class ConflictPanel : UserControl
             Text = "Как исправить: " + finding.SuggestedFix,
             TextWrapping = TextWrapping.Wrap,
             FontStyle = FontStyle.Italic,
-            Foreground = InkSoftBrush,
+            Foreground = inkSoft,
         });
 
         return new Border
         {
-            Background = new SolidColorBrush(background),
-            BorderBrush = new SolidColorBrush(accent),
+            Background = new SolidColorBrush(tint),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(120, accent.R, accent.G, accent.B)),
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(10),
-            Padding = new Thickness(14, 10),
+            CornerRadius = new CornerRadius(12),
+            Padding = new Thickness(16, 12),
             Child = content,
         };
     }

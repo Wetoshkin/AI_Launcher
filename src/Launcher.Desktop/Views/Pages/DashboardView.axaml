@@ -2,82 +2,94 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Launcher.Desktop.ViewModels.Pages"
              xmlns:ctrl="using:Launcher.Desktop.Controls"
+             xmlns:l="using:Launcher.Desktop.Localization"
              x:Class="Launcher.Desktop.Views.Pages.DashboardView"
              x:DataType="vm:DashboardViewModel">
   <UserControl.Styles>
-    <Style Selector="Button.card">
+    <Style Selector="Button.action">
       <Setter Property="HorizontalAlignment" Value="Stretch"/>
       <Setter Property="HorizontalContentAlignment" Value="Left"/>
       <Setter Property="Padding" Value="20"/>
-      <Setter Property="CornerRadius" Value="14"/>
+      <Setter Property="CornerRadius" Value="16"/>
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
     </Style>
-    <Style Selector="Button.card:pointerover /template/ ContentPresenter">
+    <Style Selector="Button.action:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}"/>
     </Style>
-    <Style Selector="Button.cardPrimary">
+    <Style Selector="Button.actionPrimary">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
     </Style>
   </UserControl.Styles>
 
   <ScrollViewer>
-    <StackPanel Margin="32" Spacing="20" VerticalAlignment="Top" MaxWidth="900" HorizontalAlignment="Left">
-      <StackPanel Spacing="6">
-        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="Bold"/>
-        <TextBlock Text="{Binding Description}" FontSize="14" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
-      </StackPanel>
+    <StackPanel Margin="40,32" Spacing="22" VerticalAlignment="Top" MaxWidth="960" HorizontalAlignment="Left">
 
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-        <Button Grid.Column="0" Classes="card cardPrimary" Command="{Binding OpenLocalChatCommand}">
-          <StackPanel Spacing="6">
-            <TextBlock Text="💻  Локальная нейросеть" FontSize="18" FontWeight="Bold"/>
-            <TextBlock Text="Запустите модель на своём ПК и общайтесь без интернета. Бесплатно и приватно."
-                       FontSize="13" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+      <!-- Hero -->
+      <Border CornerRadius="20" ClipToBounds="True" Height="172" BoxShadow="0 10 30 0 #2A000000">
+        <Panel>
+          <Image Source="avares://Launcher.Desktop/Assets/hero.png" Stretch="UniformToFill"/>
+          <StackPanel Margin="32,0" VerticalAlignment="Center" Spacing="8">
+            <TextBlock Text="AI Launcher Studio" FontSize="30" FontWeight="ExtraBold" Foreground="White"/>
+            <TextBlock Text="{l:T home.subtitle}" FontSize="14.5" Foreground="#FFFFFF" Opacity="0.92"
+                       TextWrapping="Wrap" MaxWidth="560"/>
+          </StackPanel>
+        </Panel>
+      </Border>
+
+      <!-- Основные действия -->
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
+        <Button Grid.Column="0" Classes="action actionPrimary" Command="{Binding OpenLocalChatCommand}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="💻" FontSize="26"/>
+            <TextBlock Text="{l:T home.local.title}" FontSize="18" FontWeight="Bold"/>
+            <TextBlock Text="{l:T home.local.desc}" FontSize="13" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
           </StackPanel>
         </Button>
-        <Button Grid.Column="1" Classes="card" Command="{Binding OpenOnlineChatCommand}">
-          <StackPanel Spacing="6">
-            <TextBlock Text="☁  Онлайн нейросеть" FontSize="18" FontWeight="Bold"/>
-            <TextBlock Text="Подключитесь к облачной модели (OpenAI, Anthropic и др.) по API-ключу."
-                       FontSize="13" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+        <Button Grid.Column="1" Classes="action" Command="{Binding OpenOnlineChatCommand}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="☁️" FontSize="26"/>
+            <TextBlock Text="{l:T home.online.title}" FontSize="18" FontWeight="Bold"/>
+            <TextBlock Text="{l:T home.online.desc}" FontSize="13" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
           </StackPanel>
         </Button>
       </Grid>
 
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-        <Button Grid.Column="0" Classes="card" Command="{Binding OpenModelsCommand}">
-          <StackPanel Spacing="4">
-            <TextBlock Text="📦  Модели" FontSize="15" FontWeight="Bold"/>
-            <TextBlock Text="Скачать или выбрать GGUF-модель." FontSize="12"
-                       Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
+        <Button Grid.Column="0" Classes="action" Command="{Binding OpenModelsCommand}">
+          <StackPanel Spacing="5">
+            <StackPanel Orientation="Horizontal" Spacing="9">
+              <TextBlock Text="📦" FontSize="15"/>
+              <TextBlock Text="{l:T home.models.title}" FontSize="15" FontWeight="SemiBold"/>
+            </StackPanel>
+            <TextBlock Text="{l:T home.models.desc}" FontSize="12.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
           </StackPanel>
         </Button>
-        <Button Grid.Column="1" Classes="card" Command="{Binding OpenRuntimesCommand}">
-          <StackPanel Spacing="4">
-            <TextBlock Text="⚙  Среды (runtime)" FontSize="15" FontWeight="Bold"/>
-            <TextBlock Text="Установить движок llama.cpp под ваше железо." FontSize="12"
-                       Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
+        <Button Grid.Column="1" Classes="action" Command="{Binding OpenRuntimesCommand}">
+          <StackPanel Spacing="5">
+            <StackPanel Orientation="Horizontal" Spacing="9">
+              <TextBlock Text="⚙️" FontSize="15"/>
+              <TextBlock Text="{l:T home.runtimes.title}" FontSize="15" FontWeight="SemiBold"/>
+            </StackPanel>
+            <TextBlock Text="{l:T home.runtimes.desc}" FontSize="12.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
           </StackPanel>
         </Button>
       </Grid>
 
-      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="1" CornerRadius="14" Padding="20">
-        <StackPanel Spacing="6">
-          <TextBlock Text="Ваше железо" FontSize="16" FontWeight="Bold"/>
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="{l:T home.hw.title}" FontSize="17" FontWeight="Bold"/>
           <TextBlock Text="{Binding HardwareSummary}" FontSize="13" TextWrapping="Wrap"
                      Foreground="{DynamicResource InkSoftBrush}"/>
         </StackPanel>
       </Border>
 
-      <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="1" CornerRadius="14" Padding="20">
-        <StackPanel Spacing="14">
-          <TextBlock Text="Как модель ложится в память" FontSize="16" FontWeight="Bold"/>
-          <TextBlock Text="{Binding SampleCaption}" FontSize="12" TextWrapping="Wrap"
+      <Border Classes="card">
+        <StackPanel Spacing="16">
+          <TextBlock Text="{l:T home.mem.title}" FontSize="17" FontWeight="Bold"/>
+          <TextBlock Text="{Binding SampleCaption}" FontSize="12.5" TextWrapping="Wrap"
                      Foreground="{DynamicResource InkSoftBrush}"/>
           <ctrl:HardwareMemoryView Plan="{Binding MemoryPlan}"/>
         </StackPanel>
