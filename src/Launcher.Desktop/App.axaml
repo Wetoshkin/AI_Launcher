@@ -70,5 +70,12 @@
             <Setter Property="MinHeight" Value="36"/>
             <Setter Property="CornerRadius" Value="9"/>
         </Style>
+        <Style Selector="NumericUpDown">
+            <Setter Property="MinHeight" Value="36"/>
+            <Setter Property="CornerRadius" Value="9"/>
+        </Style>
+        <Style Selector="Expander">
+            <Setter Property="CornerRadius" Value="10"/>
+        </Style>
     </Application.Styles>
 </Application>

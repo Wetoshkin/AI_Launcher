@@ -153,6 +153,11 @@ public sealed partial class ShellViewModel : ViewModelBase
             {
                 _dashboard.LoadQuickLaunch();
             }
+            else if (string.Equals(value.Key, "agents", System.StringComparison.OrdinalIgnoreCase))
+            {
+                // Папку моделей могли указать на вкладке «Модели» — подхватим список.
+                _agents.RefreshLocalModels();
+            }
         }
     }
 

@@ -51,10 +51,25 @@ public sealed partial class AgentsViewModel : ViewModelBase
     private LaunchPreset _selectedPreset = LaunchPreset.Default;
 
     [ObservableProperty]
+    private int _contextTokens = 32768;
+
+    [ObservableProperty]
+    private int _modelNativeContext;
+
+    [ObservableProperty]
+    private string _contextHint = "У каждой модели свой «родной» контекст — он подставится при выборе модели.";
+
+    [ObservableProperty]
     private ResponseStyle _selectedStyle = ResponseStyle.All[0];
 
     [ObservableProperty]
+    private double _temperature;
+
+    [ObservableProperty]
     private KvCacheMode _selectedKvCache = KvCacheMode.Default;
+
+    [ObservableProperty]
+    private string _commandPreview = string.Empty;
 
     [ObservableProperty]
     private bool _moeAuto = true;
@@ -85,6 +100,12 @@ public sealed partial class AgentsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _showExpert;
+
+    [ObservableProperty]
+    private bool _showEngine;
+
+    [ObservableProperty]
+    private string _draftModelPath = string.Empty;
 
     [ObservableProperty]
     private string _expertArgs = string.Empty;
@@ -143,7 +164,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
     private string _baseUrl = "http://127.0.0.1:8080/v1";
 
     [ObservableProperty]
-    private string _model = "local-model";
+    private string _model = "local/model";
 
     [ObservableProperty]
     private string _status = "Нажмите «Проверить агенты», чтобы увидеть, что установлено.";
@@ -153,7 +174,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _connectionHint =
-        "Запустите модель кнопкой выше — её адрес и название подставятся агенту автоматически.";
+        "Модель не запущена. Нажмите «🚀 Старт» ниже — адрес и название подставятся автоматически.";
 
     public ObservableCollection<AgentStatusRow> Agents { get; } = new();
 
@@ -179,11 +200,12 @@ public sealed partial class AgentsViewModel : ViewModelBase
         GpuSettings.Instance.Changed += (_, _) => Dispatcher.UIThread.Post(RecomputeGpuFill);
         SyncFromRunningModel();
         RefreshLocalModels();
+        RecomputeCommandPreview();
     }
 
     /// <summary>Список локальных моделей из запомненной папки; часто используемые — выше.</summary>
     [RelayCommand]
-    private void RefreshLocalModels()
+    public void RefreshLocalModels()
     {
         var prefs = UiPreferences.Load();
         var folder = prefs.ModelsFolder;
@@ -251,11 +273,12 @@ public sealed partial class AgentsViewModel : ViewModelBase
     private LaunchProfile CaptureProfile() => new()
     {
         ModelPath = LocalModelPath,
-        ContextTokens = SelectedPreset.ContextTokens,
+        ContextTokens = ContextTokens,
         KvModeIndex = System.Math.Max(0, KvCacheMode.All.ToList().IndexOf(SelectedKvCache)),
         Agent = SelectedAgent.ToString(),
         ProjectFolder = ProjectFolder,
         Style = SelectedStyle.Name,
+        Temperature = Temperature,
         MoeAuto = MoeAuto,
         MoeCpuLayers = MoeCpuLayers,
         Reasoning = Reasoning,
@@ -289,8 +312,10 @@ public sealed partial class AgentsViewModel : ViewModelBase
             SelectedAgent = ak;
         }
 
+        ContextTokens = p.ContextTokens;
         ProjectFolder = p.ProjectFolder;
         SelectedStyle = Styles.FirstOrDefault(s => s.Name == p.Style) ?? Styles[0];
+        Temperature = p.Temperature;
         MoeAuto = p.MoeAuto;
         if (!p.MoeAuto)
         {
@@ -322,16 +347,43 @@ public sealed partial class AgentsViewModel : ViewModelBase
     partial void OnLocalModelPathChanged(string value)
     {
         RecomputeMoe();
-        RecomputeGpuFill();
+        LoadNativeContext(value);
+        UpdateDerived();
     }
 
     partial void OnMoeAutoChanged(bool value) => RecomputeMoe();
 
-    partial void OnMoeCpuLayersChanged(int value) => RecomputeGpuFill();
+    partial void OnMoeCpuLayersChanged(int value) => UpdateDerived();
 
-    partial void OnSelectedPresetChanged(LaunchPreset value) => RecomputeGpuFill();
+    partial void OnContextTokensChanged(int value) => UpdateDerived();
 
-    partial void OnSelectedKvCacheChanged(KvCacheMode value) => RecomputeGpuFill();
+    partial void OnSelectedPresetChanged(LaunchPreset value) => ContextTokens = value.ContextTokens;
+
+    partial void OnSelectedKvCacheChanged(KvCacheMode value) => UpdateDerived();
+
+    partial void OnSelectedStyleChanged(ResponseStyle value) => RecomputeCommandPreview();
+
+    partial void OnTemperatureChanged(double value) => RecomputeCommandPreview();
+
+    partial void OnReasoningChanged(bool value) => RecomputeCommandPreview();
+
+    partial void OnReasoningDepthIndexChanged(int value) => RecomputeCommandPreview();
+
+    partial void OnFlashAttentionChanged(bool value) => RecomputeCommandPreview();
+
+    partial void OnKeepInRamChanged(bool value) => RecomputeCommandPreview();
+
+    partial void OnNoMmapChanged(bool value) => RecomputeCommandPreview();
+
+    partial void OnSplitModeRowChanged(bool value) => RecomputeCommandPreview();
+
+    partial void OnVerboseLogChanged(bool value) => RecomputeCommandPreview();
+
+    partial void OnExpertArgsChanged(string value) => RecomputeCommandPreview();
+
+    partial void OnDraftModelPathChanged(string value) => RecomputeCommandPreview();
+
+    partial void OnServerPortChanged(int value) => RecomputeCommandPreview();
 
     partial void OnSelectedLocalModelChanged(LocalModelOption? value)
     {
@@ -339,6 +391,61 @@ public sealed partial class AgentsViewModel : ViewModelBase
         {
             LocalModelPath = value.Path;
         }
+    }
+
+    private void UpdateDerived()
+    {
+        RecomputeGpuFill();
+        RecomputeCommandPreview();
+    }
+
+    /// <summary>Читает «родной» контекст модели из GGUF и подставляет его по умолчанию.</summary>
+    private void LoadNativeContext(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path))
+        {
+            ModelNativeContext = 0;
+            ContextHint = "У каждой модели свой «родной» контекст — он подставится при выборе модели.";
+            return;
+        }
+
+        Task.Run(() => GgufMetadata.ReadContextLength(path)).ContinueWith(t =>
+        {
+            var native = t.Status == TaskStatus.RanToCompletion ? t.Result : null;
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (native is > 0)
+                {
+                    ModelNativeContext = native.Value;
+                    ContextTokens = System.Math.Min(native.Value, 32768);
+                    ContextHint = $"Родной контекст модели — {native.Value / 1024}K. " +
+                        "Меньше ставить можно (экономит память), больше — только если хватает видеопамяти (модель может работать хуже).";
+                }
+                else
+                {
+                    ModelNativeContext = 0;
+                    ContextHint = "Не удалось определить родной контекст модели. Ставьте по памяти: для агентов 32K — хороший старт.";
+                }
+            });
+        });
+    }
+
+    private void RecomputeCommandPreview()
+    {
+        var exe = string.IsNullOrWhiteSpace(RuntimeExe) ? "llama-server" : System.IO.Path.GetFileName(RuntimeExe);
+        var model = string.IsNullOrWhiteSpace(LocalModelPath) ? "<модель>" : System.IO.Path.GetFileName(LocalModelPath);
+        var alias = "local/" + System.IO.Path.GetFileNameWithoutExtension(
+            string.IsNullOrWhiteSpace(LocalModelPath) ? "model" : LocalModelPath);
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"{exe} -m \"{model}\" --alias {alias} --ctx-size {ContextTokens} --port {ServerPort} --host 127.0.0.1 --dry-multiplier 0.8");
+        var extra = ComposeServerArgs();
+        if (!string.IsNullOrWhiteSpace(extra))
+        {
+            sb.Append(' ').Append(extra);
+        }
+
+        CommandPreview = sb.ToString();
     }
 
     private void RecomputeMoe()
@@ -363,7 +470,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
         }
 
         // KV-кэш ≈ 0.125 МБ на токен (f16, ориентир для 7–8B), множитель режима сжатия.
-        var kvGb = SelectedPreset.ContextTokens * 0.125 / 1024.0 * SelectedKvCache.Factor;
+        var kvGb = ContextTokens * 0.125 / 1024.0 * SelectedKvCache.Factor;
         var need = modelGb + kvGb;
 
         // MoE: эксперты первых N слоёв уходят на CPU → в ОЗУ.
@@ -412,7 +519,7 @@ public sealed partial class AgentsViewModel : ViewModelBase
 
         HasGpuFill = GpuFill.Count > 0;
 
-        var ctxText = $"контекст {SelectedPreset.ContextTokens / 1024}K, KV ~{kvGb:0.0} ГБ ({SelectedKvCache.Name.Split(' ')[0]})";
+        var ctxText = $"контекст {ContextTokens / 1024}K, KV ~{kvGb:0.0} ГБ ({SelectedKvCache.Name.Split(' ')[0]})";
         if (ramUsed <= 0.05 && sumV > 0)
         {
             GpuFillSummary = $"Модель целиком в видеопамяти (~{need:0.0} ГБ; {ctxText}) — будет быстро.";
@@ -530,9 +637,21 @@ public sealed partial class AgentsViewModel : ViewModelBase
             parts.Add(SelectedStyle.Args);
         }
 
+        // Ручная температура переопределяет значение из стиля (llama-server берёт последнее).
+        if (Temperature > 0)
+        {
+            parts.Add("--temp " + Temperature.ToString("0.0#", System.Globalization.CultureInfo.InvariantCulture));
+        }
+
         if (!string.IsNullOrWhiteSpace(SelectedKvCache.Args))
         {
             parts.Add(SelectedKvCache.Args!);
+        }
+
+        // Flash Attention — один раз: нужен для сжатого KV или включён вручную.
+        if (SelectedKvCache.RequiresFlashAttention || FlashAttention)
+        {
+            parts.Add("--flash-attn on");
         }
 
         if (MoeCpuLayers > 0)
@@ -543,12 +662,6 @@ public sealed partial class AgentsViewModel : ViewModelBase
         if (Reasoning)
         {
             parts.Add($"--reasoning on --reasoning-format deepseek-legacy --reasoning-budget {ReasoningBudget()}");
-        }
-
-        // Экспертные галочки — частые флаги без ручного ввода.
-        if (FlashAttention)
-        {
-            parts.Add("--flash-attn on");
         }
 
         if (KeepInRam)
@@ -571,25 +684,17 @@ public sealed partial class AgentsViewModel : ViewModelBase
             parts.Add("--verbose");
         }
 
+        if (!string.IsNullOrWhiteSpace(DraftModelPath))
+        {
+            parts.Add($"--model-draft \"{DraftModelPath.Trim()}\"");
+        }
+
         if (!string.IsNullOrWhiteSpace(ExpertArgs))
         {
             parts.Add(ExpertArgs.Trim());
         }
 
         return parts.Count == 0 ? null : string.Join(" ", parts);
-    }
-
-    private string? ComputeTensorSplit()
-    {
-        if (_hardware is null)
-        {
-            return null;
-        }
-
-        var cards = GpuClassifier.UsableGpus(_hardware, GpuSettings.Instance.UseIntegratedGpu);
-        return cards.Count < 2
-            ? null
-            : string.Join(",", cards.Select(g => ((int)Math.Round(Math.Max(1.0, g.TotalGb))).ToString()));
     }
 
     // ───────────────────────── Запуск/остановка модели ─────────────────────────
@@ -628,11 +733,13 @@ public sealed partial class AgentsViewModel : ViewModelBase
                 RuntimeExe.Trim(),
                 LocalModelPath.Trim(),
                 ServerPort,
-                contextTokens: SelectedPreset.ContextTokens,
+                contextTokens: ContextTokens,
                 log: AppendServerLog,
                 CancellationToken.None,
                 antiLoop: true,
-                tensorSplit: ComputeTensorSplit(),
+                // Свой --tensor-split НЕ передаём: он отключает авто-подгонку llama.cpp под
+                // свободную память и приводит к OOM. llama.cpp сам распределит по видеокартам.
+                tensorSplit: null,
                 extraArgs: ComposeServerArgs());
 
             IsServerRunning = _serverLauncher.IsRunning;
@@ -741,13 +848,13 @@ public sealed partial class AgentsViewModel : ViewModelBase
         if (running.IsRunning)
         {
             BaseUrl = NormalizeAgentBaseUrl(running.BaseUrl);
-            Model = string.IsNullOrWhiteSpace(running.ModelId) ? "local-model" : running.ModelId;
+            Model = string.IsNullOrWhiteSpace(running.ModelId) ? "local/model" : running.ModelId;
             ConnectionHint = $"✓ Подключено к запущенной модели: {Model}  ({BaseUrl}). Агент будет отвечать через неё.";
         }
         else
         {
-            ConnectionHint = "Модель не запущена. Запустите её кнопкой выше — адрес и название подставятся агенту " +
-                "автоматически. Либо впишите онлайн-адрес и ключ вручную.";
+            ConnectionHint = "Модель не запущена. Нажмите «🚀 Старт» (или «Только сервер») ниже — адрес и название " +
+                "подставятся автоматически. Либо впишите онлайн-адрес вручную.";
         }
     }
 
@@ -810,6 +917,14 @@ public sealed partial class AgentsViewModel : ViewModelBase
         var isLocalUrl = BaseUrl.Contains("127.0.0.1", StringComparison.OrdinalIgnoreCase)
             || BaseUrl.Contains("localhost", StringComparison.OrdinalIgnoreCase);
 
+        // Для локального сервера id модели обязан быть в формате local/<имя>.
+        if (isLocalUrl && !Model.Trim().StartsWith("local/", StringComparison.Ordinal))
+        {
+            Model = RunningModel.Instance.IsRunning && RunningModel.Instance.ModelId.StartsWith("local/", StringComparison.Ordinal)
+                ? RunningModel.Instance.ModelId
+                : "local/model";
+        }
+
         try
         {
             // Конфиг пишем сразу — он пригодится даже если агент не установлен.
@@ -863,9 +978,14 @@ public sealed partial class AgentsViewModel : ViewModelBase
                          "Установите его CLI и повторите. Команда: " + plan.Executable + " " + string.Join(' ', plan.Arguments);
             }
         }
+        catch (ArgumentException)
+        {
+            Status = "Не удалось подготовить запуск агента: некорректный id модели. " +
+                "Для локальной модели он должен быть в формате local/<имя>. Запустите модель и повторите.";
+        }
         catch (Exception ex)
         {
-            Status = "Ошибка подготовки: " + ex.Message;
+            Status = "Ошибка подготовки запуска: " + ex.Message;
         }
     }
 

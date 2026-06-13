@@ -2,10 +2,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Launcher.Desktop.ViewModels.Pages"
              xmlns:l="using:Launcher.Desktop.Localization"
+             xmlns:conv="using:Launcher.Desktop.Converters"
              x:Class="Launcher.Desktop.Views.Pages.RuntimesView"
              x:DataType="vm:RuntimesViewModel">
   <ScrollViewer>
-    <StackPanel Margin="40,32" Spacing="22" VerticalAlignment="Top" MaxWidth="1000" HorizontalAlignment="Left">
+    <StackPanel Margin="40,32" Spacing="22" VerticalAlignment="Top">
       <StackPanel Spacing="6">
         <TextBlock Text="{l:T runtimes.title}" FontSize="30" FontWeight="ExtraBold"/>
         <TextBlock Text="{Binding Description}" FontSize="13.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
@@ -53,9 +54,18 @@
 
       <Border Classes="card">
         <StackPanel Spacing="14">
+          <TextBlock Text="Скачать движок" FontSize="17" FontWeight="Bold"/>
+          <TextBlock TextWrapping="Wrap" FontSize="12.5" Foreground="{DynamicResource InkSoftBrush}"
+                     Text="Тип сборки — это под какую видеокарту собран движок. Подходящий уже выбран по вашему железу; новичку проще всего нажать «Установить рекомендованную»."/>
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <TextBlock Text="{l:T runtimes.engine}" VerticalAlignment="Center"/>
-            <ComboBox MinWidth="160" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"/>
+            <TextBlock Text="Тип сборки" VerticalAlignment="Center"/>
+            <ComboBox MinWidth="260" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Converter={x:Static conv:FitConverters.ProfileLabel}}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
             <Button Content="{l:T common.find}" Classes="primary" Command="{Binding ListReleasesCommand}"/>
           </StackPanel>
           <TextBlock Text="{Binding Status}" FontSize="12.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>

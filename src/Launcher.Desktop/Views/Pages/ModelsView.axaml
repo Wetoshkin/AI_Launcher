@@ -6,7 +6,7 @@
              x:Class="Launcher.Desktop.Views.Pages.ModelsView"
              x:DataType="vm:ModelsViewModel">
   <ScrollViewer>
-    <StackPanel Margin="40,32" Spacing="22" VerticalAlignment="Top" MaxWidth="1000" HorizontalAlignment="Left">
+    <StackPanel Margin="40,32" Spacing="22" VerticalAlignment="Top">
       <StackPanel Spacing="6">
         <TextBlock Text="{l:T models.title}" FontSize="30" FontWeight="ExtraBold"/>
         <TextBlock Text="{Binding Description}" FontSize="13.5" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>

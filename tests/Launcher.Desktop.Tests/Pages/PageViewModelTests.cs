@@ -14,7 +14,7 @@ public class PageViewModelTests
     public void Models_has_title() => Assert.Equal("Модели", new ModelsViewModel().Title);
 
     [Fact]
-    public void Runtimes_has_title() => Assert.Equal("Среды (runtime)", new RuntimesViewModel().Title);
+    public void Runtimes_has_title() => Assert.Equal("Среды (движок)", new RuntimesViewModel().Title);
 
     [Fact]
     public void Settings_has_title() => Assert.Equal("Настройки", new SettingsViewModel().Title);

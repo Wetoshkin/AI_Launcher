@@ -6,7 +6,7 @@
              x:Class="Launcher.Desktop.Views.Pages.SettingsView"
              x:DataType="vm:SettingsViewModel">
   <ScrollViewer>
-    <StackPanel Margin="40,36" Spacing="24" VerticalAlignment="Top" MaxWidth="820" HorizontalAlignment="Left">
+    <StackPanel Margin="40,36" Spacing="24" VerticalAlignment="Top">
       <StackPanel Spacing="6">
         <TextBlock Text="{l:T settings.title}" FontSize="30" FontWeight="ExtraBold"/>
         <TextBlock Text="{l:T settings.subtitle}" FontSize="14" Foreground="{DynamicResource InkSoftBrush}" TextWrapping="Wrap"/>
