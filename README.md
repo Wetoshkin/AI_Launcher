@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/images/app-icon.png" width="120" alt="AI Launcher Studio"/>
+<img src="assets/images/app-icon.png" width="120" alt="AI Launcher Studio"/>
 
 # AI Launcher Studio
 
@@ -14,7 +14,7 @@
 
 [English version](README_en.md)
 
-<img src="docs/images/screenshot-home.png" width="85%" alt="Главный экран"/>
+<img src="assets/images/screenshot-home.png" width="85%" alt="Главный экран"/>
 
 </div>
 
@@ -43,7 +43,7 @@
 ### ☁️ Онлайн нейросеть
 Встроенный чат к **OpenAI**, **OpenRouter**, **Anthropic (Claude)** или своему адресу — по API-ключу. Есть поддержка прокси **Hiddify** для заблокированных провайдеров.
 
-<div align="center"><img src="docs/images/screenshot-chat.png" width="85%" alt="Чат"/></div>
+<div align="center"><img src="assets/images/screenshot-chat.png" width="85%" alt="Чат"/></div>
 
 ### 🧠 Диаграмма памяти
 Наглядно показывает, **как модель ложится в память** одной или двух видеокарт и системную RAM, и предупреждает, если не помещается — ещё до запуска.
@@ -51,12 +51,12 @@
 ### ⚠️ Проверка конфликтов настроек + подсказки
 Движок объясняет простым языком, если настройки несовместимы (MTP без подходящей модели, TurboQuant без нужной сборки, контекст больше нативного, нехватка памяти) — и как это исправить. У **каждого** параметра есть иконка «?» с понятным объяснением: что это, зачем и на что влияет.
 
-<div align="center"><img src="docs/images/screenshot-settings.png" width="85%" alt="Настройки"/></div>
+<div align="center"><img src="assets/images/screenshot-settings.png" width="85%" alt="Настройки"/></div>
 
 ### 📦 Модели и 🤖 Среды
 Локальный каталог GGUF и живой поиск на **Hugging Face** с подсветкой динамических квантов (UD-Q4_K_XL). Реальное **скачивание и установка** сборок `llama.cpp` прямо из приложения.
 
-<div align="center"><img src="docs/images/screenshot-runtimes.png" width="85%" alt="Среды (runtime)"/></div>
+<div align="center"><img src="assets/images/screenshot-runtimes.png" width="85%" alt="Среды (runtime)"/></div>
 
 ### 🤖 Кодинг-агенты
 Запуск агентов (**OpenCode, Kilo, Claw, Aider**) на локальной или онлайн модели прямо в вашем проекте.
@@ -71,7 +71,7 @@
 - **🌗 Светлая и тёмная темы**, **🌍 русский и английский** языки, **🔄 проверка обновлений**.
 - **🛠 Режим Эксперт** — поле произвольных аргументов `llama-server` + лог-консоль сервера.
 
-<div align="center"><img src="docs/images/screenshot-home-dark.png" width="85%" alt="Тёмная тема"/></div>
+<div align="center"><img src="assets/images/screenshot-home-dark.png" width="85%" alt="Тёмная тема"/></div>
 
 ## 🏁 Быстрый старт
 

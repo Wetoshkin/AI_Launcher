@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/images/app-icon.png" width="120" alt="AI Launcher Studio"/>
+<img src="assets/images/app-icon.png" width="120" alt="AI Launcher Studio"/>
 
 # AI Launcher Studio
 
@@ -14,7 +14,7 @@ Clear for beginners, powerful for pros.
 
 [Русская версия](README.md)
 
-<img src="docs/images/screenshot-home.png" width="85%" alt="Home"/>
+<img src="assets/images/screenshot-home.png" width="85%" alt="Home"/>
 
 </div>
 
@@ -43,7 +43,7 @@ Install a `llama.cpp` engine for your hardware (CPU / Vulkan / CUDA / ROCm — t
 ### ☁️ Online AI
 Built-in chat to **OpenAI**, **OpenRouter**, **Anthropic (Claude)** or a custom endpoint via API key. Hiddify proxy support for blocked providers.
 
-<div align="center"><img src="docs/images/screenshot-chat.png" width="85%" alt="Chat"/></div>
+<div align="center"><img src="assets/images/screenshot-chat.png" width="85%" alt="Chat"/></div>
 
 ### 🧠 Memory diagram
 Visualizes **how a model fits** across one or two GPUs and system RAM, and warns if it doesn't — before you launch.
@@ -51,12 +51,12 @@ Visualizes **how a model fits** across one or two GPUs and system RAM, and warns
 ### ⚠️ Settings conflict engine + hints
 Explains in plain language when settings are incompatible (MTP without a matching model, TurboQuant without the right build, context above native, out of memory) and how to fix them. **Every** parameter has a "?" icon explaining what it is, why, and what it affects.
 
-<div align="center"><img src="docs/images/screenshot-settings.png" width="85%" alt="Settings"/></div>
+<div align="center"><img src="assets/images/screenshot-settings.png" width="85%" alt="Settings"/></div>
 
 ### 📦 Models & 🤖 Runtimes
 Local GGUF catalog and live **Hugging Face** search highlighting dynamic quants (UD-Q4_K_XL). Real **download and install** of `llama.cpp` builds from inside the app.
 
-<div align="center"><img src="docs/images/screenshot-runtimes.png" width="85%" alt="Runtimes"/></div>
+<div align="center"><img src="assets/images/screenshot-runtimes.png" width="85%" alt="Runtimes"/></div>
 
 ### 🤖 Coding agents
 Launch agents (**OpenCode, Kilo, Claw, Aider**) on a local or online model right in your project.
@@ -71,7 +71,7 @@ Launch agents (**OpenCode, Kilo, Claw, Aider**) on a local or online model right
 - **🌗 Light and dark themes**, **🌍 Russian and English**, **🔄 update check**.
 - **🛠 Expert mode** — free-form `llama-server` arguments + server log console.
 
-<div align="center"><img src="docs/images/screenshot-home-dark.png" width="85%" alt="Dark theme"/></div>
+<div align="center"><img src="assets/images/screenshot-home-dark.png" width="85%" alt="Dark theme"/></div>
 
 ## 🏁 Quick start
 

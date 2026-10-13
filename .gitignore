@@ -39,3 +39,6 @@ coverage/
 # Local agent worktrees
 .worktrees/
 installer/Output/
+
+# Private research/spec docs (not published)
+docs/
